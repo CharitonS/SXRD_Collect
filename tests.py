@@ -20,6 +20,7 @@ __author__ = 'Clemens Prescher'
 import unittest
 
 from models import *
+from xps_trajectory.xps_trajectory import XPSTrajectory
 
 class SamplePointTest(unittest.TestCase):
     def setUp(self):
@@ -39,3 +40,15 @@ class SamplePointTest(unittest.TestCase):
         self.sample_point.perform_wide_scan_for_setup[1]=True
         self.sample_point.perform_single_for_setup[0]=True
         collect_sample_point(self.sample_point, [])
+
+
+class TrajectoryScanTest(unittest.TestCase):
+    HOST = '164.54.160.34'
+    GROUP_NAME = 'G1'
+    POSITIONERS = "STX STZ SLY OM"
+
+    GATHER_OUTPUTS = ('CurrentPosition', 'FollowingError',
+                      'SetpointPosition', 'CurrentVelocity')
+
+    def test_templates(self):
+        stage_xps = XPSTrajectory(host=self.HOST, group=self.GROUP_NAME, positioners=self.POSITIONERS)

@@ -16,6 +16,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Clemens Prescher'
+from measurement import collect_single_data, collect_step_data, collect_wide_data
 
 
 class ExperimentSetup(object):
@@ -58,20 +59,6 @@ class SamplePoint(object):
         del self.perform_wide_scan_for_setup[ind]
 
 
-def collect_step_data(detector_position, omega_start, omega_end, omega_step, time, x, y, z, pv_names):
-    #performs the actual step measurement
-    print 'collecting step data'
-    return
-
-def collect_wide_data(detector_position, omega_start, omega_end, omega_step, time, x, y, z, pv_names):
-    #performs the actual wide measurement
-    print 'collecting wide data'
-    return
-
-def collect_single_data(detector_position, omega_start, omega_end, omega_step, time, x, y, z, pv_names):
-    #performs an actual single angle measurement:
-    print 'collecting single_data'
-    return
 
 def collect_sample_point(sample_point, pv_names):
     for ind, experiment_setup in enumerate(sample_point.experiment_setups):
