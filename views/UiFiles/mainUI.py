@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created: Mon Jul 14 16:22:24 2014
+# Created: Mon Jul 14 16:38:46 2014
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -180,7 +180,22 @@ class Ui_SXRDCollectWidget(object):
         self.line_5.setObjectName(_fromUtf8("line_5"))
         self.verticalLayout.addWidget(self.line_5)
         self.sample_points_table = QtGui.QTableWidget(SXRDCollectWidget)
-        self.sample_points_table.setStyleSheet(_fromUtf8(""))
+        self.sample_points_table.setStyleSheet(_fromUtf8("QPushButton {\n"
+"    height: 18px;\n"
+"    border: 1px solid #000;\n"
+"    border-radius:2px;\n"
+"    padding-left: 8px;\n"
+"    padding-right: 8px;\n"
+"    margin: 5px;\n"
+"}\n"
+"\n"
+"QPushButton::pressed{\n"
+"    margin-left: 7px;\n"
+"    margin-top: 7px;\n"
+"}\n"
+"QPushButton::hover{\n"
+"    background-color: #EEE\n"
+"}"))
         self.sample_points_table.setLineWidth(0)
         self.sample_points_table.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.sample_points_table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)

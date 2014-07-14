@@ -248,17 +248,17 @@ Conifguration</string>
        </column>
        <column>
         <property name="text">
-         <string>Ω start</string>
+         <string>Ω Start</string>
         </property>
        </column>
        <column>
         <property name="text">
-         <string>Ω end</string>
+         <string>Ω End</string>
         </property>
        </column>
        <column>
         <property name="text">
-         <string>Step</string>
+         <string>Ω Step</string>
         </property>
        </column>
        <column>
@@ -336,7 +336,22 @@ Conifguration</string>
    <item>
     <widget class="QTableWidget" name="sample_points_table">
      <property name="styleSheet">
-      <string notr="true"/>
+      <string notr="true">QPushButton {
+	height: 18px;
+	border: 1px solid #000;
+	border-radius:2px;
+	padding-left: 8px;
+	padding-right: 8px;
+	margin: 5px;
+}
+
+QPushButton::pressed{
+	margin-left: 7px;
+	margin-top: 7px;
+}
+QPushButton::hover{
+	background-color: #EEE
+}</string>
      </property>
      <property name="lineWidth">
       <number>0</number>

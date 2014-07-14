@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'epics_config.ui'
 #
-# Created: Mon Jul 14 16:22:24 2014
+# Created: Mon Jul 14 16:38:46 2014
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!

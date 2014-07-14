@@ -5,14 +5,14 @@ from PyQt4 import QtGui, QtCore
 from functools import partial
 import sys
 
-from UiFiles.mainUI import Ui_SXRDCollectWidget
+from .UiFiles.mainUI import Ui_SXRDCollectWidget
 
 
 class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     set_sample_btn_clicked = QtCore.pyqtSignal(int)
     move_sample_btn_clicked = QtCore.pyqtSignal(int)
 
-    def __init__(self):
+    def __init__(self, version):
         super(MainView, self).__init__()
         self.setupUi(self)
 
@@ -21,6 +21,9 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
 
         self.standard_show_btn.clicked.connect(self.standard_show_btn_clicked)
         self.hide_standards()
+
+
+        self.setWindowTitle("SXRD Collect {}".format(version))
 
     def add_experiment_setup(self, detector_pos, omega_start, omega_end, omega_step, exposure_time):
         new_row_ind = int(self.setup_table.rowCount())
