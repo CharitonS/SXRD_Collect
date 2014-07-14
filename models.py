@@ -62,7 +62,6 @@ class SamplePoint(object):
 
 def collect_sample_point(sample_point, pv_names):
     for ind, experiment_setup in enumerate(sample_point.experiment_setups):
-        print ind
         if sample_point.perform_single_for_setup[ind]:
             collect_single_data(experiment_setup.detector_pos,
                                 experiment_setup.omega_start,
