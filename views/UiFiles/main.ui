@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>SXRDCollectWidget</class>
+ <widget class="QWidget" name="SXRDCollectWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -13,11 +13,20 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">#experiment_lbl, #sample_lbl, #standards_lbl {
+	font: italic 20px;
+}
+
+#title_lbl {
+	font: bold 25px;
+}</string>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_9">
      <item>
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="title_lbl">
        <property name="text">
         <string>Single Crystal X-ray Diffraction</string>
        </property>
@@ -53,9 +62,25 @@ Conifguration</string>
     </layout>
    </item>
    <item>
+    <widget class="Line" name="line_8">
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="lineWidth">
+      <number>1</number>
+     </property>
+     <property name="midLineWidth">
+      <number>0</number>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_8">
      <item>
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="experiment_lbl">
        <property name="text">
         <string>Experiment Setup</string>
        </property>
@@ -102,33 +127,148 @@ Conifguration</string>
     </layout>
    </item>
    <item>
-    <widget class="QTableWidget" name="setup_table">
-     <column>
-      <property name="text">
-       <string>Detector</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Ω start</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Ω end</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Step</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Time</string>
-      </property>
-     </column>
+    <widget class="Line" name="line_7">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="5,8">
+     <property name="spacing">
+      <number>10</number>
+     </property>
+     <item>
+      <widget class="QWidget" name="widget" native="true">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Basename:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="basename_txt"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Folder:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="folder_txt"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>Examplefilename</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="Line" name="line_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="rename_files_cb">
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Rename Files</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="rename_after_cb">
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="text">
+           <string>Reset name after Measurement</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTableWidget" name="setup_table">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <attribute name="horizontalHeaderDefaultSectionSize">
+        <number>60</number>
+       </attribute>
+       <attribute name="horizontalHeaderHighlightSections">
+        <bool>true</bool>
+       </attribute>
+       <column>
+        <property name="text">
+         <string>Detector</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Ω start</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Ω end</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Step</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Time</string>
+        </property>
+       </column>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="Line" name="line">
@@ -140,7 +280,7 @@ Conifguration</string>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
-      <widget class="QLabel" name="label_10">
+      <widget class="QLabel" name="sample_lbl">
        <property name="text">
         <string>Sample Points</string>
        </property>
@@ -187,9 +327,34 @@ Conifguration</string>
     </layout>
    </item>
    <item>
-    <widget class="QTableWidget" name="points_table">
+    <widget class="Line" name="line_5">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTableWidget" name="sample_points_table">
+     <property name="styleSheet">
+      <string notr="true"/>
+     </property>
+     <property name="lineWidth">
+      <number>0</number>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <property name="columnCount">
+      <number>6</number>
+     </property>
      <attribute name="horizontalHeaderDefaultSectionSize">
       <number>80</number>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
      </attribute>
      <column>
       <property name="text">
@@ -216,6 +381,11 @@ Conifguration</string>
        <string/>
       </property>
      </column>
+     <column>
+      <property name="text">
+       <string> </string>
+      </property>
+     </column>
     </widget>
    </item>
    <item>
@@ -228,7 +398,7 @@ Conifguration</string>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
-      <widget class="QPushButton" name="pushButton_12">
+      <widget class="QPushButton" name="standard_show_btn">
        <property name="minimumSize">
         <size>
          <width>30</width>
@@ -247,7 +417,7 @@ Conifguration</string>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_9">
+      <widget class="QLabel" name="standards_lbl">
        <property name="text">
         <string>Standards</string>
        </property>
@@ -294,6 +464,13 @@ Conifguration</string>
     </layout>
    </item>
    <item>
+    <widget class="Line" name="line_6">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QTableWidget" name="standard_table">
      <attribute name="horizontalHeaderDefaultSectionSize">
       <number>80</number>
@@ -326,28 +503,30 @@ Conifguration</string>
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_5">
-     <item>
-      <spacer name="horizontalSpacer_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="standard_every_sample_cb">
-       <property name="text">
-        <string>Every Sample Point</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    <widget class="QWidget" name="standard_footer_2" native="true">
+     <layout class="QHBoxLayout" name="standard_footer">
+      <item>
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="standard_every_sample_cb">
+        <property name="text">
+         <string>Every Sample Point</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <widget class="Line" name="line_3">

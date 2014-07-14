@@ -64,7 +64,7 @@ class XPS:
         except socket.timeout:
             return [-2, '']
         except socket.error (errNb, errString):
-            print 'Socket error : ' + errString
+            print('Socket error : ' + errString)
             return [-2, '']
 
         for i in range(len(ret)):
