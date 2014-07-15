@@ -26,7 +26,7 @@ from epics import caput, caget, PV, camonitor
 
 from models import *
 from xps_trajectory.xps_trajectory import XPSTrajectory
-from views.main import MainView
+from views.MainView import MainView
 
 class SamplePointTest(unittest.TestCase):
     def setUp(self):
@@ -63,6 +63,24 @@ class TrajectoryScanTest(unittest.TestCase):
         stage_xps.run_line_trajectory_general()
 
 
+from PyQt4.QtTest import QTest
+from controller.MainController import MainController
+
+
+class MainControllerTest(unittest.TestCase):
+    def setUp(self):
+        self.app = QtGui.QApplication(sys.argv)
+        self.controller = MainController()
+        self.view = self.controller.main_view
+
+    def test_setup_operations(self):
+        QTest.mouseClick(self.view.add_setup_btn, QtCore.Qt.LeftButton)
+        QTest.mouseClick(self.view.add_setup_btn, QtCore.Qt.LeftButton)
+        QTest.mouseClick(self.view.add_setup_btn, QtCore.Qt.LeftButton)
+
+    def tearDown(self):
+        self.app.exec_()
+
 
 class MainViewTest(unittest.TestCase):
     def setUp(self):
@@ -87,7 +105,6 @@ class MainViewTest(unittest.TestCase):
         self.view.del_experiment_setup(3)
         self.view.del_experiment_setup(1)
         self.view.del_experiment_setup(0)
-
     def tearDown(self):
         self.view.close()
         del self.view

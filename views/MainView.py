@@ -22,10 +22,10 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.standard_show_btn.clicked.connect(self.standard_show_btn_clicked)
         self.hide_standards()
 
-
         self.setWindowTitle("SXRD Collect {}".format(version))
 
     def add_experiment_setup(self, detector_pos, omega_start, omega_end, omega_step, exposure_time):
+        self.setup_table.blockSignals(True)
         new_row_ind = int(self.setup_table.rowCount())
         self.setup_table.setRowCount(new_row_ind + 1)
 
@@ -57,21 +57,25 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.setHorizontalHeaderItem(6+new_row_ind,
                                                          QtGui.QTableWidgetItem('Exp{}'.format(new_row_ind + 1)))
         self.sample_points_table.resizeColumnsToContents()
+        self.setup_table.blockSignals(False)
 
     def get_selected_experiment_setup(self):
         selected = self.setup_table.selectionModel().selectedRows()
         try:
-            row = selected[0].row()
+            row = []
+            for element in selected:
+                row.append(int(element.row()))
         except IndexError:
-            row = -1
+            pass
         return row
 
-    def del_experiment_setup(self, row_ind):
+    def delete_experiment_setup(self, row_ind):
         self.setup_table.blockSignals(True)
         self.setup_table.removeRow(row_ind)
         self.setup_table.blockSignals(False)
 
     def add_sample_point(self, name, x, y, z):
+        self.sample_points_table.blockSignals(True)
         new_row_ind = int(self.sample_points_table.rowCount())
         self.sample_points_table.setRowCount(new_row_ind + 1)
 
@@ -100,6 +104,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         for exp_row in range(self.setup_table.rowCount()):
             self.create_sample_point_checkboxes(new_row_ind, exp_row)
         self.sample_points_table.resizeColumnsToContents()
+        self.sample_points_table.blockSignals(False)
 
     def create_sample_point_checkboxes(self, row_index, exp_index):
         exp_widget = QtGui.QWidget()
@@ -109,26 +114,57 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         exp_layout.addWidget(step_cb)
         exp_layout.addWidget(wide_cb)
         exp_widget.setLayout(exp_layout)
+
+        step_cb.stateChanged.connect(partial(self.step_cb_changed, row_index, exp_index))
+        wide_cb.stateChanged.connect(partial(self.wide_cb_changed, row_index, exp_index))
         self.sample_points_table.setCellWidget(row_index, exp_index+6, exp_widget)
 
     def get_selected_sample_point(self):
         selected = self.sample_points_table.selectionModel().selectedRows()
         try:
-            row = selected[0].row()
+            row = []
+            for element in selected:
+                row.append(int(element.row()))
         except IndexError:
-            row = -1
+            pass
         return row
 
-    def del_sample_point(self, row_ind):
+    def delete_sample_point(self, row_ind):
         self.sample_points_table.blockSignals(True)
         self.sample_points_table.removeRow(row_ind)
         self.sample_points_table.blockSignals(False)
+
+    def clear_sample_points(self):
+        self.sample_points_table.clear()
+
+    def set_sample_point_values(self, ind, x,y,z):
+        x_item = self.sample_points_table.item(ind, 1)
+        x_item.setText(str(x))
+        y_item = self.sample_points_table.item(ind, 2)
+        y_item.setText(str(y))
+        z_item = self.sample_points_table.item(ind, 3)
+        z_item.setText(str(z))
+
+    def get_sample_point_values(self, ind):
+        x_item = self.sample_points_table.item(ind, 1)
+        x = float(str(x_item.text()))
+        y_item = self.sample_points_table.item(ind, 2)
+        y = float(str(y_item.text()))
+        z_item = self.sample_points_table.item(ind, 3)
+        z = float(str(z_item.text()))
+        return x, y, z
 
     def set_sample_btn_click(self, index):
         self.set_sample_btn_clicked.emit(index)
 
     def move_sample_btn_click(self, index):
         self.move_sample_btn_clicked.emit(index)
+
+    def step_cb_changed(self, row_index, exp_index, state):
+        print((row_index, exp_index, state))
+
+    def wide_cb_changed(self, row_index, exp_index, state):
+        pass
 
     def standard_show_btn_clicked(self):
         if self.standard_show_btn.text() == '-':
@@ -166,7 +202,7 @@ class TextDoubleDelegate(QtGui.QStyledItemDelegate):
 
     def setEditorData(self, parent, index):
         value = index.model().data(index, QtCore.Qt.EditRole)
-        self.editor.setText(str(value))
+        self.editor.setText("{:g}".format(float(value)))
 
     def setModelData(self, parent, model, index):
         value = self.editor.text()

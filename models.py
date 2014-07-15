@@ -3,7 +3,7 @@
 # Copyright (C) 2014  Clemens Prescher (clemens.prescher@gmail.com)
 # GSECARS, University of Chicago
 #
-#     This program is free software: you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
@@ -42,7 +42,7 @@ class MainData(object):
     def add_sample_point(self, name, x, y, z):
         self.sample_points.append(SamplePoint(name, x, y, z))
         for setup in self.experiment_setups:
-            self.sample_points[-1].register(setup)
+            self.sample_points[-1].register_setup(setup)
 
     def delete_sample_point(self, ind):
         del self.sample_points[ind]
@@ -58,6 +58,10 @@ class ExperimentSetup(object):
         self.omega_end = omega_end
         self.omega_step = omega_step
         self.time_per_step = time_per_step
+
+    def __str__(self):
+        return "{}, {}, {}, {}, {}".format(self.detector_pos, self.omega_start,
+                                           self.omega_end, self.omega_step, self.time_per_step)
 
 
 class SamplePoint(object):
@@ -86,4 +90,9 @@ class SamplePoint(object):
         del self.experiment_setups[ind]
         del self.perform_step_scan_for_setup[ind]
         del self.perform_wide_scan_for_setup[ind]
+
+    def __str__(self):
+        return "{}, {}, {}, {}, {}, {}".format(self.name, self.x, self.y, self.z,
+                                               self.perform_step_scan_for_setup,
+                                               self.perform_wide_scan_for_setup)
 
