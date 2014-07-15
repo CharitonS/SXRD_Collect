@@ -1,7 +1,6 @@
 __author__ = 'DAC_User'
 __version__ = 0.1
 
-from views.main import MainView
 from epics import caget
 
 pv_names = {'detector_position': '13IDD:m8',
@@ -13,45 +12,59 @@ pv_names = {'detector_position': '13IDD:m8',
 }
 
 
+from views.main import MainView
+from models import MainData
+
+
 class MainController(object):
     def __init__(self):
         self.main_view = MainView(__version__)
         self.main_view.show()
+        self.data = MainData()
         self.connect_buttons()
 
     def connect_buttons(self):
-        self.main_view.add_setup_btn.clicked.connect(self.add_setup_btn_clicked)
-        self.main_view.delete_setup_btn.clicked.connect(self.delete_setup_btn_clicked)
-        self.main_view.clear_setup_btn.clicked.connect(self.clear_setup_btn_clicked)
+        self.main_view.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
+        self.main_view.delete_setup_btn.clicked.connect(self.delete_experiment_setup_btn_clicked)
+        self.main_view.clear_setup_btn.clicked.connect(self.clear_experiment_setup_btn_clicked)
 
-        self.main_view.add_sample_btn.clicked.connect(self.add_sample_btn_clicked)
-        self.main_view.delete_sample_btn.clicked.connect(self.delete_sample_btn_clicked)
-        self.main_view.clear_sample_btn.clicked.connect(self.clear_sample_btn_clicked)
+        self.main_view.add_sample_btn.clicked.connect(self.add_sample_point_btn_clicked)
+        self.main_view.delete_sample_btn.clicked.connect(self.delete_sample_point_btn_clicked)
+        self.main_view.clear_sample_btn.clicked.connect(self.clear_sample_point_btn_clicked)
 
         self.main_view.add_standard_btn.clicked.connect(self.add_standard_btn_clicked)
         self.main_view.delete_standard_btn.clicked.connect(self.delete_standard_btn_clicked)
         self.main_view.clear_standard_btn.clicked.connect(self.clear_standard_btn_clicked)
 
-    def add_setup_btn_clicked(self):
+    def add_experiment_setup_btn_clicked(self):
         detector_pos, omega, exposure_time = self.get_current_setup()
         self.main_view.add_experiment_setup(detector_pos, omega - 1, omega + 1, 0.1, exposure_time)
+        self.data.add_experiment_setup(detector_pos, omega - 1, omega + 1, 0.1, exposure_time)
 
-    def delete_setup_btn_clicked(self):
-        pass
+    def delete_experiment_setup_btn_clicked(self):
+        cur_ind = self.main_view.get_selected_experiment_setup()
+        for ind in cur_ind:
+            self.main_view.delete_experiment_setup(ind)
+            self.data.delete_experiment_setup(ind)
 
-    def clear_setup_btn_clicked(self):
-        pass
+    def clear_experiment_setup_btn_clicked(self):
+        self.main_view.clear_experiment_setups()
+        self.data.clear_experiment_setups()
 
-    def add_sample_btn_clicked(self):
+    def add_sample_point_btn_clicked(self):
         x, y, z = self.get_current_sample_position()
         self.main_view.add_sample_point('P', x, y, z)
-        pass
+        self.data.add_sample_point('P', x, y, z)
 
-    def delete_sample_btn_clicked(self):
-        pass
+    def delete_sample_point_btn_clicked(self):
+        cur_ind = self.main_view.get_selected_sample_point()
+        for ind in cur_ind:
+            self.main_view.delete_sample_point(ind)
+            self.data.delete_sample_point(ind)
 
-    def clear_sample_btn_clicked(self):
-        pass
+    def clear_sample_point_btn_clicked(self):
+        self.main_view.clear_sample_points()
+        self.data.clear_sample_points()
 
     def add_standard_btn_clicked(self):
         pass

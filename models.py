@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 # - GUI program for fast processing of 2D X-ray data
-#     Copyright (C) 2014  Clemens Prescher (clemens.prescher@gmail.com)
-#     GSECARS, University of Chicago
+# Copyright (C) 2014  Clemens Prescher (clemens.prescher@gmail.com)
+# GSECARS, University of Chicago
 #
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -19,8 +19,40 @@ __author__ = 'Clemens Prescher'
 from measurement import collect_single_data, collect_step_data, collect_wide_data
 
 
+class MainData(object):
+    def __init__(self):
+        self.experiment_setups = []
+        self.sample_points = []
+
+    def add_experiment_setup(self, detector_pos=-333, omega_start=0, omega_end=0, omega_step=0, time_per_step=0):
+        self.experiment_setups.append(ExperimentSetup(detector_pos, omega_start, omega_end, omega_step, time_per_step))
+
+        for point in self.sample_points:
+            point.register_setup(self.experiment_setups[-1])
+
+    def delete_experiment_setup(self, ind):
+        for point in self.sample_points:
+            point.unregister_setup(self.experiment_setups[ind])
+        del self.experiment_setups[ind]
+
+    def clear_experiment_setups(self):
+        for ind, setup in enumerate(self.experiment_setups):
+            self.delete_experiment_setup(ind)
+
+    def add_sample_point(self, name, x, y, z):
+        self.sample_points.append(SamplePoint(name, x, y, z))
+        for setup in self.experiment_setups:
+            self.sample_points[-1].register(setup)
+
+    def delete_sample_point(self, ind):
+        del self.sample_points[ind]
+
+    def clear_sample_points(self):
+        self.sample_points = []
+
+
 class ExperimentSetup(object):
-    def __init__(self, detector_pos = -333, omega_start = 0, omega_end = 0, omega_step = 0, time_per_step=0):
+    def __init__(self, detector_pos=-333, omega_start=0, omega_end=0, omega_step=0, time_per_step=0):
         self.detector_pos = detector_pos
         self.omega_start = omega_start
         self.omega_end = omega_end
@@ -29,7 +61,7 @@ class ExperimentSetup(object):
 
 
 class SamplePoint(object):
-    def __init__(self, name = 'P', x=0, y=0, z=0):
+    def __init__(self, name='P', x=0, y=0, z=0):
         self.name = name
         self.x = x
         self.y = y
@@ -38,7 +70,6 @@ class SamplePoint(object):
         self.experiment_setups = []
         self.perform_wide_scan_for_setup = []
         self.perform_step_scan_for_setup = []
-        self.perform_single_for_setup = []
 
     def set_position(self, x, y, z):
         self.x = x
@@ -47,48 +78,12 @@ class SamplePoint(object):
 
     def register_setup(self, experiment_setup):
         self.experiment_setups.append(experiment_setup)
-        self.perform_single_for_setup.append(False)
         self.perform_step_scan_for_setup.append(False)
         self.perform_wide_scan_for_setup.append(False)
 
-    def unregister(self, experiment_setup):
+    def unregister_setup(self, experiment_setup):
         ind = self.experiment_setups.index(experiment_setup)
         del self.experiment_setups[ind]
-        del self.perform_single_for_setup[ind]
         del self.perform_step_scan_for_setup[ind]
         del self.perform_wide_scan_for_setup[ind]
 
-
-
-def collect_sample_point(sample_point, pv_names):
-    for ind, experiment_setup in enumerate(sample_point.experiment_setups):
-        if sample_point.perform_single_for_setup[ind]:
-            collect_single_data(experiment_setup.detector_pos,
-                                experiment_setup.omega_start,
-                                experiment_setup.omega_end,
-                                experiment_setup.omega_step,
-                                experiment_setup.time_per_step,
-                                sample_point.x,
-                                sample_point.y,
-                                sample_point.z,
-                                pv_names)
-        if sample_point.perform_wide_scan_for_setup[ind]:
-            collect_wide_data(experiment_setup.detector_pos,
-                                experiment_setup.omega_start,
-                                experiment_setup.omega_end,
-                                experiment_setup.omega_step,
-                                experiment_setup.time_per_step,
-                                sample_point.x,
-                                sample_point.y,
-                                sample_point.z,
-                                pv_names)
-        if sample_point.perform_step_scan_for_setup[ind]:
-            collect_step_data(experiment_setup.detector_pos,
-                                experiment_setup.omega_start,
-                                experiment_setup.omega_end,
-                                experiment_setup.omega_step,
-                                experiment_setup.time_per_step,
-                                sample_point.x,
-                                sample_point.y,
-                                sample_point.z,
-                                pv_names)
