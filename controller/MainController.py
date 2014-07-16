@@ -2,7 +2,7 @@ __author__ = 'DAC_User'
 __version__ = 0.1
 
 from epics import caget
-
+import epics
 pv_names = {'detector_position': '13IDD:m8',
             'detector': '13MARCCD2:cam1',
             'sample_position_x': '13IDD:m81',
@@ -45,6 +45,9 @@ class MainController(object):
         self.main_view.move_sample_btn_clicked.connect(self.move_sample_btn_clicked)
         self.main_view.set_sample_btn_clicked.connect(self.set_sample_btn_clicked)
 
+        self.main_view.step_cb_status_changed.connect(self.step_cb_status_changed)
+        self.main_view.wide_cb_status_changed.connect(self.wide_cb_status_changed)
+
     def add_experiment_setup_btn_clicked(self):
         detector_pos, omega, exposure_time = self.get_current_setup()
         self.main_view.add_experiment_setup(detector_pos, omega - 1, omega + 1, 0.1, exposure_time)
@@ -57,6 +60,7 @@ class MainController(object):
         for ind in cur_ind:
             self.main_view.delete_experiment_setup(ind)
             self.data.delete_experiment_setup(ind)
+        self.main_view.recreate_sample_point_checkboxes(self.data.get_experiment_state())
 
     def clear_experiment_setup_btn_clicked(self):
         self.main_view.clear_experiment_setups()
@@ -128,11 +132,32 @@ class MainController(object):
         self.data.sample_points[ind].set_position(x,y,z)
         self.main_view.set_sample_point_values(ind, x,y,z)
 
+    def step_cb_status_changed(self, row_ind, exp_ind, state):
+        cur_ind = self.main_view.get_selected_sample_point()
+        if row_ind in cur_ind:
+            for ind in cur_ind:
+                self.data.sample_points[ind].set_perform_step_scan_setup(exp_ind, state)
+            self.main_view.recreate_sample_point_checkboxes(self.data.get_experiment_state())
+        else:
+            self.data.sample_points[row_ind].set_perform_step_scan_setup(exp_ind, state)
+
+    def wide_cb_status_changed(self, row_ind, exp_ind, state):
+        cur_ind = self.main_view.get_selected_sample_point()
+        if row_ind in cur_ind:
+            for ind in cur_ind:
+                self.data.sample_points[ind].set_perform_wide_scan_setup(exp_ind, state)
+            self.main_view.recreate_sample_point_checkboxes(self.data.get_experiment_state())
+        else:
+            self.data.sample_points[row_ind].set_perform_wide_scan_setup(exp_ind, state)
+
     @staticmethod
     def get_current_sample_position():
-        x = float("{:.4g}".format(caget(pv_names['sample_position_x'])))
-        y = float("{:.4g}".format(caget(pv_names['sample_position_y'])))
-        z = float("{:.4g}".format(caget(pv_names['sample_position_z'])))
+        try:
+            x = float("{:.4g}".format(caget(pv_names['sample_position_x'])))
+            y = float("{:.4g}".format(caget(pv_names['sample_position_y'])))
+            z = float("{:.4g}".format(caget(pv_names['sample_position_z'])))
+        except epics.ca.ChannelAccessException:
+            x = y = z = 0
         return x, y, z
 
     @staticmethod
@@ -142,8 +167,13 @@ class MainController(object):
         returns: detector position, omega, exposure_time
         :return: float, float, float
         """
-        detector_pos = float("{:g}".format(caget(pv_names['detector_position'])))
-        omega = float("{:g}".format(caget(pv_names['sample_position_omega'])))
-        exposure_time = float("{:g}".format(caget(pv_names['detector'] + ':AcquireTime')))
+        try:
+            detector_pos = float("{:g}".format(caget(pv_names['detector_position'])))
+            omega = float("{:g}".format(caget(pv_names['sample_position_omega'])))
+            exposure_time = float("{:g}".format(caget(pv_names['detector'] + ':AcquireTime')))
+        except epics.ca.ChannelAccessException:
+            detector_pos = -333
+            omega = -90
+            exposure_time = 0.5
         return detector_pos, omega, exposure_time
 

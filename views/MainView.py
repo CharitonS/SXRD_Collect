@@ -12,6 +12,11 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     set_sample_btn_clicked = QtCore.pyqtSignal(int)
     move_sample_btn_clicked = QtCore.pyqtSignal(int)
 
+    step_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
+    wide_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
+
+
+
     def __init__(self, version):
         super(MainView, self).__init__()
         self.setupUi(self)
@@ -72,7 +77,19 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     def delete_experiment_setup(self, row_ind):
         self.setup_table.blockSignals(True)
         self.setup_table.removeRow(row_ind)
+        #rename row Headers:
+        for row_ind in range(self.setup_table.rowCount()):
+            self.setup_table.setVerticalHeaderItem(row_ind,
+                                                   QtGui.QTableWidgetItem('Exp{}'.format(row_ind + 1)))
         self.setup_table.blockSignals(False)
+
+        self.sample_points_table.blockSignals(True)
+        self.sample_points_table.removeColumn(6+row_ind)
+        #rename column Headers:
+        for row_ind in range(self.setup_table.rowCount()):
+            self.sample_points_table.setHorizontalHeaderItem(
+                6+row_ind, QtGui.QTableWidgetItem('Exp{}'.format(row_ind + 1)))
+        self.sample_points_table.blockSignals(False)
 
     def add_sample_point(self, name, x, y, z):
         self.sample_points_table.blockSignals(True)
@@ -106,7 +123,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.resizeColumnsToContents()
         self.sample_points_table.blockSignals(False)
 
-    def create_sample_point_checkboxes(self, row_index, exp_index):
+    def create_sample_point_checkboxes(self, row_index, exp_index, step_state = False, wide_state = False):
         exp_widget = QtGui.QWidget()
         step_cb = QtGui.QCheckBox('step')
         wide_cb = QtGui.QCheckBox('wide')
@@ -115,9 +132,17 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         exp_layout.addWidget(wide_cb)
         exp_widget.setLayout(exp_layout)
 
+        step_cb.setChecked(step_state)
+        wide_cb.setChecked(wide_state)
+
         step_cb.stateChanged.connect(partial(self.step_cb_changed, row_index, exp_index))
         wide_cb.stateChanged.connect(partial(self.wide_cb_changed, row_index, exp_index))
         self.sample_points_table.setCellWidget(row_index, exp_index+6, exp_widget)
+
+    def recreate_sample_point_checkboxes(self, values):
+        for row_index, row in enumerate(values):
+            for exp_index, experiment_state in enumerate(row):
+                self.create_sample_point_checkboxes(row_index, exp_index, experiment_state[0], experiment_state[1])
 
     def get_selected_sample_point(self):
         selected = self.sample_points_table.selectionModel().selectedRows()
@@ -161,10 +186,10 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.move_sample_btn_clicked.emit(index)
 
     def step_cb_changed(self, row_index, exp_index, state):
-        print((row_index, exp_index, state))
+        self.step_cb_status_changed.emit(row_index,exp_index, bool(state))
 
     def wide_cb_changed(self, row_index, exp_index, state):
-        pass
+        self.wide_cb_status_changed.emit(row_index, exp_index, bool(state))
 
     def standard_show_btn_clicked(self):
         if self.standard_show_btn.text() == '-':
@@ -202,7 +227,7 @@ class TextDoubleDelegate(QtGui.QStyledItemDelegate):
 
     def setEditorData(self, parent, index):
         value = index.model().data(index, QtCore.Qt.EditRole)
-        self.editor.setText("{:g}".format(float(value)))
+        self.editor.setText("{:g}".format(float(str(value))))
 
     def setModelData(self, parent, model, index):
         value = self.editor.text()

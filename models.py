@@ -39,6 +39,16 @@ class MainData(object):
         for ind, setup in enumerate(self.experiment_setups):
             self.delete_experiment_setup(ind)
 
+    def get_experiment_state(self):
+        data = []
+        for point in self.sample_points:
+            point_data = []
+            for ind, experiment in enumerate(self.experiment_setups):
+                point_data.append([point.perform_step_scan_for_setup[ind],
+                                   point.perform_wide_scan_for_setup[ind]])
+            data.append(point_data)
+        return data
+
     def add_sample_point(self, name, x, y, z):
         self.sample_points.append(SamplePoint(name, x, y, z))
         for setup in self.experiment_setups:
@@ -79,6 +89,12 @@ class SamplePoint(object):
         self.x = x
         self.y = y
         self.z = z
+
+    def set_perform_wide_scan_setup(self, exp_ind, state):
+        self.perform_wide_scan_for_setup[exp_ind] = state
+
+    def set_perform_step_scan_setup(self, exp_ind, state):
+        self.perform_step_scan_for_setup[exp_ind] = state
 
     def register_setup(self, experiment_setup):
         self.experiment_setups.append(experiment_setup)

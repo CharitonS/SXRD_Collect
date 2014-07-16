@@ -78,6 +78,14 @@ class MainControllerTest(unittest.TestCase):
         QTest.mouseClick(self.view.add_setup_btn, QtCore.Qt.LeftButton)
         QTest.mouseClick(self.view.add_setup_btn, QtCore.Qt.LeftButton)
 
+        QTest.mouseClick(self.view.add_sample_btn, QtCore.Qt.LeftButton)
+        QTest.mouseClick(self.view.add_sample_btn, QtCore.Qt.LeftButton)
+        QTest.mouseClick(self.view.add_sample_btn, QtCore.Qt.LeftButton)
+
+        self.view.setup_table.selectRow(2)
+
+        QTest.mouseClick(self.view.delete_sample_btn, QtCore.QtLeftButton)
+
     def tearDown(self):
         self.app.exec_()
 
