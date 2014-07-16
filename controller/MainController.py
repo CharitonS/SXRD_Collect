@@ -1,8 +1,11 @@
 __author__ = 'DAC_User'
 __version__ = 0.1
 
-from epics import caget
+import time
+
+from epics import caget, caput
 import epics
+from PyQt4 import QtGui
 pv_names = {'detector_position': '13IDD:m8',
             'detector': '13MARCCD2:cam1',
             'sample_position_x': '13IDD:m81',
@@ -24,6 +27,8 @@ class MainController(object):
         self.data = MainData()
         self.connect_buttons()
         self.connect_tables()
+        self.connect_txt()
+        self.populate_filename()
 
     def connect_buttons(self):
         self.main_view.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
@@ -38,6 +43,8 @@ class MainController(object):
         self.main_view.delete_standard_btn.clicked.connect(self.delete_standard_btn_clicked)
         self.main_view.clear_standard_btn.clicked.connect(self.clear_standard_btn_clicked)
 
+        self.main_view.collect_btn.clicked.connect(self.collect_data)
+
     def connect_tables(self):
         self.main_view.setup_table.cellChanged.connect(self.setup_table_cell_changed)
         self.main_view.sample_points_table.cellChanged.connect(self.sample_points_table_cell_changed)
@@ -48,19 +55,42 @@ class MainController(object):
         self.main_view.step_cb_status_changed.connect(self.step_cb_status_changed)
         self.main_view.wide_cb_status_changed.connect(self.wide_cb_status_changed)
 
+    def connect_txt(self):
+        self.main_view.filename_txt.editingFinished.connect(self.basename_txt_changed)
+        self.main_view.filepath_txt.editingFinished.connect(self.filepath_txt_changed)
+
+    def populate_filename(self):
+        self.prev_filepath, self.prev_filename, self.prev_file_number = self.get_filename_info()
+
+        self.filepath = self.prev_filepath
+        self.basename = self.prev_filename
+
+        self.main_view.filename_txt.setText(self.prev_filename)
+        self.main_view.filepath_txt.setText(self.prev_filepath)
+
+        self.set_example_lbl()
+
+
     def add_experiment_setup_btn_clicked(self):
         detector_pos, omega, exposure_time = self.get_current_setup()
         self.main_view.add_experiment_setup(detector_pos, omega - 1, omega + 1, 0.1, exposure_time)
         self.data.add_experiment_setup(detector_pos, omega - 1, omega + 1, 0.1, exposure_time)
 
     def delete_experiment_setup_btn_clicked(self):
-        cur_ind = self.main_view.get_selected_experiment_setup()
-        cur_ind.sort()
-        cur_ind = cur_ind[::-1]
-        for ind in cur_ind:
-            self.main_view.delete_experiment_setup(ind)
-            self.data.delete_experiment_setup(ind)
-        self.main_view.recreate_sample_point_checkboxes(self.data.get_experiment_state())
+        msgBox = QtGui.QMessageBox()
+        msgBox.setText('Do you really want to delete the selected experiment(s).')
+        msgBox.setWindowTitle('Confirmation')
+        msgBox.setStandardButtons( QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+        msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        response = msgBox.exec_()
+        if response == QtGui.QMessageBox.Yes:
+            cur_ind = self.main_view.get_selected_experiment_setup()
+            cur_ind.sort()
+            cur_ind = cur_ind[::-1]
+            for ind in cur_ind:
+                self.main_view.delete_experiment_setup(ind)
+                self.data.delete_experiment_setup(ind)
+            self.main_view.recreate_sample_point_checkboxes(self.data.get_experiment_state())
 
     def clear_experiment_setup_btn_clicked(self):
         self.main_view.clear_experiment_setups()
@@ -68,8 +98,9 @@ class MainController(object):
 
     def add_sample_point_btn_clicked(self):
         x, y, z = self.get_current_sample_position()
-        self.main_view.add_sample_point('P', x, y, z)
-        self.data.add_sample_point('P', x, y, z)
+        num = len(self.data.sample_points)
+        self.main_view.add_sample_point('P{}'.format(num+1), x, y, z)
+        self.data.add_sample_point('P{}'.format(num+1), x, y, z)
 
     def delete_sample_point_btn_clicked(self):
         cur_ind = self.main_view.get_selected_sample_point()
@@ -151,6 +182,46 @@ class MainController(object):
         else:
             self.data.sample_points[row_ind].set_perform_wide_scan_setup(exp_ind, state)
 
+    def basename_txt_changed(self):
+        self.basename = self.main_view.filename_txt.text()
+        self.set_example_lbl()
+
+    def filepath_txt_changed(self):
+        self.filepath = self.main_view.filepath_txt.text()
+        self.set_example_lbl()
+
+    def set_example_lbl(self):
+        example_str = self.filepath+'/'+self.basename+'_'+'P1_Exp1_s_001'
+        self.main_view.example_filename_lbl.setText(example_str)
+
+
+    def collect_data(self):
+        previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
+
+        for exp_ind, experiment in enumerate(self.data.experiment_setups):
+            for sample_point in self.data.sample_points:
+                if sample_point.perform_wide_scan_for_setup[exp_ind]:
+                    if self.main_view.rename_files_cb.isChecked():
+                        filename = self.basename + '_' +sample_point.name+'_Exp'+str(exp_ind)+'_w'
+                        caput(pv_names['detector']+':FilePath', bytearray(self.filepath+'\0','utf-8'))
+                        caput(pv_names['detector']+':FileName', bytearray(filename+'\0','utf-8'))
+                        caput(pv_names['detector']+':FileNumber', 1)
+                    print("Performing wide scan for {}, with setup number {}".format(sample_point, exp_ind))
+                if sample_point.perform_step_scan_for_setup[exp_ind]:
+                    if self.main_view.rename_files_cb.isChecked():
+                        filename = self.basename + '_' +sample_point.name+'_Exp'+str(exp_ind)+'_s'
+                        caput(pv_names['detector']+':FilePath', bytearray(self.filepath+'\0','utf-8'))
+                        caput(pv_names['detector']+':FileName', bytearray(filename+'\0','utf-8'))
+                        caput(pv_names['detector']+':FileNumber', 1)
+                    print("Performing step scan for {}, with setup number {}".format(sample_point, exp_ind))
+
+        if self.main_view.rename_after_cb.isChecked():
+            caput(pv_names['detector']+':FilePath', bytearray(previous_filepath+'\0', 'utf-8'))
+            caput(pv_names['detector']+':FileName', bytearray(previous_filename+'\0','utf-8'))
+            caput(pv_names['detector']+':FileNumber', previous_filenumber)
+
+
+
     @staticmethod
     def get_current_sample_position():
         try:
@@ -177,4 +248,17 @@ class MainController(object):
             omega = -90
             exposure_time = 0.5
         return detector_pos, omega, exposure_time
+
+    @staticmethod
+    def get_filename_info():
+        try:
+            path = caget(pv_names['detector']+':FilePath', as_string=True)
+            print(path)
+            filename = caget(pv_names['detector']+':FileName', as_string=True)
+            file_number = caget(pv_names['detector']+':FileNumber')
+        except epics.ca.ChannelAccessException:
+            path=''
+            filename='test'
+            file_number = 0
+        return path, filename, file_number
 

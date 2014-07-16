@@ -154,7 +154,7 @@ Conifguration</string>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="basename_txt"/>
+           <widget class="QLineEdit" name="filename_txt"/>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_4">
@@ -167,12 +167,12 @@ Conifguration</string>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLineEdit" name="folder_txt"/>
+           <widget class="QLineEdit" name="filepath_txt"/>
           </item>
          </layout>
         </item>
         <item>
-         <widget class="QLabel" name="label_5">
+         <widget class="QLabel" name="example_filename_lbl">
           <property name="text">
            <string>Examplefilename</string>
           </property>
@@ -208,6 +208,9 @@ Conifguration</string>
           </property>
           <property name="text">
            <string>Reset name after Measurement</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -398,7 +401,7 @@ QPushButton::hover{
      </column>
      <column>
       <property name="text">
-       <string> </string>
+       <string/>
       </property>
      </column>
     </widget>
@@ -566,7 +569,7 @@ QPushButton::hover{
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton_11">
+      <widget class="QPushButton" name="collect_btn">
        <property name="minimumSize">
         <size>
          <width>130</width>
