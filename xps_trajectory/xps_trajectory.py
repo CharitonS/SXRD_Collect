@@ -1,8 +1,12 @@
 import time
 import numpy as np
 import ftplib
-from io import StringIO
+from cStringIO import StringIO
 from .XPS_C8_drivers import XPS
+
+import logging
+
+logger = logging.getLevelName(__name__)
 
 # #
 # # used methods for collector.py
@@ -193,7 +197,7 @@ Line = %f, %f
         try:
             self.upload_trajectoryFile(name + '.trj', trajectory_str)
             ret = True
-            print('uploaded')
+            logger.info('Trajectory File uploaded.')
         except:
             pass
         return trajectory_str
@@ -203,7 +207,7 @@ Line = %f, %f
         """run trajectory in PVT mode"""
         traj = self.trajectories.get(name, None)
         if traj is None:
-            print('Cannot find trajectory named %s' % name)
+            logger.error('Cannot find trajectory named %s' % name)
             return
 
         traj_file = '%s.trj' % name
@@ -234,7 +238,7 @@ Line = %f, %f
         self.xps.GatheringConfigurationSet(self.ssid, self.gather_outputs)
 
         ret = self.xps.MultipleAxesPVTPulseOutputSet(self.ssid, self.group_name,
-                                                     1, step_number+1, dtime)
+                                                     2, step_number+1, dtime)
         ret = self.xps.MultipleAxesPVTVerification(self.ssid, self.group_name, traj_file)
 
         buffer = ('Always', self.group_name + '.PVT.TrajectoryPulse')

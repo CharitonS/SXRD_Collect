@@ -17,7 +17,7 @@ pv_names = {'detector_position': '13IDD:m8',
 
 from views.MainView import MainView
 from models import MainData
-from measurement import move_to_sample_pos
+from measurement import move_to_sample_pos, collect_step_data, collect_wide_data
 
 
 class MainController(object):
@@ -77,6 +77,11 @@ class MainController(object):
         self.data.add_experiment_setup(detector_pos, omega - 1, omega + 1, 0.1, exposure_time)
 
     def delete_experiment_setup_btn_clicked(self):
+        cur_ind = self.main_view.get_selected_experiment_setup()
+        cur_ind.sort()
+        cur_ind = cur_ind[::-1]
+        if cur_ind is None or (len(cur_ind)==0):
+            return
         msgBox = QtGui.QMessageBox()
         msgBox.setText('Do you really want to delete the selected experiment(s).')
         msgBox.setWindowTitle('Confirmation')
@@ -84,9 +89,6 @@ class MainController(object):
         msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
         response = msgBox.exec_()
         if response == QtGui.QMessageBox.Yes:
-            cur_ind = self.main_view.get_selected_experiment_setup()
-            cur_ind.sort()
-            cur_ind = cur_ind[::-1]
             for ind in cur_ind:
                 self.main_view.delete_experiment_setup(ind)
                 self.data.delete_experiment_setup(ind)
@@ -99,8 +101,8 @@ class MainController(object):
     def add_sample_point_btn_clicked(self):
         x, y, z = self.get_current_sample_position()
         num = len(self.data.sample_points)
-        self.main_view.add_sample_point('P{}'.format(num+1), x, y, z)
-        self.data.add_sample_point('P{}'.format(num+1), x, y, z)
+        self.main_view.add_sample_point('S{}'.format(num+1), x, y, z)
+        self.data.add_sample_point('S{}'.format(num+1), x, y, z)
 
     def delete_sample_point_btn_clicked(self):
         cur_ind = self.main_view.get_selected_sample_point()
@@ -191,34 +193,63 @@ class MainController(object):
         self.set_example_lbl()
 
     def set_example_lbl(self):
-        example_str = self.filepath+'/'+self.basename+'_'+'P1_Exp1_s_001'
+        example_str = self.filepath+'/'+self.basename+'_'+'S1_P1_E1_s_001'
         self.main_view.example_filename_lbl.setText(example_str)
 
 
     def collect_data(self):
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
+        previous_exposure_time = caget(pv_names['detector']+':AcquireTime')
 
         for exp_ind, experiment in enumerate(self.data.experiment_setups):
             for sample_point in self.data.sample_points:
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
                     if self.main_view.rename_files_cb.isChecked():
-                        filename = self.basename + '_' +sample_point.name+'_Exp'+str(exp_ind)+'_w'
-                        caput(pv_names['detector']+':FilePath', bytearray(self.filepath+'\0','utf-8'))
-                        caput(pv_names['detector']+':FileName', bytearray(filename+'\0','utf-8'))
+                        point_number = str(self.main_view.point_txt.text())
+                        filename = self.basename + '_' +sample_point.name+'_P'+point_number+'_E'+str(exp_ind+1)+'_w'
+                        caput(pv_names['detector']+':FilePath', self.filepath)
+                        caput(pv_names['detector']+':FileName', filename)
                         caput(pv_names['detector']+':FileNumber', 1)
-                    print("Performing wide scan for {}, with setup number {}".format(sample_point, exp_ind))
+                    print("Performing wide scan for {}, with setup {}".format(sample_point, experiment))
+                    exposure_time = abs(experiment.omega_end-experiment.omega_start)/experiment.omega_step * \
+                        experiment.time_per_step
+                    collect_wide_data(detector_position=experiment.detector_pos,
+                                      omega_start=experiment.omega_start,
+                                      omega_end=experiment.omega_end,
+                                      exposure_time = exposure_time,
+                                      x = sample_point.x,
+                                      y = sample_point.y,
+                                      z = sample_point.z,
+                                      pv_names=pv_names)
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
                     if self.main_view.rename_files_cb.isChecked():
-                        filename = self.basename + '_' +sample_point.name+'_Exp'+str(exp_ind)+'_s'
-                        caput(pv_names['detector']+':FilePath', bytearray(self.filepath+'\0','utf-8'))
-                        caput(pv_names['detector']+':FileName', bytearray(filename+'\0','utf-8'))
+                        point_number = str(self.main_view.point_txt.text())
+                        filename = self.basename + '_' +sample_point.name+'_P'+point_number+'_E'+str(exp_ind+1)+'_s'
+                        caput(pv_names['detector']+':FilePath', self.filepath)
+                        caput(pv_names['detector']+':FileName', filename)
                         caput(pv_names['detector']+':FileNumber', 1)
-                    print("Performing step scan for {}, with setup number {}".format(sample_point, exp_ind))
+                    print("Performing step scan for {}, with setup {}".format(sample_point, experiment))
+                    collect_step_data(detector_position=experiment.detector_pos,
+                                      omega_start=experiment.omega_start,
+                                      omega_end=experiment.omega_end,
+                                      omega_step=experiment.omega_step,
+                                      exposure_time=experiment.time_per_step,
+                                      x = sample_point.x,
+                                      y = sample_point.y,
+                                      z = sample_point.z,
+                                      pv_names=pv_names)
+
+        caput(pv_names['detector']+':AcquireTime', previous_exposure_time)
+        self.increase_point_number()
 
         if self.main_view.rename_after_cb.isChecked():
-            caput(pv_names['detector']+':FilePath', bytearray(previous_filepath+'\0', 'utf-8'))
-            caput(pv_names['detector']+':FileName', bytearray(previous_filename+'\0','utf-8'))
+            caput(pv_names['detector']+':FilePath', previous_filepath)
+            caput(pv_names['detector']+':FileName', previous_filename)
             caput(pv_names['detector']+':FileNumber', previous_filenumber)
+
+    def increase_point_number(self):
+        cur_point_number=int(str(self.main_view.point_txt.text()))
+        self.main_view.point_txt.setText(str(cur_point_number+1))
 
 
 

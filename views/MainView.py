@@ -31,6 +31,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.hide_standards()
 
         self.setWindowTitle("SXRD Collect {}".format(version))
+        self.point_txt.setValidator(QtGui.QIntValidator())
 
     def add_experiment_setup(self, detector_pos, omega_start, omega_end, omega_step, exposure_time):
         self.setup_table.blockSignals(True)
@@ -54,7 +55,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.setup_table.setItem(new_row_ind, 3, omega_step_item)
         self.setup_table.setItem(new_row_ind, 4, exposure_time_item)
 
-        self.setup_table.setVerticalHeaderItem(new_row_ind, QtGui.QTableWidgetItem('Exp{}'.format(new_row_ind + 1)))
+        self.setup_table.setVerticalHeaderItem(new_row_ind, QtGui.QTableWidgetItem('E{}'.format(new_row_ind + 1)))
         self.setup_table.resizeColumnsToContents()
 
         #update the sample_points_table_accordingly:
@@ -63,7 +64,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
             self.create_sample_point_checkboxes(sample_point_row, new_row_ind)
 
         self.sample_points_table.setHorizontalHeaderItem(6+new_row_ind,
-                                                         QtGui.QTableWidgetItem('Exp{}'.format(new_row_ind + 1)))
+                                                         QtGui.QTableWidgetItem('E{}'.format(new_row_ind + 1)))
         self.sample_points_table.resizeColumnsToContents()
         self.setup_table.blockSignals(False)
 
@@ -74,7 +75,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
             for element in selected:
                 row.append(int(element.row()))
         except IndexError:
-            pass
+            row=None
         return row
 
     def delete_experiment_setup(self, row_ind):
@@ -83,7 +84,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         #rename row Headers:
         for row_ind in range(self.setup_table.rowCount()):
             self.setup_table.setVerticalHeaderItem(row_ind,
-                                                   QtGui.QTableWidgetItem('Exp{}'.format(row_ind + 1)))
+                                                   QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
         self.setup_table.blockSignals(False)
 
         self.sample_points_table.blockSignals(True)
@@ -91,7 +92,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         #rename column Headers:
         for row_ind in range(self.setup_table.rowCount()):
             self.sample_points_table.setHorizontalHeaderItem(
-                6+row_ind, QtGui.QTableWidgetItem('Exp{}'.format(row_ind + 1)))
+                6+row_ind, QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
         self.sample_points_table.blockSignals(False)
 
     def add_sample_point(self, name, x, y, z):
@@ -128,11 +129,11 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
 
     def create_sample_point_checkboxes(self, row_index, exp_index, step_state = False, wide_state = False):
         exp_widget = QtGui.QWidget()
-        step_cb = QtGui.QCheckBox('step')
         wide_cb = QtGui.QCheckBox('wide')
+        step_cb = QtGui.QCheckBox('step')
         exp_layout = QtGui.QHBoxLayout()
-        exp_layout.addWidget(step_cb)
         exp_layout.addWidget(wide_cb)
+        exp_layout.addWidget(step_cb)
         exp_widget.setLayout(exp_layout)
 
         step_cb.setChecked(step_state)
@@ -154,7 +155,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
             for element in selected:
                 row.append(int(element.row()))
         except IndexError:
-            pass
+            row = None
         return row
 
     def delete_sample_point(self, row_ind):
@@ -164,6 +165,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
 
     def clear_sample_points(self):
         self.sample_points_table.clear()
+        self.sample_points_table.setRowCount(0)
 
     def set_sample_point_values(self, ind, x,y,z):
         x_item = self.sample_points_table.item(ind, 1)
@@ -231,7 +233,7 @@ class TextDoubleDelegate(QtGui.QStyledItemDelegate):
 
     def setEditorData(self, parent, index):
         value = index.model().data(index, QtCore.Qt.EditRole)
-        self.editor.setText("{:g}".format(float(str(value))))
+        self.editor.setText("{:g}".format(float(str(value.toString()))))
 
     def setModelData(self, parent, model, index):
         value = self.editor.text()
@@ -255,7 +257,7 @@ class SamplePointDoubleDelegate(QtGui.QStyledItemDelegate):
 
     def setEditorData(self, parent, index):
         value = index.model().data(index, QtCore.Qt.EditRole)
-        self.editor.setText(str(value))
+        self.editor.setText(str(value.toString()))
 
     def setModelData(self, parent, model, index):
         value = self.editor.text()
