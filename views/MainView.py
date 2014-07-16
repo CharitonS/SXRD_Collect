@@ -21,8 +21,11 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         super(MainView, self).__init__()
         self.setupUi(self)
 
-        self.delegate = TextDoubleDelegate(self)
-        self.setup_table.setItemDelegate(self.delegate)
+        self.setup_delegate = TextDoubleDelegate(self)
+        self.setup_table.setItemDelegate(self.setup_delegate)
+
+        self.sample_delegate = SamplePointDoubleDelegate(self)
+        self.sample_points_table.setItemDelegate(self.sample_delegate)
 
         self.standard_show_btn.clicked.connect(self.standard_show_btn_clicked)
         self.hide_standards()
@@ -169,6 +172,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         y_item.setText(str(y))
         z_item = self.sample_points_table.item(ind, 3)
         z_item.setText(str(z))
+        self.sample_points_table.resizeColumnsToContents()
 
     def get_sample_point_values(self, ind):
         x_item = self.sample_points_table.item(ind, 1)
@@ -218,7 +222,7 @@ class TextDoubleDelegate(QtGui.QStyledItemDelegate):
     def __init__(self, parent):
         super(TextDoubleDelegate, self).__init__(parent)
 
-    def createEditor(self, parent, _, __):
+    def createEditor(self, parent, _, model):
         self.editor = QtGui.QLineEdit(parent)
         self.editor.setFrame(False)
         self.editor.setValidator(QtGui.QDoubleValidator())
@@ -235,6 +239,31 @@ class TextDoubleDelegate(QtGui.QStyledItemDelegate):
 
     def updateEditorGeometry(self, editor, option, _):
         editor.setGeometry(option.rect)
+        
+
+class SamplePointDoubleDelegate(QtGui.QStyledItemDelegate):
+    def __init__(self, parent):
+        super(SamplePointDoubleDelegate, self).__init__(parent)
+
+    def createEditor(self, parent, _, model):
+        self.editor = QtGui.QLineEdit(parent)
+        self.editor.setFrame(False)
+        if model.column() != 0:
+            self.editor.setValidator(QtGui.QDoubleValidator())
+        self.editor.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        return self.editor
+
+    def setEditorData(self, parent, index):
+        value = index.model().data(index, QtCore.Qt.EditRole)
+        self.editor.setText(str(value))
+
+    def setModelData(self, parent, model, index):
+        value = self.editor.text()
+        model.setData(index, value, QtCore.Qt.EditRole)
+
+    def updateEditorGeometry(self, editor, option, _):
+        editor.setGeometry(option.rect)
+
 
 
 if __name__ == '__main__':

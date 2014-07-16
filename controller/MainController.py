@@ -120,6 +120,7 @@ class MainController(object):
             self.data.sample_points[row].y = float(value)
         elif col == 3:
             self.data.sample_points[row].z = float(value)
+        self.main_view.sample_points_table.resizeColumnsToContents()
 
         print(self.data.sample_points[row])
 
