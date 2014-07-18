@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created: Wed Jul 16 17:58:51 2014
+# Created: Fri Jul 18 11:05:52 2014
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -147,7 +147,7 @@ class Ui_SXRDCollectWidget(object):
         self.setup_table.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.setup_table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.setup_table.setObjectName(_fromUtf8("setup_table"))
-        self.setup_table.setColumnCount(5)
+        self.setup_table.setColumnCount(6)
         self.setup_table.setRowCount(0)
         item = QtGui.QTableWidgetItem()
         self.setup_table.setHorizontalHeaderItem(0, item)
@@ -159,6 +159,8 @@ class Ui_SXRDCollectWidget(object):
         self.setup_table.setHorizontalHeaderItem(3, item)
         item = QtGui.QTableWidgetItem()
         self.setup_table.setHorizontalHeaderItem(4, item)
+        item = QtGui.QTableWidgetItem()
+        self.setup_table.setHorizontalHeaderItem(5, item)
         self.setup_table.horizontalHeader().setDefaultSectionSize(60)
         self.setup_table.horizontalHeader().setHighlightSections(True)
         self.horizontalLayout_5.addWidget(self.setup_table)
@@ -330,14 +332,16 @@ class Ui_SXRDCollectWidget(object):
         self.rename_files_cb.setText(_translate("SXRDCollectWidget", "Rename Files", None))
         self.rename_after_cb.setText(_translate("SXRDCollectWidget", "Reset name after Measurement", None))
         item = self.setup_table.horizontalHeaderItem(0)
-        item.setText(_translate("SXRDCollectWidget", "Detector", None))
+        item.setText(_translate("SXRDCollectWidget", "Det X", None))
         item = self.setup_table.horizontalHeaderItem(1)
-        item.setText(_translate("SXRDCollectWidget", "Ω Start", None))
+        item.setText(_translate("SXRDCollectWidget", "Det Y", None))
         item = self.setup_table.horizontalHeaderItem(2)
-        item.setText(_translate("SXRDCollectWidget", "Ω End", None))
+        item.setText(_translate("SXRDCollectWidget", "Ω Start", None))
         item = self.setup_table.horizontalHeaderItem(3)
-        item.setText(_translate("SXRDCollectWidget", "Ω Step", None))
+        item.setText(_translate("SXRDCollectWidget", "Ω End", None))
         item = self.setup_table.horizontalHeaderItem(4)
+        item.setText(_translate("SXRDCollectWidget", "Ω Step", None))
+        item = self.setup_table.horizontalHeaderItem(5)
         item.setText(_translate("SXRDCollectWidget", "Time", None))
         self.sample_lbl.setText(_translate("SXRDCollectWidget", "Sample Points", None))
         self.add_sample_btn.setText(_translate("SXRDCollectWidget", "Add", None))

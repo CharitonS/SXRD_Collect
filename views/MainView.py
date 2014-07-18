@@ -33,13 +33,15 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.setWindowTitle("SXRD Collect {}".format(version))
         self.point_txt.setValidator(QtGui.QIntValidator())
 
-    def add_experiment_setup(self, detector_pos, omega_start, omega_end, omega_step, exposure_time):
+    def add_experiment_setup(self, detector_pos_x, detector_pos_y, omega_start, omega_end, omega_step, exposure_time):
         self.setup_table.blockSignals(True)
         new_row_ind = int(self.setup_table.rowCount())
         self.setup_table.setRowCount(new_row_ind + 1)
 
-        detector_item = QtGui.QTableWidgetItem(str(detector_pos))
-        detector_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        detector_x_item = QtGui.QTableWidgetItem(str(detector_pos_x))
+        detector_x_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        detector_y_item = QtGui.QTableWidgetItem(str(detector_pos_y))
+        detector_y_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         omega_start_item = QtGui.QTableWidgetItem(str(omega_start))
         omega_start_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         omega_end_item = QtGui.QTableWidgetItem(str(omega_end))
@@ -49,11 +51,12 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         exposure_time_item = QtGui.QTableWidgetItem(str(exposure_time))
         exposure_time_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-        self.setup_table.setItem(new_row_ind, 0, detector_item)
-        self.setup_table.setItem(new_row_ind, 1, omega_start_item)
-        self.setup_table.setItem(new_row_ind, 2, omega_end_item)
-        self.setup_table.setItem(new_row_ind, 3, omega_step_item)
-        self.setup_table.setItem(new_row_ind, 4, exposure_time_item)
+        self.setup_table.setItem(new_row_ind, 0, detector_x_item)
+        self.setup_table.setItem(new_row_ind, 1, detector_y_item)
+        self.setup_table.setItem(new_row_ind, 2, omega_start_item)
+        self.setup_table.setItem(new_row_ind, 3, omega_end_item)
+        self.setup_table.setItem(new_row_ind, 4, omega_step_item)
+        self.setup_table.setItem(new_row_ind, 5, exposure_time_item)
 
         self.setup_table.setVerticalHeaderItem(new_row_ind, QtGui.QTableWidgetItem('E{}'.format(new_row_ind + 1)))
         self.setup_table.resizeColumnsToContents()

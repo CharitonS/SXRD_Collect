@@ -24,8 +24,8 @@ class MainData(object):
         self.experiment_setups = []
         self.sample_points = []
 
-    def add_experiment_setup(self, detector_pos=-333, omega_start=0, omega_end=0, omega_step=0, time_per_step=0):
-        self.experiment_setups.append(ExperimentSetup(detector_pos, omega_start, omega_end, omega_step, time_per_step))
+    def add_experiment_setup(self, detector_pos_x=0, detector_pos_y=49, omega_start=0, omega_end=0, omega_step=0, time_per_step=0):
+        self.experiment_setups.append(ExperimentSetup(detector_pos_x, detector_pos_y, omega_start, omega_end, omega_step, time_per_step))
 
         for point in self.sample_points:
             point.register_setup(self.experiment_setups[-1])
@@ -62,15 +62,16 @@ class MainData(object):
 
 
 class ExperimentSetup(object):
-    def __init__(self, detector_pos=-333, omega_start=0, omega_end=0, omega_step=0, time_per_step=0):
-        self.detector_pos = detector_pos
+    def __init__(self, detector_pos_x=0, detector_pos_z=49, omega_start=0, omega_end=0, omega_step=0, time_per_step=0):
+        self.detector_pos_x = detector_pos_x
+        self.detector_pos_z = detector_pos_z
         self.omega_start = omega_start
         self.omega_end = omega_end
         self.omega_step = omega_step
         self.time_per_step = time_per_step
 
     def __str__(self):
-        return "{}, {}, {}, {}, {}".format(self.detector_pos, self.omega_start,
+        return "{}, {}, {}, {}, {}".format(self.detector_pos_x, self.detector_pos_z, self.omega_start,
                                            self.omega_end, self.omega_step, self.time_per_step)
 
 

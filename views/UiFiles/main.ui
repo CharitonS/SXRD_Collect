@@ -292,7 +292,12 @@ Conifguration</string>
        </attribute>
        <column>
         <property name="text">
-         <string>Detector</string>
+         <string>Det X</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Det Y</string>
         </property>
        </column>
        <column>

@@ -7,7 +7,8 @@ from epics import caget, caput
 import epics
 from PyQt4 import QtGui
 
-pv_names = {'detector_position': '13IDD:m8',
+pv_names = {'detector_position_x': '13IDD:m8',
+            'detector_position_z': '13IDD:m84',
             'detector': '13MARCCD2:cam1',
             'sample_position_x': '13IDD:m81',
             'sample_position_y': '13IDD:m83',
@@ -72,9 +73,9 @@ class MainController(object):
 
 
     def add_experiment_setup_btn_clicked(self):
-        detector_pos, omega, exposure_time = self.get_current_setup()
-        self.main_view.add_experiment_setup(detector_pos, omega - 1, omega + 1, 0.1, exposure_time)
-        self.data.add_experiment_setup(detector_pos, omega - 1, omega + 1, 0.1, exposure_time)
+        detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()
+        self.main_view.add_experiment_setup(detector_pos_x, detector_pos_z, omega - 1, omega + 1, 0.1, exposure_time)
+        self.data.add_experiment_setup(detector_pos_x, detector_pos_z, omega - 1, omega + 1, 0.1, exposure_time)
 
     def delete_experiment_setup_btn_clicked(self):
         cur_ind = self.main_view.get_selected_experiment_setup()
@@ -129,17 +130,19 @@ class MainController(object):
         label_item = self.main_view.setup_table.item(row, col)
         value = float(str(label_item.text()))
         if col == 0:
-            self.data.experiment_setups[row].detector_pos = value
+            self.data.experiment_setups[row].detector_pos_x = value
         elif col == 1:
-            self.data.experiment_setups[row].omega_start = value
+            self.data.experiment_setups[row].detector_pos_z = value
         elif col == 2:
-            self.data.experiment_setups[row].omega_end = value
+            self.data.experiment_setups[row].omega_start = value
         elif col == 3:
-            self.data.experiment_setups[row].omega_step = value
+            self.data.experiment_setups[row].omega_end = value
         elif col == 4:
+            self.data.experiment_setups[row].omega_step = value
+        elif col == 5:
             self.data.experiment_setups[row].time_per_step = value
-        self.main_view.setup_table.resizeColumnsToContents()
 
+        self.main_view.setup_table.resizeColumnsToContents()
         print(self.data.experiment_setups[row])
 
     def sample_points_table_cell_changed(self, row, col):
@@ -199,7 +202,8 @@ class MainController(object):
     def collect_data(self):
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
         previous_exposure_time = caget(pv_names['detector'] + ':AcquireTime')
-        previous_detector_pos = caget(pv_names['detector_position'])
+        previous_detector_pos_x = caget(pv_names['detector_position_x'])
+        previous_detector_pos_z = caget(pv_names['detector_position_z'])
 
         for exp_ind, experiment in enumerate(self.data.experiment_setups):
             for sample_point in self.data.sample_points:
@@ -208,13 +212,15 @@ class MainController(object):
                         point_number = str(self.main_view.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_E' + str(
                             exp_ind + 1) + '_w'
+                        print filename
                         caput(pv_names['detector'] + ':FilePath', self.filepath)
                         caput(pv_names['detector'] + ':FileName', filename)
                         caput(pv_names['detector'] + ':FileNumber', 1)
                     print("Performing wide scan for {}, with setup {}".format(sample_point, experiment))
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
                                     experiment.time_per_step
-                    collect_wide_data(detector_position=experiment.detector_pos,
+                    collect_wide_data(detector_position_x=experiment.detector_pos_x,
+                                      detector_position_z=experiment.detector_pos_z,
                                       omega_start=experiment.omega_start,
                                       omega_end=experiment.omega_end,
                                       exposure_time=exposure_time,
@@ -231,7 +237,8 @@ class MainController(object):
                         caput(pv_names['detector'] + ':FileName', filename)
                         caput(pv_names['detector'] + ':FileNumber', 1)
                     print("Performing step scan for {}, with setup {}".format(sample_point, experiment))
-                    collect_step_data(detector_position=experiment.detector_pos,
+                    collect_step_data(detector_position_x=experiment.detector_pos_x,
+                                      detector_position_z=experiment.detector_pos_z,
                                       omega_start=experiment.omega_start,
                                       omega_end=experiment.omega_end,
                                       omega_step=experiment.omega_step,
@@ -245,7 +252,8 @@ class MainController(object):
         self.increase_point_number()
 
         #move to previous detector position:
-        caput(pv_names['detector_position'], previous_detector_pos, wait=True, timeout=300)
+        caput(pv_names['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
+        caput(pv_names['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
 
         if self.main_view.rename_after_cb.isChecked():
             caput(pv_names['detector'] + ':FilePath', previous_filepath)
@@ -275,14 +283,16 @@ class MainController(object):
         :return: float, float, float
         """
         try:
-            detector_pos = float("{:g}".format(caget(pv_names['detector_position'])))
+            detector_pos_x = float("{:g}".format(caget(pv_names['detector_position_x'])))
+            detector_pos_z = float("{:g}".format(caget(pv_names['detector_position_z'])))
             omega = float("{:g}".format(caget(pv_names['sample_position_omega'])))
             exposure_time = float("{:g}".format(caget(pv_names['detector'] + ':AcquireTime')))
         except epics.ca.ChannelAccessException:
-            detector_pos = -333
+            detector_pos_x = 0
+            detector_pos_z = 49
             omega = -90
             exposure_time = 0.5
-        return detector_pos, omega, exposure_time
+        return detector_pos_x, detector_pos_z, omega, exposure_time
 
     @staticmethod
     def get_filename_info():

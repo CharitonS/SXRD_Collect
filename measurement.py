@@ -21,10 +21,10 @@ GATHER_OUTPUTS = ('CurrentPosition', 'FollowingError',
                   'SetpointPosition', 'CurrentVelocity')
 
 
-def collect_step_data(detector_position, omega_start, omega_end, omega_step, exposure_time, x, y, z, pv_names):
+def collect_step_data(detector_position_x, detector_position_z, omega_start, omega_end, omega_step, exposure_time, x, y, z, pv_names):
     # performs the actual step measurement
     #prepare the stage:
-    original_omega = prepare_stage(detector_position, omega_start, pv_names, x, y, z)
+    original_omega = prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
 
     #prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
@@ -56,22 +56,21 @@ def perform_step_collection(omega_step, exposure_time, stage_xps,  pv_names):
 
     #start data collection
     collect_data(exposure_time+50, pv_names)
+    time.sleep(0.25)
     stage_xps.run_line_trajectory_general()
 
     #stop detector
-    time.sleep(0.1)
     caput('13MARCCD2:cam1:Acquire', 0)
     #wait for readout
     while not detector_checker.is_finished():
         time.sleep(0.001)
     del detector_checker
 
-
-def prepare_stage(detector_position, omega_start, pv_names, x, y, z):
+def prepare_stage(detector_position_x, detector_pos_z, omega_start, pv_names, x, y, z):
     original_omega = caget(pv_names['sample_position_omega'])
     move_to_sample_pos(x, y, z, pv_names)
     move_to_omega_position(omega_start, pv_names)
-    move_to_detector_position(detector_position, pv_names)
+    move_to_detector_position(detector_position_x, detector_pos_z, pv_names)
     return original_omega
 
 
@@ -81,11 +80,11 @@ def prepare_detector(pv_names):
     return previous_shutter_mode
 
 
-def collect_wide_data(detector_position, omega_start, omega_end, exposure_time, x, y, z, pv_names):
+def collect_wide_data(detector_position_x, detector_position_z, omega_start, omega_end, exposure_time, x, y, z, pv_names):
     # performs the actual wide measurement
 
     #prepare the stage:
-    original_omega = prepare_stage(detector_position, omega_start, pv_names, x, y, z)
+    original_omega = prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
 
     #prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
@@ -193,10 +192,12 @@ def move_to_omega_position(omega, pv_names, wait=True):
         mylog.info('Moving Sample Omega to {} finished.\n'.format(omega))
 
 
-def move_to_detector_position(detector_position, pv_names):
-    mylog.info('Moving Detector to {}'.format(detector_position))
-    caput(pv_names['detector_position'], detector_position, wait=True, timeout=300)
-    mylog.info('Moving Detector to {} finished.\n'.format(detector_position))
+def move_to_detector_position(detector_position_x, detector_position_z, pv_names):
+    mylog.info('Moving Detector X to {}'.format(detector_position_x))
+    caput(pv_names['detector_position_x'], detector_position_x, wait=True, timeout=300)
+    mylog.info('Moving Detector Z to {}'.format(detector_position_z))
+    caput(pv_names['detector_position_z'], detector_position_z, wait=True, timeout=300)
+    mylog.info('Moving Detector finished. \n')
 
 
 def collect_data(exposure_time, pv_names, wait=False):
@@ -208,7 +209,8 @@ def collect_data(exposure_time, pv_names, wait=False):
 
 
 if __name__ == '__main__':
-    pv_names = {'detector_position': '13IDD:m8',
+    pv_names = {'detector_position_x': '13IDD:m8',
+                'detector_position_y': '13IDD:m84',
                 'detector': '13MARCCD2:cam1',
                 'sample_position_x': '13IDD:m81',
                 'sample_position_y': '13IDD:m83',
