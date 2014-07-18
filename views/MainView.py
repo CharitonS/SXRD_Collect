@@ -16,7 +16,6 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     wide_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
 
 
-
     def __init__(self, version):
         super(MainView, self).__init__()
         self.setupUi(self)
@@ -48,25 +47,29 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         omega_end_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         omega_step_item = QtGui.QTableWidgetItem(str(omega_step))
         omega_step_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        exposure_time_item = QtGui.QTableWidgetItem(str(exposure_time))
-        exposure_time_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        exposure_time_step_item = QtGui.QTableWidgetItem(str(exposure_time))
+        exposure_time_step_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        total_exposure_time = (omega_end - omega_start) / omega_step * exposure_time
+        exposure_time_total_item = QtGui.QTableWidgetItem(str(total_exposure_time))
+        exposure_time_total_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         self.setup_table.setItem(new_row_ind, 0, detector_x_item)
         self.setup_table.setItem(new_row_ind, 1, detector_y_item)
         self.setup_table.setItem(new_row_ind, 2, omega_start_item)
         self.setup_table.setItem(new_row_ind, 3, omega_end_item)
         self.setup_table.setItem(new_row_ind, 4, omega_step_item)
-        self.setup_table.setItem(new_row_ind, 5, exposure_time_item)
+        self.setup_table.setItem(new_row_ind, 5, exposure_time_step_item)
+        self.setup_table.setItem(new_row_ind, 6, exposure_time_total_item)
 
         self.setup_table.setVerticalHeaderItem(new_row_ind, QtGui.QTableWidgetItem('E{}'.format(new_row_ind + 1)))
         self.setup_table.resizeColumnsToContents()
 
-        #update the sample_points_table_accordingly:
-        self.sample_points_table.setColumnCount(7+new_row_ind)
+        # update the sample_points_table_accordingly:
+        self.sample_points_table.setColumnCount(7 + new_row_ind)
         for sample_point_row in range(self.sample_points_table.rowCount()):
             self.create_sample_point_checkboxes(sample_point_row, new_row_ind)
 
-        self.sample_points_table.setHorizontalHeaderItem(6+new_row_ind,
+        self.sample_points_table.setHorizontalHeaderItem(6 + new_row_ind,
                                                          QtGui.QTableWidgetItem('E{}'.format(new_row_ind + 1)))
         self.sample_points_table.resizeColumnsToContents()
         self.setup_table.blockSignals(False)
@@ -78,24 +81,24 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
             for element in selected:
                 row.append(int(element.row()))
         except IndexError:
-            row=None
+            row = None
         return row
 
     def delete_experiment_setup(self, row_ind):
         self.setup_table.blockSignals(True)
         self.setup_table.removeRow(row_ind)
-        #rename row Headers:
+        # rename row Headers:
         for row_ind in range(self.setup_table.rowCount()):
             self.setup_table.setVerticalHeaderItem(row_ind,
                                                    QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
         self.setup_table.blockSignals(False)
 
         self.sample_points_table.blockSignals(True)
-        self.sample_points_table.removeColumn(6+row_ind)
+        self.sample_points_table.removeColumn(6 + row_ind)
         #rename column Headers:
         for row_ind in range(self.setup_table.rowCount()):
             self.sample_points_table.setHorizontalHeaderItem(
-                6+row_ind, QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
+                6 + row_ind, QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
         self.sample_points_table.blockSignals(False)
 
     def add_sample_point(self, name, x, y, z):
@@ -130,7 +133,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.resizeColumnsToContents()
         self.sample_points_table.blockSignals(False)
 
-    def create_sample_point_checkboxes(self, row_index, exp_index, step_state = False, wide_state = False):
+    def create_sample_point_checkboxes(self, row_index, exp_index, step_state=False, wide_state=False):
         exp_widget = QtGui.QWidget()
         wide_cb = QtGui.QCheckBox('wide')
         step_cb = QtGui.QCheckBox('step')
@@ -144,7 +147,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
 
         step_cb.stateChanged.connect(partial(self.step_cb_changed, row_index, exp_index))
         wide_cb.stateChanged.connect(partial(self.wide_cb_changed, row_index, exp_index))
-        self.sample_points_table.setCellWidget(row_index, exp_index+6, exp_widget)
+        self.sample_points_table.setCellWidget(row_index, exp_index + 6, exp_widget)
 
     def recreate_sample_point_checkboxes(self, values):
         for row_index, row in enumerate(values):
@@ -170,7 +173,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.clear()
         self.sample_points_table.setRowCount(0)
 
-    def set_sample_point_values(self, ind, x,y,z):
+    def set_sample_point_values(self, ind, x, y, z):
         x_item = self.sample_points_table.item(ind, 1)
         x_item.setText(str(x))
         y_item = self.sample_points_table.item(ind, 2)
@@ -195,7 +198,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.move_sample_btn_clicked.emit(index)
 
     def step_cb_changed(self, row_index, exp_index, state):
-        self.step_cb_status_changed.emit(row_index,exp_index, bool(state))
+        self.step_cb_status_changed.emit(row_index, exp_index, bool(state))
 
     def wide_cb_changed(self, row_index, exp_index, state):
         self.wide_cb_status_changed.emit(row_index, exp_index, bool(state))
@@ -244,7 +247,7 @@ class TextDoubleDelegate(QtGui.QStyledItemDelegate):
 
     def updateEditorGeometry(self, editor, option, _):
         editor.setGeometry(option.rect)
-        
+
 
 class SamplePointDoubleDelegate(QtGui.QStyledItemDelegate):
     def __init__(self, parent):
@@ -268,7 +271,6 @@ class SamplePointDoubleDelegate(QtGui.QStyledItemDelegate):
 
     def updateEditorGeometry(self, editor, option, _):
         editor.setGeometry(option.rect)
-
 
 
 if __name__ == '__main__':

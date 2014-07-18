@@ -17,7 +17,7 @@ logger = logging.getLevelName(__name__)
 # # mapscan:   Build (twice!)
 # # linescan:  Build , clearabort
 # # ExecTraj;  Execute(),   building<attribute>, executing<attribute>
-## WriteTrajData:  Read_FTP(), SaveGatheringData()
+# # WriteTrajData:  Read_FTP(), SaveGatheringData()
 ##
 ## need to have env and ROI written during traj scan:
 ##   use a separate thread for ROI and ENV, allow
@@ -238,7 +238,7 @@ Line = %f, %f
         self.xps.GatheringConfigurationSet(self.ssid, self.gather_outputs)
 
         ret = self.xps.MultipleAxesPVTPulseOutputSet(self.ssid, self.group_name,
-                                                     2, step_number+1, dtime)
+                                                     2, step_number + 1, dtime)
         ret = self.xps.MultipleAxesPVTVerification(self.ssid, self.group_name, traj_file)
 
         buffer = ('Always', self.group_name + '.PVT.TrajectoryPulse')
@@ -323,7 +323,7 @@ Line = %f, %f
         # db.add('MLGet ret=%i, buff_len = %i ' % (ret, len(buff)))
 
         if ret < 0:  # gathering too long: need to read in chunks
-            print('Need to read Data in Chunks!!!') # how many chunks are needed??
+            print('Need to read Data in Chunks!!!')  # how many chunks are needed??
             Nchunks = 3
             nx = int((npulses - 2) / Nchunks)
             ret = 1

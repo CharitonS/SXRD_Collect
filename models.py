@@ -70,8 +70,14 @@ class ExperimentSetup(object):
         self.omega_step = omega_step
         self.time_per_step = time_per_step
 
+    def get_total_exposure_time(self):
+        return (self.omega_end - self.omega_start) / self.omega_step * self.time_per_step
+
+    def get_step_exposure_time(self, total_time):
+        return total_time*self.omega_step/(self.omega_end-self.omega_start)
+
     def __str__(self):
-        return "{}, {}, {}, {}, {}".format(self.detector_pos_x, self.detector_pos_z, self.omega_start,
+        return "{}, {}, {}, {}, {}, {}".format(self.detector_pos_x, self.detector_pos_z, self.omega_start,
                                            self.omega_end, self.omega_step, self.time_per_step)
 
 

@@ -141,6 +141,17 @@ class MainController(object):
             self.data.experiment_setups[row].omega_step = value
         elif col == 5:
             self.data.experiment_setups[row].time_per_step = value
+            self.main_view.setup_table.blockSignals(True)
+            total_exposure_time_item = self.main_view.setup_table.item(row, 6)
+            total_exposure_time_item.setText(str(self.data.experiment_setups[row].get_total_exposure_time()))
+            self.main_view.setup_table.blockSignals(False)
+        elif col == 6:
+            self.main_view.setup_table.blockSignals(True)
+            step_time = self.data.experiment_setups[row].get_step_exposure_time(value)
+            step_exposure_time_item = self.main_view.setup_table.item(row, 5)
+            step_exposure_time_item.setText(str(step_time))
+            self.data.experiment_setups[row].time_per_step = step_time
+            self.main_view.setup_table.blockSignals(False)
 
         self.main_view.setup_table.resizeColumnsToContents()
         print(self.data.experiment_setups[row])
@@ -210,9 +221,9 @@ class MainController(object):
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
                     if self.main_view.rename_files_cb.isChecked():
                         point_number = str(self.main_view.point_txt.text())
-                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_E' + str(
-                            exp_ind + 1) + '_w'
-                        print filename
+                        filename = str(self.basename + '_' + sample_point.name + '_P' + point_number + '_E' + str(
+                                exp_ind + 1) + '_w')
+                        print(filename)
                         caput(pv_names['detector'] + ':FilePath', self.filepath)
                         caput(pv_names['detector'] + ':FileName', filename)
                         caput(pv_names['detector'] + ':FileNumber', 1)
@@ -231,8 +242,8 @@ class MainController(object):
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
                     if self.main_view.rename_files_cb.isChecked():
                         point_number = str(self.main_view.point_txt.text())
-                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_E' + str(
-                            exp_ind + 1) + '_s'
+                        filename = str(self.basename + '_' + sample_point.name + '_P' + point_number + '_E' + str(
+                            exp_ind + 1) + '_s')
                         caput(pv_names['detector'] + ':FilePath', self.filepath)
                         caput(pv_names['detector'] + ':FileName', filename)
                         caput(pv_names['detector'] + ':FileNumber', 1)
@@ -254,6 +265,8 @@ class MainController(object):
         #move to previous detector position:
         caput(pv_names['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
         caput(pv_names['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
+
+        caput(pv_names['detector']+':ShutterMode', 1) # enable epics PV shutter mode
 
         if self.main_view.rename_after_cb.isChecked():
             caput(pv_names['detector'] + ':FilePath', previous_filepath)
@@ -306,4 +319,3 @@ class MainController(object):
             filename = 'test'
             file_number = 0
         return path, filename, file_number
-
