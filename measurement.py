@@ -195,14 +195,14 @@ def move_to_omega_position(omega, pv_names, wait=True):
 
 def move_to_detector_position(detector_position, pv_names):
     mylog.info('Moving Detector to {}'.format(detector_position))
-    caput(pv_names['detector_position'], detector_position, wait=True)
+    caput(pv_names['detector_position'], detector_position, wait=True, timeout=300)
     mylog.info('Moving Detector to {} finished.\n'.format(detector_position))
 
 
 def collect_data(exposure_time, pv_names, wait=False):
     caput(pv_names['detector'] + ':AcquireTime', exposure_time)
     mylog.info('Start data collection.')
-    caput(pv_names['detector'] + ':Acquire', 1, wait=wait)
+    caput(pv_names['detector'] + ':Acquire', 1, wait=wait, timeout=exposure_time+20)
     if wait:
         mylog.info('Finished data collection.\n')
 
