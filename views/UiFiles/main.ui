@@ -290,6 +290,14 @@ Conifguration</string>
        <attribute name="horizontalHeaderHighlightSections">
         <bool>true</bool>
        </attribute>
+       <attribute name="verticalHeaderVisible">
+        <bool>false</bool>
+       </attribute>
+       <column>
+        <property name="text">
+         <string>Name</string>
+        </property>
+       </column>
        <column>
         <property name="text">
          <string>Det X</string>

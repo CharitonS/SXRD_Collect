@@ -4,7 +4,7 @@
 # GSECARS, University of Chicago
 #
 # This program is free software: you can redistribute it and/or modify
-#     it under the terms of the GNU General Public License as published by
+# it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 #
@@ -24,8 +24,10 @@ class MainData(object):
         self.experiment_setups = []
         self.sample_points = []
 
-    def add_experiment_setup(self, detector_pos_x=0, detector_pos_y=49, omega_start=0, omega_end=0, omega_step=0, time_per_step=0):
-        self.experiment_setups.append(ExperimentSetup(detector_pos_x, detector_pos_y, omega_start, omega_end, omega_step, time_per_step))
+    def add_experiment_setup(self, name, detector_pos_x=0, detector_pos_y=49, omega_start=0, omega_end=0, omega_step=0,
+                             time_per_step=0):
+        self.experiment_setups.append(
+            ExperimentSetup(name, detector_pos_x, detector_pos_y, omega_start, omega_end, omega_step, time_per_step))
 
         for point in self.sample_points:
             point.register_setup(self.experiment_setups[-1])
@@ -60,9 +62,29 @@ class MainData(object):
     def clear_sample_points(self):
         self.sample_points = []
 
+    def get_experiment_setup_names(self):
+        res = []
+        for experiment_setup in self.experiment_setups:
+            res.append(experiment_setup.name)
+        return res
+
+    def setup_name_existent(self, name):
+        for setup in self.experiment_setups:
+            if name == setup.name:
+                return True
+        return False
+
+    def sample_name_existent(self, name):
+        for setup in self.sample_points:
+            if name == setup.name:
+                return True
+        return False
+
 
 class ExperimentSetup(object):
-    def __init__(self, detector_pos_x=0, detector_pos_z=49, omega_start=0, omega_end=0, omega_step=0, time_per_step=0):
+    def __init__(self, name, detector_pos_x=0, detector_pos_z=49, omega_start=0, omega_end=0, omega_step=0,
+                 time_per_step=0):
+        self.name = name
         self.detector_pos_x = detector_pos_x
         self.detector_pos_z = detector_pos_z
         self.omega_start = omega_start
@@ -74,11 +96,12 @@ class ExperimentSetup(object):
         return (self.omega_end - self.omega_start) / self.omega_step * self.time_per_step
 
     def get_step_exposure_time(self, total_time):
-        return total_time*self.omega_step/(self.omega_end-self.omega_start)
+        return total_time * self.omega_step / (self.omega_end - self.omega_start)
 
     def __str__(self):
-        return "{}, {}, {}, {}, {}, {}".format(self.detector_pos_x, self.detector_pos_z, self.omega_start,
-                                           self.omega_end, self.omega_step, self.time_per_step)
+        return "{}: {}, {}, {}, {}, {}, {}".format(self.name, self.detector_pos_x, self.detector_pos_z,
+                                                   self.omega_start, self.omega_end, self.omega_step,
+                                                   self.time_per_step)
 
 
 class SamplePoint(object):

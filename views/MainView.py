@@ -20,11 +20,9 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         super(MainView, self).__init__()
         self.setupUi(self)
 
-        self.setup_delegate = TextDoubleDelegate(self)
-        self.setup_table.setItemDelegate(self.setup_delegate)
-
-        self.sample_delegate = SamplePointDoubleDelegate(self)
-        self.sample_points_table.setItemDelegate(self.sample_delegate)
+        self.table_delegate = FirstItemStringDelegate(self)
+        self.setup_table.setItemDelegate(self.table_delegate)
+        self.sample_points_table.setItemDelegate(self.table_delegate)
 
         self.standard_show_btn.clicked.connect(self.standard_show_btn_clicked)
         self.hide_standards()
@@ -32,11 +30,14 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.setWindowTitle("SXRD Collect {}".format(version))
         self.point_txt.setValidator(QtGui.QIntValidator())
 
-    def add_experiment_setup(self, detector_pos_x, detector_pos_y, omega_start, omega_end, omega_step, exposure_time):
+    def add_experiment_setup(self, name, detector_pos_x, detector_pos_y, omega_start,
+                             omega_end, omega_step, exposure_time):
         self.setup_table.blockSignals(True)
         new_row_ind = int(self.setup_table.rowCount())
         self.setup_table.setRowCount(new_row_ind + 1)
 
+        name_item = QtGui.QTableWidgetItem(name)
+        name_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         detector_x_item = QtGui.QTableWidgetItem(str(detector_pos_x))
         detector_x_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         detector_y_item = QtGui.QTableWidgetItem(str(detector_pos_y))
@@ -53,15 +54,16 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         exposure_time_total_item = QtGui.QTableWidgetItem(str(total_exposure_time))
         exposure_time_total_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-        self.setup_table.setItem(new_row_ind, 0, detector_x_item)
-        self.setup_table.setItem(new_row_ind, 1, detector_y_item)
-        self.setup_table.setItem(new_row_ind, 2, omega_start_item)
-        self.setup_table.setItem(new_row_ind, 3, omega_end_item)
-        self.setup_table.setItem(new_row_ind, 4, omega_step_item)
-        self.setup_table.setItem(new_row_ind, 5, exposure_time_step_item)
-        self.setup_table.setItem(new_row_ind, 6, exposure_time_total_item)
+        self.setup_table.setItem(new_row_ind, 0, name_item)
+        self.setup_table.setItem(new_row_ind, 1, detector_x_item)
+        self.setup_table.setItem(new_row_ind, 2, detector_y_item)
+        self.setup_table.setItem(new_row_ind, 3, omega_start_item)
+        self.setup_table.setItem(new_row_ind, 4, omega_end_item)
+        self.setup_table.setItem(new_row_ind, 5, omega_step_item)
+        self.setup_table.setItem(new_row_ind, 6, exposure_time_step_item)
+        self.setup_table.setItem(new_row_ind, 7, exposure_time_total_item)
 
-        self.setup_table.setVerticalHeaderItem(new_row_ind, QtGui.QTableWidgetItem('E{}'.format(new_row_ind + 1)))
+        self.setup_table.setVerticalHeaderItem(new_row_ind, QtGui.QTableWidgetItem(name))
         self.setup_table.resizeColumnsToContents()
 
         # update the sample_points_table_accordingly:
@@ -70,7 +72,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
             self.create_sample_point_checkboxes(sample_point_row, new_row_ind)
 
         self.sample_points_table.setHorizontalHeaderItem(6 + new_row_ind,
-                                                         QtGui.QTableWidgetItem('E{}'.format(new_row_ind + 1)))
+                                                         QtGui.QTableWidgetItem(name))
         self.sample_points_table.resizeColumnsToContents()
         self.setup_table.blockSignals(False)
 
@@ -100,6 +102,12 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
             self.sample_points_table.setHorizontalHeaderItem(
                 6 + row_ind, QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
         self.sample_points_table.blockSignals(False)
+
+    def update_sample_table_setup_header(self, header_names):
+        for row, header_name in enumerate(header_names):
+            header_item = self.sample_points_table.horizontalHeaderItem(row+6)
+            header_item.setText(header_name)
+
 
     def add_sample_point(self, name, x, y, z):
         self.sample_points_table.blockSignals(True)
@@ -249,9 +257,9 @@ class TextDoubleDelegate(QtGui.QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
-class SamplePointDoubleDelegate(QtGui.QStyledItemDelegate):
+class FirstItemStringDelegate(QtGui.QStyledItemDelegate):
     def __init__(self, parent):
-        super(SamplePointDoubleDelegate, self).__init__(parent)
+        super(FirstItemStringDelegate, self).__init__(parent)
 
     def createEditor(self, parent, _, model):
         self.editor = QtGui.QLineEdit(parent)

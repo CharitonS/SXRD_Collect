@@ -5,7 +5,7 @@ import time
 
 from epics import caget, caput
 import epics
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 
 pv_names = {'detector_position_x': '13IDD:m8',
             'detector_position_z': '13IDD:m84',
@@ -71,11 +71,13 @@ class MainController(object):
 
         self.set_example_lbl()
 
-
     def add_experiment_setup_btn_clicked(self):
         detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()
-        self.main_view.add_experiment_setup(detector_pos_x, detector_pos_z, omega - 1, omega + 1, 0.1, exposure_time)
-        self.data.add_experiment_setup(detector_pos_x, detector_pos_z, omega - 1, omega + 1, 0.1, exposure_time)
+        default_name = 'E{}'.format(len(self.data.experiment_setups) + 1)
+        self.data.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
+                                       omega - 1, omega + 1, 0.1, exposure_time)
+        self.main_view.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
+                                            omega - 1, omega + 1, 0.1, exposure_time)
 
     def delete_experiment_setup_btn_clicked(self):
         cur_ind = self.main_view.get_selected_experiment_setup()
@@ -128,45 +130,63 @@ class MainController(object):
 
     def setup_table_cell_changed(self, row, col):
         label_item = self.main_view.setup_table.item(row, col)
-        value = float(str(label_item.text()))
+        value = str(label_item.text())
+        self.main_view.setup_table.blockSignals(True)
         if col == 0:
-            self.data.experiment_setups[row].detector_pos_x = value
-        elif col == 1:
-            self.data.experiment_setups[row].detector_pos_z = value
-        elif col == 2:
-            self.data.experiment_setups[row].omega_start = value
-        elif col == 3:
-            self.data.experiment_setups[row].omega_end = value
-        elif col == 4:
-            self.data.experiment_setups[row].omega_step = value
-        elif col == 5:
-            self.data.experiment_setups[row].time_per_step = value
-            self.main_view.setup_table.blockSignals(True)
-            total_exposure_time_item = self.main_view.setup_table.item(row, 6)
-            total_exposure_time_item.setText(str(self.data.experiment_setups[row].get_total_exposure_time()))
-            self.main_view.setup_table.blockSignals(False)
-        elif col == 6:
-            self.main_view.setup_table.blockSignals(True)
-            step_time = self.data.experiment_setups[row].get_step_exposure_time(value)
-            step_exposure_time_item = self.main_view.setup_table.item(row, 5)
-            step_exposure_time_item.setText(str(step_time))
-            self.data.experiment_setups[row].time_per_step = step_time
-            self.main_view.setup_table.blockSignals(False)
+            if not self.data.setup_name_existent(value):
+                self.data.experiment_setups[row].name = str(value)
+                self.main_view.update_sample_table_setup_header(
+                    self.data.get_experiment_setup_names()
+                )
+                self.main_view.sample_points_table.resizeColumnsToContents()
+            else:
+                self.create_name_existent_msg('Experiment setup')
+                name_item = self.main_view.setup_table.item(row, 0)
+                name_item.setText(self.data.experiment_setups[row].name)
+        else:
+            value = float(value)
+            if col == 1:
+                self.data.experiment_setups[row].detector_pos_x = value
+            elif col == 2:
+                self.data.experiment_setups[row].detector_pos_z = value
+            elif col == 3:
+                self.data.experiment_setups[row].omega_start = value
+            elif col == 4:
+                self.data.experiment_setups[row].omega_end = value
+            elif col == 5:
+                self.data.experiment_setups[row].omega_step = value
+            elif col == 6:
+                self.data.experiment_setups[row].time_per_step = value
+                total_exposure_time_item = self.main_view.setup_table.item(row, 7)
+                total_exposure_time_item.setText(str(self.data.experiment_setups[row].get_total_exposure_time()))
+            elif col == 7:
+                step_time = self.data.experiment_setups[row].get_step_exposure_time(value)
+                step_exposure_time_item = self.main_view.setup_table.item(row, 6)
+                step_exposure_time_item.setText(str(step_time))
+                self.data.experiment_setups[row].time_per_step = step_time
 
+        self.main_view.setup_table.blockSignals(False)
         self.main_view.setup_table.resizeColumnsToContents()
         print(self.data.experiment_setups[row])
 
     def sample_points_table_cell_changed(self, row, col):
         label_item = self.main_view.sample_points_table.item(row, col)
         value = str(label_item.text())
+        self.main_view.sample_points_table.blockSignals(True)
         if col == 0:
-            self.data.sample_points[row].name = value
+            if not self.data.sample_name_existent(value):
+                self.data.sample_points[row].name = str(value)
+            else:
+                self.create_name_existent_msg('Sample')
+                name_item = self.main_view.sample_points_table.item(row, 0)
+                name_item.setText(self.data.sample_points[row].name)
         elif col == 1:
             self.data.sample_points[row].x = float(value)
         elif col == 2:
             self.data.sample_points[row].y = float(value)
         elif col == 3:
             self.data.sample_points[row].z = float(value)
+        self.main_view.sample_points_table.blockSignals(False)
         self.main_view.sample_points_table.resizeColumnsToContents()
 
         print(self.data.sample_points[row])
@@ -211,6 +231,16 @@ class MainController(object):
         self.main_view.example_filename_lbl.setText(example_str)
 
     def collect_data(self):
+        if self.check_conditions() is False:
+            msg_box = QtGui.QMessageBox()
+            msg_box.setWindowFlags(QtCore.Qt.Tool)
+            msg_box.setText('Please Move mirrors and microscope in the right positions')
+            msg_box.setIcon(QtGui.QMessageBox.Critical)
+            msg_box.setWindowTitle('Error')
+            msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
+            msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+            msg_box.exec_()
+            return
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
         previous_exposure_time = caget(pv_names['detector'] + ':AcquireTime')
         previous_detector_pos_x = caget(pv_names['detector_position_x'])
@@ -221,11 +251,11 @@ class MainController(object):
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
                     if self.main_view.rename_files_cb.isChecked():
                         point_number = str(self.main_view.point_txt.text())
-                        filename = str(self.basename + '_' + sample_point.name + '_P' + point_number + '_E' + str(
-                                exp_ind + 1) + '_w')
+                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                   experiment.name + '_w'
                         print(filename)
-                        caput(pv_names['detector'] + ':FilePath', self.filepath)
-                        caput(pv_names['detector'] + ':FileName', filename)
+                        caput(pv_names['detector'] + ':FilePath', str(self.filepath))
+                        caput(pv_names['detector'] + ':FileName', str(filename))
                         caput(pv_names['detector'] + ':FileNumber', 1)
                     print("Performing wide scan for {}, with setup {}".format(sample_point, experiment))
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
@@ -242,11 +272,12 @@ class MainController(object):
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
                     if self.main_view.rename_files_cb.isChecked():
                         point_number = str(self.main_view.point_txt.text())
-                        filename = str(self.basename + '_' + sample_point.name + '_P' + point_number + '_E' + str(
-                            exp_ind + 1) + '_s')
-                        caput(pv_names['detector'] + ':FilePath', self.filepath)
-                        caput(pv_names['detector'] + ':FileName', filename)
-                        caput(pv_names['detector'] + ':FileNumber', 1)
+                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' +\
+                                   experiment.name + '_s'
+                    print filename
+                    caput(pv_names['detector'] + ':FilePath', str(self.filepath))
+                    caput(pv_names['detector'] + ':FileName', str(filename))
+                    caput(pv_names['detector'] + ':FileNumber', 1)
                     print("Performing step scan for {}, with setup {}".format(sample_point, experiment))
                     collect_step_data(detector_position_x=experiment.detector_pos_x,
                                       detector_position_z=experiment.detector_pos_z,
@@ -262,11 +293,11 @@ class MainController(object):
         caput(pv_names['detector'] + ':AcquireTime', previous_exposure_time)
         self.increase_point_number()
 
-        #move to previous detector position:
+        # move to previous detector position:
         caput(pv_names['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
         caput(pv_names['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
 
-        caput(pv_names['detector']+':ShutterMode', 1) # enable epics PV shutter mode
+        caput(pv_names['detector'] + ':ShutterMode', 1)  # enable epics PV shutter mode
 
         if self.main_view.rename_after_cb.isChecked():
             caput(pv_names['detector'] + ':FilePath', previous_filepath)
@@ -277,6 +308,17 @@ class MainController(object):
     def increase_point_number(self):
         cur_point_number = int(str(self.main_view.point_txt.text()))
         self.main_view.point_txt.setText(str(cur_point_number + 1))
+
+    @staticmethod
+    def create_name_existent_msg(name_type):
+        msg_box = QtGui.QMessageBox()
+        msg_box.setWindowFlags(QtCore.Qt.Tool)
+        msg_box.setText('{} name already exists.'.format(name_type))
+        msg_box.setIcon(QtGui.QMessageBox.Critical)
+        msg_box.setWindowTitle('Error')
+        msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
+        msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+        msg_box.exec_()
 
     @staticmethod
     def get_current_sample_position():
@@ -319,3 +361,14 @@ class MainController(object):
             filename = 'test'
             file_number = 0
         return path, filename, file_number
+
+    @staticmethod
+    def check_conditions():
+        if int(caget('13IDD:m24.RBV')) > -105:
+            return False
+        elif int(caget('13IDD:m23.RBV')) > -105:
+            return False
+        elif int(caget('13IDD:m67.RBV')) > -65:
+            return False
+        return True
+
