@@ -253,6 +253,7 @@ class MainController(object):
         previous_detector_pos_x = caget(pv_names['detector_position_x'])
         previous_detector_pos_z = caget(pv_names['detector_position_z'])
         previous_omega_pos = caget(pv_names['sample_position_omega'])
+        sample_x, sample_y, sample_z = self.get_current_sample_position()
 
         for exp_ind, experiment in enumerate(self.data.experiment_setups):
             for sample_point in self.data.sample_points:
@@ -301,10 +302,14 @@ class MainController(object):
         caput(pv_names['detector'] + ':AcquireTime', previous_exposure_time)
 
         # move to previous detector position:
-        if self.main_view.reset_position_cb.isChecked():
+        if self.main_view.reset_detector_position_cb.isChecked():
             caput(pv_names['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
             caput(pv_names['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
+
+        # move to previous sample position
+        if self.main_view.reset_sample_position_cb.isChecked():
             caput(pv_names['sample_position_omega'], previous_omega_pos)
+            move_to_sample_pos(sample_x, sample_y, sample_z, pv_names)
 
         caput(pv_names['detector'] + ':ShutterMode', 1)  # enable epics PV shutter mode
 

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created: Thu Jul 24 11:49:41 2014
+# Created: Thu Jul 24 12:11:18 2014
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -140,10 +140,14 @@ class Ui_SXRDCollectWidget(object):
         self.rename_after_cb.setChecked(True)
         self.rename_after_cb.setObjectName(_fromUtf8("rename_after_cb"))
         self.verticalLayout_2.addWidget(self.rename_after_cb)
-        self.reset_position_cb = QtGui.QCheckBox(self.widget)
-        self.reset_position_cb.setChecked(True)
-        self.reset_position_cb.setObjectName(_fromUtf8("reset_position_cb"))
-        self.verticalLayout_2.addWidget(self.reset_position_cb)
+        self.reset_sample_position_cb = QtGui.QCheckBox(self.widget)
+        self.reset_sample_position_cb.setChecked(True)
+        self.reset_sample_position_cb.setObjectName(_fromUtf8("reset_sample_position_cb"))
+        self.verticalLayout_2.addWidget(self.reset_sample_position_cb)
+        self.reset_detector_position_cb = QtGui.QCheckBox(self.widget)
+        self.reset_detector_position_cb.setChecked(True)
+        self.reset_detector_position_cb.setObjectName(_fromUtf8("reset_detector_position_cb"))
+        self.verticalLayout_2.addWidget(self.reset_detector_position_cb)
         spacerItem3 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_2.addItem(spacerItem3)
         self.horizontalLayout_5.addWidget(self.widget)
@@ -340,7 +344,8 @@ class Ui_SXRDCollectWidget(object):
         self.example_filename_lbl.setText(_translate("SXRDCollectWidget", "Examplefilename", None))
         self.rename_files_cb.setText(_translate("SXRDCollectWidget", "Rename Files", None))
         self.rename_after_cb.setText(_translate("SXRDCollectWidget", "Reset name after Measurement", None))
-        self.reset_position_cb.setText(_translate("SXRDCollectWidget", "Reset Position", None))
+        self.reset_sample_position_cb.setText(_translate("SXRDCollectWidget", "Reset Sample Position", None))
+        self.reset_detector_position_cb.setText(_translate("SXRDCollectWidget", "Reset Detector Position", None))
         item = self.setup_table.horizontalHeaderItem(0)
         item.setText(_translate("SXRDCollectWidget", "Name", None))
         item = self.setup_table.horizontalHeaderItem(1)

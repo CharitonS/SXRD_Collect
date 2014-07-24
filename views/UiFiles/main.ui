@@ -261,9 +261,19 @@ Conifguration</string>
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="reset_position_cb">
+         <widget class="QCheckBox" name="reset_sample_position_cb">
           <property name="text">
-           <string>Reset Position</string>
+           <string>Reset Sample Position</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="reset_detector_position_cb">
+          <property name="text">
+           <string>Reset Detector Position</string>
           </property>
           <property name="checked">
            <bool>true</bool>
