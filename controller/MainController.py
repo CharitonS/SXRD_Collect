@@ -151,14 +151,16 @@ class MainController(object):
                 self.data.experiment_setups[row].detector_pos_z = value
             elif col == 3:
                 self.data.experiment_setups[row].omega_start = value
+                self.update_total_exposure_time(row)
             elif col == 4:
                 self.data.experiment_setups[row].omega_end = value
+                self.update_total_exposure_time(row)
             elif col == 5:
                 self.data.experiment_setups[row].omega_step = value
+                self.update_total_exposure_time(row)
             elif col == 6:
                 self.data.experiment_setups[row].time_per_step = value
-                total_exposure_time_item = self.main_view.setup_table.item(row, 7)
-                total_exposure_time_item.setText(str(self.data.experiment_setups[row].get_total_exposure_time()))
+                self.update_total_exposure_time(row)
             elif col == 7:
                 step_time = self.data.experiment_setups[row].get_step_exposure_time(value)
                 step_exposure_time_item = self.main_view.setup_table.item(row, 6)
@@ -168,6 +170,10 @@ class MainController(object):
         self.main_view.setup_table.blockSignals(False)
         self.main_view.setup_table.resizeColumnsToContents()
         print(self.data.experiment_setups[row])
+
+    def update_total_exposure_time(self, row):
+        total_exposure_time_item = self.main_view.setup_table.item(row, 7)
+        total_exposure_time_item.setText(str(self.data.experiment_setups[row].get_total_exposure_time()))
 
     def sample_points_table_cell_changed(self, row, col):
         label_item = self.main_view.sample_points_table.item(row, col)
@@ -241,6 +247,7 @@ class MainController(object):
             msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
             msg_box.exec_()
             return
+
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
         previous_exposure_time = caget(pv_names['detector'] + ':AcquireTime')
         previous_detector_pos_x = caget(pv_names['detector_position_x'])
@@ -272,7 +279,7 @@ class MainController(object):
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
                     if self.main_view.rename_files_cb.isChecked():
                         point_number = str(self.main_view.point_txt.text())
-                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' +\
+                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + '_s'
                     print filename
                     caput(pv_names['detector'] + ':FilePath', str(self.filepath))
@@ -308,6 +315,35 @@ class MainController(object):
     def increase_point_number(self):
         cur_point_number = int(str(self.main_view.point_txt.text()))
         self.main_view.point_txt.setText(str(cur_point_number + 1))
+
+    def estimate_collection_time(self, pv_names):
+        total_time = 0
+        det_x_speed = caget(pv_names['detector_position_x'] + '.VELO')
+        det_z_speed = caget(pv_names['detector_position_z'] + '.VELO')
+        det_x_pos = caget(pv_names['detector_position_x'])
+        det_z_pos = caget(pv_names['detector_position_z'])
+
+        for exp_ind, experiment in enumerate(self.data.experiment_setups):
+            exp_collection = False
+            for sample_point in self.data.sample_points:
+                if sample_point.perform_wide_scan_for_setup[exp_ind]:
+                    exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
+                                    experiment.time_per_step
+                    total_time += exposure_time
+                    exp_collection = True
+                if sample_point.perform_step_scan_for_setup[exp_ind]:
+                    print("Performing step scan for {}, with setup {}".format(sample_point, experiment))
+                    number_of_steps = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step
+                    exposure_time = number_of_steps * (4 + experiment.time_per_step)
+                    total_time += exposure_time
+                    exp_collection = True
+                if exp_collection:
+                    det_x_move_time = abs(experiment.detector_pos_x - det_x_pos) / float(det_x_speed)
+                    det_y_move_time = abs(experiment.detector_pos_z - det_z_pos) / float(det_z_speed)
+                    total_time += det_x_move_time + det_y_move_time
+                    det_x_pos = experiment.detector_pos_x
+                    det_z_pos = experiment.detector_pos_z
+
 
     @staticmethod
     def create_name_existent_msg(name_type):
