@@ -252,6 +252,7 @@ class MainController(object):
         previous_exposure_time = caget(pv_names['detector'] + ':AcquireTime')
         previous_detector_pos_x = caget(pv_names['detector_position_x'])
         previous_detector_pos_z = caget(pv_names['detector_position_z'])
+        previous_omega_pos = caget(pv_names['sample_position_omega'])
 
         for exp_ind, experiment in enumerate(self.data.experiment_setups):
             for sample_point in self.data.sample_points:
@@ -298,13 +299,17 @@ class MainController(object):
                                       pv_names=pv_names)
 
         caput(pv_names['detector'] + ':AcquireTime', previous_exposure_time)
-        self.increase_point_number()
 
         # move to previous detector position:
-        caput(pv_names['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
-        caput(pv_names['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
+        if self.main_view.reset_position_cb.isChecked():
+            caput(pv_names['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
+            caput(pv_names['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
+            caput(pv_names['sample_position_omega'], previous_omega_pos)
 
         caput(pv_names['detector'] + ':ShutterMode', 1)  # enable epics PV shutter mode
+
+        if self.main_view.rename_files_cb.isChecked():
+                self.increase_point_number()
 
         if self.main_view.rename_after_cb.isChecked():
             caput(pv_names['detector'] + ':FilePath', previous_filepath)
