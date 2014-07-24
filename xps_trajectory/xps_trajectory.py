@@ -18,7 +18,7 @@ logger = logging.getLevelName(__name__)
 # # linescan:  Build , clearabort
 # # ExecTraj;  Execute(),   building<attribute>, executing<attribute>
 # # WriteTrajData:  Read_FTP(), SaveGatheringData()
-##
+# #
 ## need to have env and ROI written during traj scan:
 ##   use a separate thread for ROI and ENV, allow
 ##   XY trajectory to block.
@@ -105,7 +105,6 @@ Line = %f, %f
             self.move_template += ", %({0}dist)f, %({0}velo)f".format(positioner)
             self.down_template += ", %({0}ramp)f, %({0}zero)f".format(positioner)
 
-
     def ftp_connect(self):
         self.ftpconn.connect(self.host)
         self.ftpconn.login(self.user, self.passwd)
@@ -116,7 +115,7 @@ Line = %f, %f
         self.ftpconn.close()
         self.FTP_connected = False
 
-    def upload_trajectoryFile(self, fname, data):
+    def upload_trajectory_file(self, fname, data):
         self.ftp_connect()
         self.ftpconn.cwd(config.traj_folder)
         self.ftpconn.storbinary('STOR %s' % fname, StringIO(data))
@@ -195,7 +194,7 @@ Line = %f, %f
 
         ret = False
         try:
-            self.upload_trajectoryFile(name + '.trj', trajectory_str)
+            self.upload_trajectory_file(name + '.trj', trajectory_str)
             ret = True
             logger.info('Trajectory File uploaded.')
         except:
@@ -257,55 +256,12 @@ Line = %f, %f
 
         npulses = 0
         if save:
-            npulses = self.SaveResults(outfile, verbose=verbose)
+            npulses = self.save_results(outfile, verbose=verbose)
 
         self.xps.GroupMoveRelative(self.ssid, self.group_name, ramps)
         return npulses
 
-
-    def Move(self, xpos=None, ypos=None, tpos=None):
-        "move XY positioner to supplied position"
-        ret = self.xps.GroupPositionCurrentGet(self.ssid, 'FINE', 3)
-        if xpos is None:  xpos = ret[1]
-        if ypos is None:  ypos = ret[2]
-        if tpos is None:  tpos = ret[3]
-        self.xps.GroupMoveAbsolute(self.ssid, 'FINE', (xpos, ypos, tpos))
-
-
-    def OLD_RunGenericTrajectory(self, name='foreward',
-                                 pulse_range=1, pulse_step=0.01,
-                                 speed=1.0,
-                                 verbose=False, save=True,
-                                 outfile='Gather.dat', debug=False):
-        traj_file = '%s.trj' % name
-        # print 'Run Gen Traj', pulse_range, pulse_step
-
-        self.xps.GatheringReset(self.ssid)
-        self.xps.GatheringConfigurationSet(self.ssid, self.gather_outputs)
-
-        ret = self.xps.XYLineArcVerification(self.ssid, self.group_name, traj_file)
-        self.xps.XYLineArcPulseOutputSet(self.ssid, self.group_name, 0, pulse_range, pulse_step)
-
-        buffer = ('Always', 'FINE.XYLineArc.TrajectoryPulse',)
-        self.xps.EventExtendedConfigurationTriggerSet(self.ssid, buffer,
-                                                      ('0', '0'), ('0', '0'),
-                                                      ('0', '0'), ('0', '0'))
-
-        self.xps.EventExtendedConfigurationActionSet(self.ssid, ('GatheringOneData',),
-                                                     ('',), ('',), ('',), ('',))
-
-        eventID, m = self.xps.EventExtendedStart(self.ssid)
-        # print 'Execute',  traj_file, eventID
-        ret = self.xps.XYLineArcExecution(self.ssid, self.group_name, traj_file, speed, 1, 1)
-        o = self.xps.EventExtendedRemove(self.ssid, eventID)
-        o = self.xps.GatheringStop(self.ssid)
-
-        if save:
-            npulses = self.SaveResults(outfile, verbose=verbose)
-        return npulses
-
-
-    def SaveResults(self, fname, verbose=False):
+    def save_results(self, filename, verbose=False):
         """read gathering data from XPS
         """
         # self.xps.GatheringStop(self.ssid)
@@ -354,23 +310,18 @@ Line = %f, %f
         for x in ';\r\t':
             obuff = obuff.replace(x, ' ')
         # db.add('  data fixed')
-        f = open(fname, 'w')
+        f = open(filename, 'w')
         f.write(self.gather_titles)
         f.write(obuff)
         f.close()
         nlines = len(obuff.split('\n')) - 1
         if verbose:
-            print('Wrote %i lines, %i bytes to %s' % (nlines, len(buff), fname))
+            print('Wrote %i lines, %i bytes to %s' % (nlines, len(buff), filename))
         self.nlines_out = nlines
         # db.show()
         return npulses
 
 
 if __name__ == '__main__':
-    xps = XPSTrajectory()
-    xps.DefineLineTrajectories(axis='x', start=-2., stop=2., scantime=20, step=0.004)
-    print(xps.trajectories)
-    xps.Move(-2.0, 0.1, 0)
-    time.sleep(0.02)
-    xps.RunLineTrajectory(name='foreward', outfile='Out.dat')
+    pass
 

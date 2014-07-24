@@ -261,6 +261,16 @@ Conifguration</string>
          </widget>
         </item>
         <item>
+         <widget class="QCheckBox" name="reset_position_cb">
+          <property name="text">
+           <string>Reset Position</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -305,7 +315,7 @@ Conifguration</string>
        </column>
        <column>
         <property name="text">
-         <string>Det Y</string>
+         <string>Det Z</string>
         </property>
        </column>
        <column>

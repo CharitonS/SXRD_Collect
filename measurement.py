@@ -7,8 +7,8 @@ from functools import partial
 from epics import caput, caget, PV, camonitor, camonitor_clear
 
 logging.basicConfig()
-mylog = logging.getLogger()
-mylog.setLevel(logging.DEBUG)
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 from xps_trajectory.xps_trajectory import XPSTrajectory
 
@@ -21,16 +21,17 @@ GATHER_OUTPUTS = ('CurrentPosition', 'FollowingError',
                   'SetpointPosition', 'CurrentVelocity')
 
 
-def collect_step_data(detector_position_x, detector_position_z, omega_start, omega_end, omega_step, exposure_time, x, y, z, pv_names):
+def collect_step_data(detector_position_x, detector_position_z, omega_start, omega_end, omega_step, exposure_time, x, y,
+                      z, pv_names):
     # performs the actual step measurement
-    #prepare the stage:
+    # prepare the stage:
     original_omega = prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
 
     #prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
 
     #perform measurements:
-    num_steps = (omega_end-omega_start)/omega_step
+    num_steps = (omega_end - omega_start) / omega_step
     print(num_steps)
 
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
@@ -40,23 +41,23 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
     for dummy_ind in range(int(num_steps)):
         t1 = time.time()
 
-        mylog.info('Running Omega-Trajectory: {} degree {} s'.format(omega_step, exposure_time))
-        perform_step_collection(omega_step, exposure_time, stage_xps, pv_names)
-        print('Time needed {}.'.format(time.time()-t1))
+        logger.info('Running Omega-Trajectory: {} degree {} s'.format(omega_step, exposure_time))
+        perform_step_collection(exposure_time, stage_xps, pv_names)
+        print('Time needed {}.'.format(time.time() - t1))
     #move to original omega position
     move_to_omega_position(original_omega, pv_names)
-    caput(pv_names['detector']+':ShutterMode', previous_shutter_mode)
-    mylog.info('Wide data collection finished.\n')
+    caput(pv_names['detector'] + ':ShutterMode', previous_shutter_mode)
+    logger.info('Wide data collection finished.\n')
 
     del stage_xps
 
 
-def perform_step_collection(omega_step, exposure_time, stage_xps,  pv_names):
+def perform_step_collection(exposure_time, stage_xps, pv_names):
     detector_checker = MarCCDChecker(pv_names['detector'])
 
-    #start data collection
-    collect_data(exposure_time+50, pv_names)
-    time.sleep(0.25)
+    # start data collection
+    collect_data(exposure_time + 50, pv_names)
+    time.sleep(0.5)
     stage_xps.run_line_trajectory_general()
 
     #stop detector
@@ -65,6 +66,7 @@ def perform_step_collection(omega_step, exposure_time, stage_xps,  pv_names):
     while not detector_checker.is_finished():
         time.sleep(0.001)
     del detector_checker
+
 
 def prepare_stage(detector_position_x, detector_pos_z, omega_start, pv_names, x, y, z):
     original_omega = caget(pv_names['sample_position_omega'])
@@ -80,10 +82,11 @@ def prepare_detector(pv_names):
     return previous_shutter_mode
 
 
-def collect_wide_data(detector_position_x, detector_position_z, omega_start, omega_end, exposure_time, x, y, z, pv_names):
+def collect_wide_data(detector_position_x, detector_position_z, omega_start, omega_end, exposure_time, x, y, z,
+                      pv_names):
     # performs the actual wide measurement
 
-    #prepare the stage:
+    # prepare the stage:
     original_omega = prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
 
     #prepare the detector
@@ -91,7 +94,7 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     detector_checker = MarCCDChecker(pv_names['detector'])
 
     #start data collection
-    collect_data(exposure_time+50, pv_names)
+    collect_data(exposure_time + 50, pv_names)
 
     #start trajectory scan
     omega_range = omega_end - omega_start
@@ -102,21 +105,21 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     #stop detector and wait for the detector readout
     time.sleep(0.1)
     caput('13MARCCD2:cam1:Acquire', 0)
-    caput(pv_names['detector']+':ShutterMode', previous_shutter_mode)
+    caput(pv_names['detector'] + ':ShutterMode', previous_shutter_mode)
     while not detector_checker.is_finished():
         time.sleep(0.01)
-    mylog.info('Wide data collection finished.\n')
+    logger.info('Wide data collection finished.\n')
     return
 
 
 class MarCCDChecker(object):
     def __init__(self, pv_name):
         self.detector_status = self.StatusChecker(3)
-        camonitor(pv_name+':MarReadoutStatus_RBV',
+        camonitor(pv_name + ':MarReadoutStatus_RBV',
                   writer=partial(self.detector_status.set_status, 0, 'Idle', True))
-        camonitor(pv_name+':MarCorrectStatus_RBV',
+        camonitor(pv_name + ':MarCorrectStatus_RBV',
                   writer=partial(self.detector_status.set_status, 1, 'Idle', True))
-        camonitor(pv_name+':MarWritingStatus_RBV',
+        camonitor(pv_name + ':MarWritingStatus_RBV',
                   writer=partial(self.detector_status.set_status, 2, 'Idle', True))
 
     def is_finished(self):
@@ -150,7 +153,7 @@ def run_omega_trajectory(omega, running_time):
     stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega]], scan_time=running_time, pulse_time=0.1,
                                                accel_values=DEFAULT_ACCEL)
 
-    mylog.info("Running Omega-Trajectory: {}d {}s".format(omega, running_time))
+    logger.info("Running Omega-Trajectory: {}d {}s".format(omega, running_time))
     stage_xps.run_line_trajectory_general()
     del stage_xps
 
@@ -165,7 +168,7 @@ def collect_single_data(detector_position, exposure_time, x, y, z, omega, pv_nam
 
 
 def move_to_sample_pos(x, y, z, pv_names, wait=True, callbacks=[]):
-    mylog.info('Moving Sample to x: {}, y: {}, z: {}'.format(x, y, z))
+    logger.info('Moving Sample to x: {}, y: {}, z: {}'.format(x, y, z))
     motor_x = PV(pv_names['sample_position_x'])
     motor_y = PV(pv_names['sample_position_y'])
     motor_z = PV(pv_names['sample_position_z'])
@@ -181,31 +184,31 @@ def move_to_sample_pos(x, y, z, pv_names, wait=True, callbacks=[]):
         for callback in callbacks:
             callback()
     time.sleep(0.5)
-    mylog.info('Moving Sample to x: {}, y: {}, z: {} finished.\n'.format(x, y, z))
+    logger.info('Moving Sample to x: {}, y: {}, z: {} finished.\n'.format(x, y, z))
     return
 
 
 def move_to_omega_position(omega, pv_names, wait=True):
-    mylog.info('Moving Sample Omega to {}'.format(omega))
+    logger.info('Moving Sample Omega to {}'.format(omega))
     caput(pv_names['sample_position_omega'], omega, wait=wait)
     if wait:
-        mylog.info('Moving Sample Omega to {} finished.\n'.format(omega))
+        logger.info('Moving Sample Omega to {} finished.\n'.format(omega))
 
 
 def move_to_detector_position(detector_position_x, detector_position_z, pv_names):
-    mylog.info('Moving Detector X to {}'.format(detector_position_x))
+    logger.info('Moving Detector X to {}'.format(detector_position_x))
     caput(pv_names['detector_position_x'], detector_position_x, wait=True, timeout=300)
-    mylog.info('Moving Detector Z to {}'.format(detector_position_z))
+    logger.info('Moving Detector Z to {}'.format(detector_position_z))
     caput(pv_names['detector_position_z'], detector_position_z, wait=True, timeout=300)
-    mylog.info('Moving Detector finished. \n')
+    logger.info('Moving Detector finished. \n')
 
 
 def collect_data(exposure_time, pv_names, wait=False):
     caput(pv_names['detector'] + ':AcquireTime', exposure_time)
-    mylog.info('Start data collection.')
-    caput(pv_names['detector'] + ':Acquire', 1, wait=wait, timeout=exposure_time+20)
+    logger.info('Start data collection.')
+    caput(pv_names['detector'] + ':Acquire', 1, wait=wait, timeout=exposure_time + 20)
     if wait:
-        mylog.info('Finished data collection.\n')
+        logger.info('Finished data collection.\n')
 
 
 if __name__ == '__main__':
@@ -219,7 +222,7 @@ if __name__ == '__main__':
     }
 
     # collect_step_data(filename='/dac/temp',
-    #                   detector_position=-333,
+    # detector_position=-333,
     #                   exposure_time=0.5,
     #                   x=-1.5, y=-1.5, z=-1.5,
     #                   omega_start=-93,
