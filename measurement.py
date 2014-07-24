@@ -25,7 +25,7 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
                       z, pv_names):
     # performs the actual step measurement
     # prepare the stage:
-    original_omega = prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
+    prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
 
     #prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
@@ -44,8 +44,7 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
         logger.info('Running Omega-Trajectory: {} degree {} s'.format(omega_step, exposure_time))
         perform_step_collection(exposure_time, stage_xps, pv_names)
         print('Time needed {}.'.format(time.time() - t1))
-    #move to original omega position
-    move_to_omega_position(original_omega, pv_names)
+
     caput(pv_names['detector'] + ':ShutterMode', previous_shutter_mode)
     logger.info('Wide data collection finished.\n')
 
@@ -69,11 +68,9 @@ def perform_step_collection(exposure_time, stage_xps, pv_names):
 
 
 def prepare_stage(detector_position_x, detector_pos_z, omega_start, pv_names, x, y, z):
-    original_omega = caget(pv_names['sample_position_omega'])
     move_to_sample_pos(x, y, z, pv_names)
     move_to_omega_position(omega_start, pv_names)
     move_to_detector_position(detector_position_x, detector_pos_z, pv_names)
-    return original_omega
 
 
 def prepare_detector(pv_names):
@@ -87,7 +84,7 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     # performs the actual wide measurement
 
     # prepare the stage:
-    original_omega = prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
+    prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
 
     #prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
@@ -99,8 +96,6 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     #start trajectory scan
     omega_range = omega_end - omega_start
     run_omega_trajectory(omega_range, exposure_time)
-    #move to original omega position
-    move_to_omega_position(original_omega, pv_names, wait=False)
 
     #stop detector and wait for the detector readout
     time.sleep(0.1)
