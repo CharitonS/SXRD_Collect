@@ -273,7 +273,7 @@ class MainController(object):
                                       detector_position_z=experiment.detector_pos_z,
                                       omega_start=experiment.omega_start,
                                       omega_end=experiment.omega_end,
-                                      exposure_time=exposure_time,
+                                      exposure_time=abs(exposure_time),
                                       x=sample_point.x,
                                       y=sample_point.y,
                                       z=sample_point.z,
@@ -298,7 +298,6 @@ class MainController(object):
                                       y=sample_point.y,
                                       z=sample_point.z,
                                       pv_names=pv_names)
-
         caput(pv_names['detector'] + ':AcquireTime', previous_exposure_time)
 
         # move to previous detector position:

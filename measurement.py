@@ -15,7 +15,7 @@ from xps_trajectory.xps_trajectory import XPSTrajectory
 HOST = '164.54.160.34'
 GROUP_NAME = 'G1'
 POSITIONERS = "STX STZ STY OM"
-DEFAULT_ACCEL = [0.5, 0.5, 0.5, 0.5]
+DEFAULT_ACCEL = [2, 2, 2, 2]
 
 GATHER_OUTPUTS = ('CurrentPosition', 'FollowingError',
                   'SetpointPosition', 'CurrentVelocity')
@@ -26,7 +26,6 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
     # performs the actual step measurement
     # prepare the stage:
     prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
-
     #prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
 
@@ -36,12 +35,13 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
 
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
     stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
-                                               pulse_time=0.1)
+                                               pulse_time=0.1, accel_values=DEFAULT_ACCEL)
 
     for dummy_ind in range(int(num_steps)):
         t1 = time.time()
 
         logger.info('Running Omega-Trajectory: {} degree {} s'.format(omega_step, exposure_time))
+        perform_background_collection()
         perform_step_collection(exposure_time, stage_xps, pv_names)
         print('Time needed {}.'.format(time.time() - t1))
 
@@ -56,15 +56,20 @@ def perform_step_collection(exposure_time, stage_xps, pv_names):
 
     # start data collection
     collect_data(exposure_time + 50, pv_names)
-    time.sleep(0.5)
+    time.sleep(1)
     stage_xps.run_line_trajectory_general()
-
     #stop detector
     caput('13MARCCD2:cam1:Acquire', 0)
     #wait for readout
     while not detector_checker.is_finished():
         time.sleep(0.001)
     del detector_checker
+
+
+def perform_background_collection():
+    caput('13MARCCD2:cam1:FrameType', 1, wait=True)
+    caput('13MARCCD2:cam1:Acquire', 1, wait=True)
+    caput('13MARCCD2:cam1:FrameType', 0)
 
 
 def prepare_stage(detector_position_x, detector_pos_z, omega_start, pv_names, x, y, z):
@@ -126,6 +131,12 @@ class MarCCDChecker(object):
         else:
             return False
 
+    def read_out_is_finished(self):
+        if self.detector_status.status[0]:
+            return True
+        else:
+            False
+
     class StatusChecker(object):
         def __init__(self, num_status, value=False):
             self.status = []
@@ -145,8 +156,8 @@ class MarCCDChecker(object):
 
 def run_omega_trajectory(omega, running_time):
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
-    stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega]], scan_time=running_time, pulse_time=0.1,
-                                               accel_values=DEFAULT_ACCEL)
+    stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega]], scan_time=running_time, pulse_time=0.1)
+                                               # accel_values=DEFAULT_ACCEL)
 
     logger.info("Running Omega-Trajectory: {}d {}s".format(omega, running_time))
     stage_xps.run_line_trajectory_general()
@@ -216,20 +227,6 @@ if __name__ == '__main__':
                 'sample_position_omega': '13IDD:m96',
     }
 
-    # collect_step_data(filename='/dac/temp',
-    # detector_position=-333,
-    #                   exposure_time=0.5,
-    #                   x=-1.5, y=-1.5, z=-1.5,
-    #                   omega_start=-93,
-    #                   omega_end=-87,
-    #                   omega_step=0.5,
-    #                   pv_names=pv_names)
 
-    # collect_single_data(filename='/dac/temp2',
-    # detector_position=-333,
-    # exposure_time=2,
-    # x=-3, y=1.5, z=-3,
-    # omega=-90,
-    #                     pv_names=pv_names)
-
-    run_omega_trajectory(5, 20)
+    perform_background_collection()
+    print('finished')

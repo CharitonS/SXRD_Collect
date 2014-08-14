@@ -24,10 +24,10 @@ import numpy as np
 import fabio
 from PIL import Image
 
-file_path = '/Volumes/Data/dac_user/2014/IDD_2014-2/Dera/F1_Fs100/P1'
-step_base_name = 'S1_Fs100_S2_P1_D1_s_'
-num_img = 64
-wide_file_name = 'S1_Fs100_S2_P1_D1_w_001.tif'
+file_path = 'T:/dac_user/2014/IDD_2014-2/BGI/Enstatite'
+step_base_name = 'Enst_2_P8_center_p49_s_'
+num_img = 160
+wide_file_name = 'Enst_2_P9_center_p49_w_001.tif'
 
 wide_file_path = os.path.join(file_path, wide_file_name)
 
@@ -46,12 +46,12 @@ for ind in range(num_img):
     print(file_name)
     step_file_path = os.path.join(file_path, file_name)
     step_img_data = get_img_matrix(step_file_path)
-    step_img_sum_data +=step_img_data
+    step_img_sum_data += step_img_data
 
 im = Image.fromarray(step_img_sum_data)
 im.save('sum_step_data.tiff')
 
-im = Image.fromarray(np.ones(wide_img_data.shape)*35000+wide_img_data-step_img_sum_data)
+im = Image.fromarray(np.ones(wide_img_data.shape)*3000+wide_img_data-step_img_sum_data/2.0)
 im.save('subtracted_img_data.tiff')
 
 
