@@ -22,7 +22,46 @@ GATHER_OUTPUTS = ('CurrentPosition', 'FollowingError',
 
 
 def collect_step_data(detector_position_x, detector_position_z, omega_start, omega_end, omega_step, exposure_time, x, y,
-                      z, pv_names):
+                      z, pv_names, callback_fcn = None):
+    """
+    Performs a single crystal step collection at the sample position x,y,z using the trajectory scan of the
+    XPS motor controller. This
+    :param detector_position_x:
+        Detector x position. Whereby the X motor PV is defined in pv_names as "detector_position_x".
+    :param detector_position_z:
+        Detector z position. Whereby the Z motor PV is defined in pv_names as "detector_position_z".
+    :param omega_start:
+        Starting omega angle for the step scans. Whereby the omega motor PV  is defined in pv_names as
+        "sample_position_omega".
+    :param omega_end:
+        End omega angle for the step scans. Whereby the omega motor PV  is defined in pv_names as
+        "sample_position_omega".
+    :param omega_step:
+        Omega step for each single frame/ Whereby the omega motor PV  is defined in pv_names as
+        "sample_position_omega".
+    :param exposure_time:
+        Exposure time per frame in seconds.
+    :param x:
+        Sample position x. PV is defined in pv_names as "sample_position_x".
+    :param y:
+        Sample position y. PV is defined in pv_names as "sample_position_y".
+    :param z:
+        Sample position z. PV is defined in pv_names as "sample_position_z".
+    :param pv_names:
+        A dictionary containing the PV names for the following keys:
+            'detector_position_x':
+            'detector_position_z':
+            'detector':
+            'sample_position_x':
+            'sample_position_y':
+            'sample_position_z':
+            'sample_position_omega':
+    :param callback_fcn:
+        A user-defined function which will be called after each collection step is performed. The following values are
+        given as parameters: step_number, omega_position, collected time.
+        If the function returns False the step collection will be aborted. Otherwise the data collection will proceed
+        until the omega_end.
+    """
     # performs the actual step measurement
     # prepare the stage:
     prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
@@ -36,18 +75,21 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
     stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
                                                pulse_time=0.1, accel_values=DEFAULT_ACCEL)
-
-    #caput('13IDA:mono_pid1.FBON', 0)
     perform_background_collection()
-    for dummy_ind in range(int(num_steps)):
+
+    start_time = time.time()
+    for step in range(int(num_steps)):
         t1 = time.time()
         logger.info('Running Omega-Trajectory: {} degree {} s'.format(omega_step, exposure_time))
         perform_step_collection(exposure_time, stage_xps, pv_names)
-        print('Time needed {}.'.format(time.time() - t1))
-    # caput('13IDA:mono_pid1.FBON', 1)
+        print('Time needed for one single step collection{}.'.format(time.time() - t1))
+
+        if callback_fcn is not None:
+            if callback_fcn(step, time.time()-start_time) is False:
+                break
+
     caput(pv_names['detector'] + ':ShutterMode', previous_shutter_mode)
     logger.info('Wide data collection finished.\n')
-
     del stage_xps
 
 
