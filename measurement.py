@@ -37,14 +37,14 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
     stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
                                                pulse_time=0.1, accel_values=DEFAULT_ACCEL)
 
+    #caput('13IDA:mono_pid1.FBON', 0)
+    perform_background_collection()
     for dummy_ind in range(int(num_steps)):
         t1 = time.time()
-
         logger.info('Running Omega-Trajectory: {} degree {} s'.format(omega_step, exposure_time))
-        perform_background_collection()
         perform_step_collection(exposure_time, stage_xps, pv_names)
         print('Time needed {}.'.format(time.time() - t1))
-
+    # caput('13IDA:mono_pid1.FBON', 1)
     caput(pv_names['detector'] + ':ShutterMode', previous_shutter_mode)
     logger.info('Wide data collection finished.\n')
 
@@ -56,14 +56,16 @@ def perform_step_collection(exposure_time, stage_xps, pv_names):
 
     # start data collection
     collect_data(exposure_time + 50, pv_names)
-    time.sleep(1)
+    time.sleep(0.5)
     stage_xps.run_line_trajectory_general()
+    print("line trajectory finished")
     #stop detector
     caput('13MARCCD2:cam1:Acquire', 0)
     #wait for readout
     while not detector_checker.is_finished():
         time.sleep(0.001)
     del detector_checker
+    time.sleep(0.3)
 
 
 def perform_background_collection():
@@ -96,6 +98,7 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     detector_checker = MarCCDChecker(pv_names['detector'])
 
     #start data collection
+    perform_background_collection()
     collect_data(exposure_time + 50, pv_names)
 
     #start trajectory scan
