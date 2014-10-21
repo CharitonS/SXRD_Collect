@@ -22,7 +22,7 @@ GATHER_OUTPUTS = ('CurrentPosition', 'FollowingError',
 
 
 def collect_step_data(detector_position_x, detector_position_z, omega_start, omega_end, omega_step, exposure_time, x, y,
-                      z, pv_names, callback_fcn = None):
+                      z, pv_names, callback_fcn=None):
     """
     Performs a single crystal step collection at the sample position x,y,z using the trajectory scan of the
     XPS motor controller. This
@@ -57,15 +57,14 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
             'sample_position_z':
             'sample_position_omega':
     :param callback_fcn:
-        A user-defined function which will be called after each collection step is performed. The following values are
-        given as parameters: step_number, omega_position, collected time.
+        A user-defined function which will be called after each collection step is performed.
         If the function returns False the step collection will be aborted. Otherwise the data collection will proceed
         until the omega_end.
     """
     # performs the actual step measurement
     # prepare the stage:
     prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
-    #prepare the detector
+    # prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
 
     #perform measurements:
@@ -77,15 +76,14 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
                                                pulse_time=0.1, accel_values=DEFAULT_ACCEL)
     perform_background_collection()
 
-    start_time = time.time()
     for step in range(int(num_steps)):
         t1 = time.time()
         logger.info('Running Omega-Trajectory: {} degree {} s'.format(omega_step, exposure_time))
         perform_step_collection(exposure_time, stage_xps, pv_names)
-        print('Time needed for one single step collection{}.'.format(time.time() - t1))
+        print('Time needed for one single step collection {}.'.format(time.time() - t1))
 
         if callback_fcn is not None:
-            if callback_fcn(step, time.time()-start_time) is False:
+            if callback_fcn() is False:
                 break
 
     caput(pv_names['detector'] + ':ShutterMode', previous_shutter_mode)
@@ -101,7 +99,7 @@ def perform_step_collection(exposure_time, stage_xps, pv_names):
     time.sleep(0.5)
     stage_xps.run_line_trajectory_general()
     print("line trajectory finished")
-    #stop detector
+    # stop detector
     caput('13MARCCD2:cam1:Acquire', 0)
     #wait for readout
     while not detector_checker.is_finished():
@@ -135,7 +133,7 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     # prepare the stage:
     prepare_stage(detector_position_x, detector_position_z, omega_start, pv_names, x, y, z)
 
-    #prepare the detector
+    # prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
     detector_checker = MarCCDChecker(pv_names['detector'])
 
@@ -202,7 +200,7 @@ class MarCCDChecker(object):
 def run_omega_trajectory(omega, running_time):
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
     stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega]], scan_time=running_time, pulse_time=0.1)
-                                               # accel_values=DEFAULT_ACCEL)
+    # accel_values=DEFAULT_ACCEL)
 
     logger.info("Running Omega-Trajectory: {}d {}s".format(omega, running_time))
     stage_xps.run_line_trajectory_general()
@@ -271,7 +269,6 @@ if __name__ == '__main__':
                 'sample_position_z': '13IDD:m82',
                 'sample_position_omega': '13IDD:m96',
     }
-
 
     perform_background_collection()
     print('finished')

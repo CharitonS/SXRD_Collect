@@ -31,6 +31,8 @@ class MainController(object):
         self.connect_txt()
         self.populate_filename()
 
+        self.abort_collection = False
+
     def connect_buttons(self):
         self.main_view.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
         self.main_view.delete_setup_btn.clicked.connect(self.delete_experiment_setup_btn_clicked)
@@ -237,23 +239,25 @@ class MainController(object):
         self.main_view.example_filename_lbl.setText(example_str)
 
     def collect_data(self):
+        #check if all motor positions are in a correct position
         if self.check_conditions() is False:
-            msg_box = QtGui.QMessageBox()
-            msg_box.setWindowFlags(QtCore.Qt.Tool)
-            msg_box.setText('Please Move mirrors and microscope in the right positions')
-            msg_box.setIcon(QtGui.QMessageBox.Critical)
-            msg_box.setWindowTitle('Error')
-            msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
-            msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
-            msg_box.exec_()
+            self.show_error_message_box('Please Move mirrors and microscope in the right positions')
             return
 
+        #save current state to be able to restore after the measurement when the checkboxes are selected.
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
         previous_exposure_time = caget(pv_names['detector'] + ':AcquireTime')
         previous_detector_pos_x = caget(pv_names['detector_position_x'])
         previous_detector_pos_z = caget(pv_names['detector_position_z'])
         previous_omega_pos = caget(pv_names['sample_position_omega'])
         sample_x, sample_y, sample_z = self.get_current_sample_position()
+
+        #prepare for for abortion of the collection procedure
+        self.abort_collection = False
+        self.main_view.collect_btn.setText('Abort')
+        self.main_view.collect_btn.clicked.disconnect(self.collect_data)
+        self.main_view.collect_btn.clicked.connect(self.abort_data_collection)
+        QtGui.QApplication.processEvents()
 
         for exp_ind, experiment in enumerate(self.data.experiment_setups):
             for sample_point in self.data.sample_points:
@@ -278,6 +282,10 @@ class MainController(object):
                                       y=sample_point.y,
                                       z=sample_point.z,
                                       pv_names=pv_names)
+
+                if self.check_if_aborted():
+                    break
+
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
                     if self.main_view.rename_files_cb.isChecked():
                         point_number = str(self.main_view.point_txt.text())
@@ -297,7 +305,11 @@ class MainController(object):
                                       x=sample_point.x,
                                       y=sample_point.y,
                                       z=sample_point.z,
-                                      pv_names=pv_names)
+                                      pv_names=pv_names,
+                                      callback_fcn=self.check_if_aborted)
+
+                if self.check_if_aborted():
+                    break
         caput(pv_names['detector'] + ':AcquireTime', previous_exposure_time)
 
         # move to previous detector position:
@@ -320,6 +332,18 @@ class MainController(object):
             caput(pv_names['detector'] + ':FileName', previous_filename)
             if self.main_view.rename_files_cb.isChecked():
                 caput(pv_names['detector'] + ':FileNumber', previous_filenumber)
+
+        #reset the state of the gui:
+        self.main_view.collect_btn.setText('Collect')
+        self.main_view.collect_btn.clicked.connect(self.collect_data)
+        self.main_view.collect_btn.clicked.disconnect(self.abort_data_collection)
+
+    def abort_data_collection(self):
+        self.abort_collection = True
+
+    def check_if_aborted(self):
+        QtGui.QApplication.processEvents()
+        return not self.abort_collection
 
     def increase_point_number(self):
         cur_point_number = int(str(self.main_view.point_txt.text()))
@@ -352,6 +376,7 @@ class MainController(object):
                     total_time += det_x_move_time + det_y_move_time
                     det_x_pos = experiment.detector_pos_x
                     det_z_pos = experiment.detector_pos_z
+        return total_time
 
 
     @staticmethod
@@ -416,4 +441,15 @@ class MainController(object):
         elif int(caget('13IDD:m67.RBV')) > -65:
             return False
         return True
+
+    @staticmethod
+    def show_error_message_box(msg):
+        msg_box = QtGui.QMessageBox()
+        msg_box.setWindowFlags(QtCore.Qt.Tool)
+        msg_box.setText(msg)
+        msg_box.setIcon(QtGui.QMessageBox.Critical)
+        msg_box.setWindowTitle('Error')
+        msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
+        msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+        msg_box.exec_()
 
