@@ -67,27 +67,37 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
     # prepare the detector
     previous_shutter_mode = prepare_detector(pv_names)
 
-    #perform measurements:
+    # perform measurements:
     num_steps = (omega_end - omega_start) / omega_step
     print(num_steps)
 
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
     stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
                                                pulse_time=0.1, accel_values=DEFAULT_ACCEL)
-    perform_background_collection()
 
-    for step in range(int(num_steps)):
-        t1 = time.time()
-        logger.info('Running Omega-Trajectory: {} degree {} s'.format(omega_step, exposure_time))
-        perform_step_collection(exposure_time, stage_xps, pv_names)
-        print('Time needed for one single step collection {}.'.format(time.time() - t1))
+    if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
+        perform_background_collection()
+    else:
+        logger.info('Data collection was aborted!')
 
-        if callback_fcn is not None:
-            if callback_fcn() is False:
-                break
+    if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
+        for step in range(int(num_steps)):
+            t1 = time.time()
+            logger.info('Running Omega-Trajectory from {} deg by {} deg {} s'.format(omega_start + step * omega_step,
+                                                                                     omega_step,
+                                                                                     exposure_time))
+            perform_step_collection(exposure_time, stage_xps, pv_names)
+            logger.info('Time needed for one single step collection {}.\n'.format(time.time() - t1))
+
+            if callback_fcn is not None:
+                if callback_fcn() is False:
+                    logger.info('Data collection was aborted!')
+                    break
+    else:
+        logger.info('Data collection was aborted!')
 
     caput(pv_names['detector'] + ':ShutterMode', previous_shutter_mode)
-    logger.info('Wide data collection finished.\n')
+    logger.info('Data collection finished.\n')
     del stage_xps
 
 
@@ -98,20 +108,22 @@ def perform_step_collection(exposure_time, stage_xps, pv_names):
     collect_data(exposure_time + 50, pv_names)
     time.sleep(0.5)
     stage_xps.run_line_trajectory_general()
-    print("line trajectory finished")
     # stop detector
     caput('13MARCCD2:cam1:Acquire', 0)
-    #wait for readout
+    # wait for readout
     while not detector_checker.is_finished():
         time.sleep(0.001)
     del detector_checker
-    time.sleep(0.3)
+    logger.info("Data collection finished.")
+    time.sleep(0.5)
 
 
 def perform_background_collection():
+    logger.info("Acquiring Detector Background.")
     caput('13MARCCD2:cam1:FrameType', 1, wait=True)
     caput('13MARCCD2:cam1:Acquire', 1, wait=True)
     caput('13MARCCD2:cam1:FrameType', 0)
+    logger.info("Acquiring Detector Background finished.\n")
 
 
 def prepare_stage(detector_position_x, detector_pos_z, omega_start, pv_names, x, y, z):
@@ -137,15 +149,15 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     previous_shutter_mode = prepare_detector(pv_names)
     detector_checker = MarCCDChecker(pv_names['detector'])
 
-    #start data collection
+    # start data collection
     perform_background_collection()
     collect_data(exposure_time + 50, pv_names)
 
-    #start trajectory scan
+    # start trajectory scan
     omega_range = omega_end - omega_start
     run_omega_trajectory(omega_range, exposure_time)
 
-    #stop detector and wait for the detector readout
+    # stop detector and wait for the detector readout
     time.sleep(0.1)
     caput('13MARCCD2:cam1:Acquire', 0)
     caput(pv_names['detector'] + ':ShutterMode', previous_shutter_mode)
@@ -254,7 +266,7 @@ def move_to_detector_position(detector_position_x, detector_position_z, pv_names
 
 def collect_data(exposure_time, pv_names, wait=False):
     caput(pv_names['detector'] + ':AcquireTime', exposure_time)
-    logger.info('Start data collection.')
+    logger.info('Starting data collection.')
     caput(pv_names['detector'] + ':Acquire', 1, wait=wait, timeout=exposure_time + 20)
     if wait:
         logger.info('Finished data collection.\n')

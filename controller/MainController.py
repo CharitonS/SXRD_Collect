@@ -6,6 +6,7 @@ import time
 from epics import caget, caput
 import epics
 from PyQt4 import QtGui, QtCore
+from threading import Thread
 
 pv_names = {'detector_position_x': '13IDD:m8',
             'detector_position_z': '13IDD:m84',
@@ -20,6 +21,10 @@ from views.MainView import MainView
 from models import MainData
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data
 
+import logging
+
+logger = logging.getLogger()
+
 
 class MainController(object):
     def __init__(self):
@@ -32,6 +37,10 @@ class MainController(object):
         self.populate_filename()
 
         self.abort_collection = False
+        self.logging_handler = InfoLoggingHandler(self.update_status_txt)
+        logger.addHandler(self.logging_handler)
+
+        self.status_txt_scrollbar_is_at_max = True
 
     def connect_buttons(self):
         self.main_view.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
@@ -62,6 +71,9 @@ class MainController(object):
         self.main_view.filename_txt.editingFinished.connect(self.basename_txt_changed)
         self.main_view.filepath_txt.editingFinished.connect(self.filepath_txt_changed)
 
+        self.main_view.status_txt.textChanged.connect(self.update_status_txt_scrollbar)
+        self.main_view.status_txt.verticalScrollBar().valueChanged.connect(self.update_status_txt_scrollbar_value)
+
     def populate_filename(self):
         self.prev_filepath, self.prev_filename, self.prev_file_number = self.get_filename_info()
 
@@ -72,6 +84,18 @@ class MainController(object):
         self.main_view.filepath_txt.setText(self.prev_filepath)
 
         self.set_example_lbl()
+
+    def update_status_txt(self, msg):
+        self.main_view.status_txt.append(msg)
+
+    def update_status_txt_scrollbar(self):
+        if self.status_txt_scrollbar_is_at_max:
+            self.main_view.status_txt.verticalScrollBar().setValue(
+                self.main_view.status_txt.verticalScrollBar().maximum()
+            )
+
+    def update_status_txt_scrollbar_value(self, value):
+        self.status_txt_scrollbar_is_at_max = value == self.main_view.status_txt.verticalScrollBar().maximum()
 
     def add_experiment_setup_btn_clicked(self):
         detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()
@@ -239,12 +263,12 @@ class MainController(object):
         self.main_view.example_filename_lbl.setText(example_str)
 
     def collect_data(self):
-        #check if all motor positions are in a correct position
+        # check if all motor positions are in a correct position
         if self.check_conditions() is False:
             self.show_error_message_box('Please Move mirrors and microscope in the right positions')
             return
 
-        #save current state to be able to restore after the measurement when the checkboxes are selected.
+        # save current state to be able to restore after the measurement when the checkboxes are selected.
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
         previous_exposure_time = caget(pv_names['detector'] + ':AcquireTime')
         previous_detector_pos_x = caget(pv_names['detector_position_x'])
@@ -252,11 +276,12 @@ class MainController(object):
         previous_omega_pos = caget(pv_names['sample_position_omega'])
         sample_x, sample_y, sample_z = self.get_current_sample_position()
 
-        #prepare for for abortion of the collection procedure
+        # prepare for for abortion of the collection procedure
         self.abort_collection = False
         self.main_view.collect_btn.setText('Abort')
         self.main_view.collect_btn.clicked.disconnect(self.collect_data)
         self.main_view.collect_btn.clicked.connect(self.abort_data_collection)
+        self.main_view.status_txt.clear()
         QtGui.QApplication.processEvents()
 
         for exp_ind, experiment in enumerate(self.data.experiment_setups):
@@ -270,20 +295,37 @@ class MainController(object):
                         caput(pv_names['detector'] + ':FilePath', str(self.filepath))
                         caput(pv_names['detector'] + ':FileName', str(filename))
                         caput(pv_names['detector'] + ':FileNumber', 1)
-                    print("Performing wide scan for {}, with setup {}".format(sample_point, experiment))
+                    logger.info("Performing wide scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
                                     experiment.time_per_step
-                    collect_wide_data(detector_position_x=experiment.detector_pos_x,
-                                      detector_position_z=experiment.detector_pos_z,
-                                      omega_start=experiment.omega_start,
-                                      omega_end=experiment.omega_end,
-                                      exposure_time=abs(exposure_time),
-                                      x=sample_point.x,
-                                      y=sample_point.y,
-                                      z=sample_point.z,
-                                      pv_names=pv_names)
 
-                if self.check_if_aborted():
+                    collect_wide_data_thread = Thread(target=collect_wide_data,
+                                                      kwargs={"detector_position_x": experiment.detector_pos_x,
+                                                              "detector_position_z": experiment.detector_pos_z,
+                                                              "omega_start": experiment.omega_start,
+                                                              "omega_end": experiment.omega_end,
+                                                              "exposure_time": abs(exposure_time),
+                                                              "x": sample_point.x,
+                                                              "y": sample_point.y,
+                                                              "z": sample_point.z,
+                                                              "pv_names": pv_names})
+                    collect_wide_data_thread.start()
+
+                    while collect_wide_data_thread.isAlive():
+                        QtGui.QApplication.processEvents()
+                        time.sleep(0.01)
+
+                    # collect_wide_data(detector_position_x=experiment.detector_pos_x,
+                    #                   detector_position_z=experiment.detector_pos_z,
+                    #                   omega_start=experiment.omega_start,
+                    #                   omega_end=experiment.omega_end,
+                    #                   exposure_time=abs(exposure_time),
+                    #                   x=sample_point.x,
+                    #                   y=sample_point.y,
+                    #                   z=sample_point.z,
+                    #                   pv_names=pv_names)
+
+                if not self.check_if_aborted():
                     break
 
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
@@ -295,20 +337,27 @@ class MainController(object):
                     caput(pv_names['detector'] + ':FilePath', str(self.filepath))
                     caput(pv_names['detector'] + ':FileName', str(filename))
                     caput(pv_names['detector'] + ':FileNumber', 1)
-                    print("Performing step scan for {}, with setup {}".format(sample_point, experiment))
-                    collect_step_data(detector_position_x=experiment.detector_pos_x,
-                                      detector_position_z=experiment.detector_pos_z,
-                                      omega_start=experiment.omega_start,
-                                      omega_end=experiment.omega_end,
-                                      omega_step=experiment.omega_step,
-                                      exposure_time=experiment.time_per_step,
-                                      x=sample_point.x,
-                                      y=sample_point.y,
-                                      z=sample_point.z,
-                                      pv_names=pv_names,
-                                      callback_fcn=self.check_if_aborted)
+                    logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
 
-                if self.check_if_aborted():
+                    collect_step_data_thread = Thread(target=collect_step_data,
+                                                      kwargs={"detector_position_x": experiment.detector_pos_x,
+                                                              "detector_position_z": experiment.detector_pos_z,
+                                                              "omega_start": experiment.omega_start,
+                                                              "omega_end": experiment.omega_end,
+                                                              "omega_step": experiment.omega_step,
+                                                              "exposure_time": experiment.time_per_step,
+                                                              "x": sample_point.x,
+                                                              "y": sample_point.y,
+                                                              "z": sample_point.z,
+                                                              "pv_names": pv_names,
+                                                              "callback_fcn": self.check_if_aborted})
+                    collect_step_data_thread.start()
+
+                    while collect_step_data_thread.isAlive():
+                        QtGui.QApplication.processEvents()
+                        time.sleep(0.01)
+
+                if not self.check_if_aborted():
                     break
         caput(pv_names['detector'] + ':AcquireTime', previous_exposure_time)
 
@@ -325,7 +374,7 @@ class MainController(object):
         caput(pv_names['detector'] + ':ShutterMode', 1)  # enable epics PV shutter mode
 
         if self.main_view.rename_files_cb.isChecked():
-                self.increase_point_number()
+            self.increase_point_number()
 
         if self.main_view.rename_after_cb.isChecked():
             caput(pv_names['detector'] + ':FilePath', previous_filepath)
@@ -333,7 +382,7 @@ class MainController(object):
             if self.main_view.rename_files_cb.isChecked():
                 caput(pv_names['detector'] + ':FileNumber', previous_filenumber)
 
-        #reset the state of the gui:
+        # reset the state of the gui:
         self.main_view.collect_btn.setText('Collect')
         self.main_view.collect_btn.clicked.connect(self.collect_data)
         self.main_view.collect_btn.clicked.disconnect(self.abort_data_collection)
@@ -342,7 +391,7 @@ class MainController(object):
         self.abort_collection = True
 
     def check_if_aborted(self):
-        QtGui.QApplication.processEvents()
+        # QtGui.QApplication.processEvents()
         return not self.abort_collection
 
     def increase_point_number(self):
@@ -453,3 +502,51 @@ class MainController(object):
         msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
         msg_box.exec_()
 
+
+class InfoLoggingHandler(logging.Handler):
+    def __init__(self, return_function):
+        super(InfoLoggingHandler, self).__init__()
+        self.return_function = return_function
+
+    def emit(self, log_record):
+        message = str(log_record.getMessage())
+        self.return_function(time.strftime('%X') + ': ' + message)
+
+
+def test_dummy_function(iterations):
+    print "the dummy function"
+    for n in range(iterations):
+        time.sleep(0.5)
+        print("{} iterations".format(n + 1))
+
+
+class ThreadRunner():
+    def __init__(self, fcn, args):
+        self.worker_thread = WorkerThread(fcn, args)
+        self.worker_finished = False
+
+        self.worker_thread.finished.connect(self.update_status)
+        self.worker_thread.terminated.connect(self.update_status)
+
+    def run(self):
+        print "running something"
+        self.worker_finished = False
+        self.worker_thread.start()
+
+        while not self.worker_finished:
+            QtGui.QApplication.processEvents()
+            time.sleep(0.1)
+
+    def update_status(self):
+        print "updating status"
+        self.worker_finished = True
+
+
+class WorkerThread(QtCore.QThread):
+    def __init__(self, func, args):
+        super(WorkerThread, self).__init__()
+        self.func = func
+        self.args = args
+
+    def run(self):
+        self.func(*self.args)

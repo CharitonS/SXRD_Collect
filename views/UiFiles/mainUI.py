@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created: Thu Jul 24 12:11:18 2014
+# Created: Tue Oct 21 16:56:57 2014
 #      by: PyQt4 UI code generator 4.9.6
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,7 +26,7 @@ except AttributeError:
 class Ui_SXRDCollectWidget(object):
     def setupUi(self, SXRDCollectWidget):
         SXRDCollectWidget.setObjectName(_fromUtf8("SXRDCollectWidget"))
-        SXRDCollectWidget.resize(704, 763)
+        SXRDCollectWidget.resize(702, 793)
         SXRDCollectWidget.setStyleSheet(_fromUtf8("#experiment_lbl, #sample_lbl, #standards_lbl {\n"
 "    font: italic 20px;\n"
 "}\n"
@@ -317,7 +317,11 @@ class Ui_SXRDCollectWidget(object):
         self.verticalLayout.addWidget(self.line_3)
         self.horizontalLayout_7 = QtGui.QHBoxLayout()
         self.horizontalLayout_7.setObjectName(_fromUtf8("horizontalLayout_7"))
-        spacerItem7 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.status_txt = QtGui.QTextEdit(SXRDCollectWidget)
+        self.status_txt.setMinimumSize(QtCore.QSize(0, 75))
+        self.status_txt.setObjectName(_fromUtf8("status_txt"))
+        self.horizontalLayout_7.addWidget(self.status_txt)
+        spacerItem7 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_7.addItem(spacerItem7)
         self.collect_btn = QtGui.QPushButton(SXRDCollectWidget)
         self.collect_btn.setMinimumSize(QtCore.QSize(130, 60))

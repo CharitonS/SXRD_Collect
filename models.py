@@ -138,7 +138,5 @@ class SamplePoint(object):
         del self.perform_wide_scan_for_setup[ind]
 
     def __str__(self):
-        return "{}, {}, {}, {}, {}, {}".format(self.name, self.x, self.y, self.z,
-                                               self.perform_step_scan_for_setup,
-                                               self.perform_wide_scan_for_setup)
+        return "{}, {}, {}, {}".format(self.name, self.x, self.y, self.z)
 
