@@ -470,12 +470,11 @@ class MainController(object):
 
     @staticmethod
     def get_filename_info():
-        try:
-            path = caget(pv_names['detector'] + ':FilePath', as_string=True)
-            print(path)
-            filename = caget(pv_names['detector'] + ':FileName', as_string=True)
-            file_number = caget(pv_names['detector'] + ':FileNumber')
-        except epics.ca.ChannelAccessException:
+        path = caget(pv_names['detector'] + ':FilePath', as_string=True)
+        print(path)
+        filename = caget(pv_names['detector'] + ':FileName', as_string=True)
+        file_number = caget(pv_names['detector'] + ':FileNumber')
+        if path is None:
             path = ''
             filename = 'test'
             file_number = 0
