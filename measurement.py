@@ -21,6 +21,13 @@ GATHER_OUTPUTS = ('CurrentPosition', 'FollowingError',
                   'SetpointPosition', 'CurrentVelocity')
 
 
+def get_sample_position(pv_names):
+    x_pos = caget(pv_names['sample_position_x'])
+    y_pos = caget(pv_names['sample_position_y'])
+    z_pos = caget(pv_names['sample_position_z'])
+    return x_pos, y_pos, z_pos
+
+
 def collect_step_data(detector_position_x, detector_position_z, omega_start, omega_end, omega_step, exposure_time, x, y,
                       z, pv_names, callback_fcn=None):
     """

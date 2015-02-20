@@ -268,6 +268,15 @@ class MainController(object):
             self.show_error_message_box('Please Move mirrors and microscope in the right positions')
             return
 
+        # check if sample position are not very far away from the current position (in case users forgot to update
+        # positions....) maximum value is right now set to 200um distance
+        if self.check_sample_point_distances() is False:
+            reply = self.show_continue_abort_message_box(
+                'Some measurement points are more than 200um away from the current sample ' +
+                'position.<br> Do you want to continue?!')
+            if reply == QtGui.QMessageBox.Abort:
+                return
+
         # save current state to be able to restore after the measurement when the checkboxes are selected.
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
         previous_exposure_time = caget(pv_names['detector'] + ':AcquireTime')
@@ -315,15 +324,15 @@ class MainController(object):
                         QtGui.QApplication.processEvents()
                         time.sleep(0.01)
 
-                    # collect_wide_data(detector_position_x=experiment.detector_pos_x,
-                    #                   detector_position_z=experiment.detector_pos_z,
-                    #                   omega_start=experiment.omega_start,
-                    #                   omega_end=experiment.omega_end,
-                    #                   exposure_time=abs(exposure_time),
-                    #                   x=sample_point.x,
-                    #                   y=sample_point.y,
-                    #                   z=sample_point.z,
-                    #                   pv_names=pv_names)
+                        # collect_wide_data(detector_position_x=experiment.detector_pos_x,
+                        # detector_position_z=experiment.detector_pos_z,
+                        # omega_start=experiment.omega_start,
+                        # omega_end=experiment.omega_end,
+                        # exposure_time=abs(exposure_time),
+                        #                   x=sample_point.x,
+                        #                   y=sample_point.y,
+                        #                   z=sample_point.z,
+                        #                   pv_names=pv_names)
 
                 if not self.check_if_aborted():
                     break
@@ -490,6 +499,12 @@ class MainController(object):
             return False
         return True
 
+    def check_sample_point_distances(self):
+        pos_x, pos_y, pos_z = self.get_current_sample_position()
+        largest_distance = self.data.get_largest_largest_collecting_sample_point_distance_to(pos_x, pos_y, pos_z)
+
+        return largest_distance < 0.2
+
     @staticmethod
     def show_error_message_box(msg):
         msg_box = QtGui.QMessageBox()
@@ -500,6 +515,18 @@ class MainController(object):
         msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
         msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
         msg_box.exec_()
+
+    @staticmethod
+    def show_continue_abort_message_box(msg):
+        msg_box = QtGui.QMessageBox()
+        msg_box.setWindowFlags(QtCore.Qt.Tool)
+        msg_box.setText("<p align='center' style='font-size:20px' >{}</p>".format(msg))
+        msg_box.setIcon(QtGui.QMessageBox.Critical)
+        msg_box.setWindowTitle('Continue?')
+        msg_box.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Abort)
+        msg_box.setDefaultButton(QtGui.QMessageBox.Abort)
+        msg_box.exec_()
+        return msg_box.result()
 
 
 class InfoLoggingHandler(logging.Handler):

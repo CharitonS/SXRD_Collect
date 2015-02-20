@@ -5,7 +5,7 @@
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-#     the Free Software Foundation, either version 3 of the License, or
+# the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 #
 #     This program is distributed in the hope that it will be useful,
@@ -80,6 +80,15 @@ class MainData(object):
                 return True
         return False
 
+    def get_largest_largest_collecting_sample_point_distance_to(self, x, y, z):
+        largest_distance = 0
+        for point in self.sample_points:
+            if point.is_collecting():
+                point_distance = point.distance_to(x, y, z)
+                if point_distance > largest_distance:
+                    largest_distance = point_distance
+        return largest_distance
+
 
 class ExperimentSetup(object):
     def __init__(self, name, detector_pos_x=0, detector_pos_z=49, omega_start=0, omega_end=0, omega_step=0,
@@ -120,11 +129,8 @@ class SamplePoint(object):
         self.y = y
         self.z = z
 
-    def set_perform_wide_scan_setup(self, exp_ind, state):
-        self.perform_wide_scan_for_setup[exp_ind] = state
-
-    def set_perform_step_scan_setup(self, exp_ind, state):
-        self.perform_step_scan_for_setup[exp_ind] = state
+    def distance_to(self, x, y, z):
+        return ((self.x - x) ** 2 + (self.y - y) ** 2 + (self.z - z) ** 2) ** 0.5
 
     def register_setup(self, experiment_setup):
         self.experiment_setups.append(experiment_setup)
@@ -136,6 +142,21 @@ class SamplePoint(object):
         del self.experiment_setups[ind]
         del self.perform_step_scan_for_setup[ind]
         del self.perform_wide_scan_for_setup[ind]
+
+    def set_perform_wide_scan_setup(self, exp_ind, state):
+        self.perform_wide_scan_for_setup[exp_ind] = state
+
+    def set_perform_step_scan_setup(self, exp_ind, state):
+        self.perform_step_scan_for_setup[exp_ind] = state
+
+    def is_collecting(self):
+        for state in self.perform_step_scan_for_setup:
+            if state:
+                return True
+        for state in self.perform_wide_scan_for_setup:
+            if state:
+                return True
+        return False
 
     def __str__(self):
         return "{}, {}, {}, {}".format(self.name, self.x, self.y, self.z)
