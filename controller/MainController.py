@@ -55,6 +55,7 @@ class MainController(object):
         self.main_view.delete_standard_btn.clicked.connect(self.delete_standard_btn_clicked)
         self.main_view.clear_standard_btn.clicked.connect(self.clear_standard_btn_clicked)
 
+        self.main_view.get_folder_btn.clicked.connect(self.get_folder_btn_clicked)
         self.main_view.collect_btn.clicked.connect(self.collect_data)
 
     def connect_tables(self):
@@ -93,6 +94,13 @@ class MainController(object):
             self.main_view.status_txt.verticalScrollBar().setValue(
                 self.main_view.status_txt.verticalScrollBar().maximum()
             )
+
+    def get_folder_btn_clicked(self):
+        self.prev_filepath, _, _ = self.get_filename_info()
+        self.filepath = self.prev_filepath
+        self.main_view.filepath_txt.setText(self.prev_filepath)
+
+        self.set_example_lbl()
 
     def update_status_txt_scrollbar_value(self, value):
         self.status_txt_scrollbar_is_at_max = value == self.main_view.status_txt.verticalScrollBar().maximum()
@@ -251,11 +259,11 @@ class MainController(object):
             self.data.sample_points[row_ind].set_perform_wide_scan_setup(exp_ind, state)
 
     def basename_txt_changed(self):
-        self.basename = self.main_view.filename_txt.text()
+        self.basename = str(self.main_view.filename_txt.text())
         self.set_example_lbl()
 
     def filepath_txt_changed(self):
-        self.filepath = self.main_view.filepath_txt.text()
+        self.filepath = str(self.main_view.filepath_txt.text())
         self.set_example_lbl()
 
     def set_example_lbl(self):
@@ -263,9 +271,14 @@ class MainController(object):
         self.main_view.example_filename_lbl.setText(example_str)
 
     def collect_data(self):
+        # check if the current file path exists
+        if self.check_filepath_exists() is False:
+            self.show_error_message_box('The folder you specified does not exist. '
+                                        'Please enter a valid path for saving the collected images!')
+            return
         # check if all motor positions are in a correct position
         if self.check_conditions() is False:
-            self.show_error_message_box('Please Move mirrors and microscope in the right positions')
+            self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
             return
 
         # check if sample position are not very far away from the current position (in case users forgot to update
@@ -329,7 +342,7 @@ class MainController(object):
                         # omega_start=experiment.omega_start,
                         # omega_end=experiment.omega_end,
                         # exposure_time=abs(exposure_time),
-                        #                   x=sample_point.x,
+                        # x=sample_point.x,
                         #                   y=sample_point.y,
                         #                   z=sample_point.z,
                         #                   pv_names=pv_names)
@@ -488,6 +501,15 @@ class MainController(object):
             filename = 'test'
             file_number = 0
         return path, filename, file_number
+
+    def check_filepath_exists(self):
+        cur_epics_filepath = caget(pv_names['detector'] + ':FilePath', as_string=True)
+        print self.filepath
+        caput(pv_names['detector'] + ':FilePath', self.filepath, wait=True)
+        exists = caget("13MARCCD2:cam1:FilePathExists_RBV")
+
+        caput(pv_names['detector'] + ':FilePath', cur_epics_filepath)
+        return exists == 1
 
     @staticmethod
     def check_conditions():
