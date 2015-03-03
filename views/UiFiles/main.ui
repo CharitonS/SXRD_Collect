@@ -143,15 +143,11 @@ Conifguration</string>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_4">
-            <property name="text">
-             <string>Folder:</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="filepath_txt"/>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="filename_txt"/>
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_3">
@@ -163,11 +159,18 @@ Conifguration</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="filename_txt"/>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="filepath_txt"/>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Point:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
           </item>
           <item row="2" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout_10">
@@ -202,16 +205,26 @@ Conifguration</string>
             </item>
            </layout>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label">
-            <property name="layoutDirection">
-             <enum>Qt::LeftToRight</enum>
-            </property>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_4">
             <property name="text">
-             <string>Point:</string>
+             <string>Folder:</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="get_folder_btn">
+            <property name="maximumSize">
+             <size>
+              <width>35</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Get</string>
             </property>
            </widget>
           </item>
