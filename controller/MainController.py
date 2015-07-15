@@ -8,15 +8,7 @@ import epics
 from PyQt4 import QtGui, QtCore
 from threading import Thread
 
-pv_names = {'detector_position_x': '13IDD:m8',
-            'detector_position_z': '13IDD:m84',
-            'detector': '13MARCCD2:cam1',
-            'sample_position_x': '13IDD:m81',
-            'sample_position_y': '13IDD:m83',
-            'sample_position_z': '13IDD:m82',
-            'sample_position_omega': '13IDD:m96',
-}
-
+from config import epics_config
 from views.MainView import MainView
 from models import MainData
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data
@@ -233,7 +225,7 @@ class MainController(object):
 
     def move_sample_btn_clicked(self, ind):
         x, y, z = self.main_view.get_sample_point_values(ind)
-        move_to_sample_pos(x, y, z, pv_names)
+        move_to_sample_pos(x, y, z)
 
     def set_sample_btn_clicked(self, ind):
         x, y, z = self.get_current_sample_position()
@@ -292,10 +284,10 @@ class MainController(object):
 
         # save current state to be able to restore after the measurement when the checkboxes are selected.
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
-        previous_exposure_time = caget(pv_names['detector'] + ':AcquireTime')
-        previous_detector_pos_x = caget(pv_names['detector_position_x'])
-        previous_detector_pos_z = caget(pv_names['detector_position_z'])
-        previous_omega_pos = caget(pv_names['sample_position_omega'])
+        previous_exposure_time = caget(epics_config['detector_control']+':AcquireTime')
+        previous_detector_pos_x = caget(epics_config['detector_position_x'])
+        previous_detector_pos_z = caget(epics_config['detector_position_z'])
+        previous_omega_pos = caget(epics_config['sample_position_omega'])
         sample_x, sample_y, sample_z = self.get_current_sample_position()
 
         # prepare for for abortion of the collection procedure
@@ -314,9 +306,9 @@ class MainController(object):
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + '_w'
                         print(filename)
-                        caput(pv_names['detector'] + ':FilePath', str(self.filepath))
-                        caput(pv_names['detector'] + ':FileName', str(filename))
-                        caput(pv_names['detector'] + ':FileNumber', 1)
+                        caput(epics_config['detector_file']+':FilePath', str(self.filepath))
+                        caput(epics_config['detector_file']+':FileName', str(filename))
+                        caput(epics_config['detector_file']+':FileNumber', 1)
                     logger.info("Performing wide scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
                                     experiment.time_per_step
@@ -329,13 +321,13 @@ class MainController(object):
                                                               "exposure_time": abs(exposure_time),
                                                               "x": sample_point.x,
                                                               "y": sample_point.y,
-                                                              "z": sample_point.z,
-                                                              "pv_names": pv_names})
+                                                              "z": sample_point.z
+                                                              })
                     collect_wide_data_thread.start()
 
                     while collect_wide_data_thread.isAlive():
                         QtGui.QApplication.processEvents()
-                        time.sleep(0.01)
+                        time.sleep(.2)
 
                         # collect_wide_data(detector_position_x=experiment.detector_pos_x,
                         # detector_position_z=experiment.detector_pos_z,
@@ -345,7 +337,7 @@ class MainController(object):
                         # x=sample_point.x,
                         #                   y=sample_point.y,
                         #                   z=sample_point.z,
-                        #                   pv_names=pv_names)
+                        #                   epics_config=epics_config)
 
                 if not self.check_if_aborted():
                     break
@@ -355,10 +347,10 @@ class MainController(object):
                         point_number = str(self.main_view.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + '_s'
-                    print filename
-                    caput(pv_names['detector'] + ':FilePath', str(self.filepath))
-                    caput(pv_names['detector'] + ':FileName', str(filename))
-                    caput(pv_names['detector'] + ':FileNumber', 1)
+                        print filename
+                    caput(epics_config['detector_file']+':FilePath', str(self.filepath))
+                    caput(epics_config['detector_file']+':FileName', str(filename))
+                    caput(epics_config['detector_file']+':FileNumber', 1)
                     logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
 
                     collect_step_data_thread = Thread(target=collect_step_data,
@@ -371,38 +363,37 @@ class MainController(object):
                                                               "x": sample_point.x,
                                                               "y": sample_point.y,
                                                               "z": sample_point.z,
-                                                              "pv_names": pv_names,
                                                               "callback_fcn": self.check_if_aborted})
                     collect_step_data_thread.start()
 
                     while collect_step_data_thread.isAlive():
                         QtGui.QApplication.processEvents()
-                        time.sleep(0.01)
+                        time.sleep(0.2)
 
                 if not self.check_if_aborted():
                     break
-        caput(pv_names['detector'] + ':AcquireTime', previous_exposure_time)
+        caput(epics_config['detector_control']+':AcquireTime', previous_exposure_time)
 
         # move to previous detector position:
         if self.main_view.reset_detector_position_cb.isChecked():
-            caput(pv_names['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
-            caput(pv_names['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
+            caput(epics_config['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
+            caput(epics_config['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
 
         # move to previous sample position
         if self.main_view.reset_sample_position_cb.isChecked():
-            caput(pv_names['sample_position_omega'], previous_omega_pos)
-            move_to_sample_pos(sample_x, sample_y, sample_z, pv_names)
+            caput(epics_config['sample_position_omega'], previous_omega_pos)
+            move_to_sample_pos(sample_x, sample_y, sample_z)
 
-        caput(pv_names['detector'] + ':ShutterMode', 1)  # enable epics PV shutter mode
+        caput(epics_config['detector_control'] + ':ShutterMode', 1)  # enable epics PV shutter mode
 
         if self.main_view.rename_files_cb.isChecked():
             self.increase_point_number()
 
         if self.main_view.rename_after_cb.isChecked():
-            caput(pv_names['detector'] + ':FilePath', previous_filepath)
-            caput(pv_names['detector'] + ':FileName', previous_filename)
+            caput(epics_config['detector_file']+':FilePath', previous_filepath)
+            caput(epics_config['detector_file']+':FileName', previous_filename)
             if self.main_view.rename_files_cb.isChecked():
-                caput(pv_names['detector'] + ':FileNumber', previous_filenumber)
+                caput(epics_config['detector_file']+':FileNumber', previous_filenumber)
 
         # reset the state of the gui:
         self.main_view.collect_btn.setText('Collect')
@@ -420,12 +411,12 @@ class MainController(object):
         cur_point_number = int(str(self.main_view.point_txt.text()))
         self.main_view.point_txt.setText(str(cur_point_number + 1))
 
-    def estimate_collection_time(self, pv_names):
+    def estimate_collection_time(self, epics_config):
         total_time = 0
-        det_x_speed = caget(pv_names['detector_position_x'] + '.VELO')
-        det_z_speed = caget(pv_names['detector_position_z'] + '.VELO')
-        det_x_pos = caget(pv_names['detector_position_x'])
-        det_z_pos = caget(pv_names['detector_position_z'])
+        det_x_speed = caget(epics_config['detector_position_x'] + '.VELO')
+        det_z_speed = caget(epics_config['detector_position_z'] + '.VELO')
+        det_x_pos = caget(epics_config['detector_position_x'])
+        det_z_pos = caget(epics_config['detector_position_z'])
 
         for exp_ind, experiment in enumerate(self.data.experiment_setups):
             exp_collection = False
@@ -464,9 +455,9 @@ class MainController(object):
     @staticmethod
     def get_current_sample_position():
         try:
-            x = float("{:.4g}".format(caget(pv_names['sample_position_x'])))
-            y = float("{:.4g}".format(caget(pv_names['sample_position_y'])))
-            z = float("{:.4g}".format(caget(pv_names['sample_position_z'])))
+            x = float("{:.4g}".format(caget(epics_config['sample_position_x'])))
+            y = float("{:.4g}".format(caget(epics_config['sample_position_y'])))
+            z = float("{:.4g}".format(caget(epics_config['sample_position_z'])))
         except epics.ca.ChannelAccessException:
             x = y = z = 0
         return x, y, z
@@ -479,10 +470,10 @@ class MainController(object):
         :return: float, float, float
         """
         try:
-            detector_pos_x = float("{:g}".format(caget(pv_names['detector_position_x'])))
-            detector_pos_z = float("{:g}".format(caget(pv_names['detector_position_z'])))
-            omega = float("{:g}".format(caget(pv_names['sample_position_omega'])))
-            exposure_time = float("{:g}".format(caget(pv_names['detector'] + ':AcquireTime')))
+            detector_pos_x = float("{:g}".format(caget(epics_config['detector_position_x'])))
+            detector_pos_z = float("{:g}".format(caget(epics_config['detector_position_z'])))
+            omega = float("{:g}".format(caget(epics_config['sample_position_omega'])))
+            exposure_time = float("{:g}".format(caget(epics_config['detector_control'] +':AcquireTime')))
         except epics.ca.ChannelAccessException:
             detector_pos_x = 0
             detector_pos_z = 49
@@ -492,10 +483,10 @@ class MainController(object):
 
     @staticmethod
     def get_filename_info():
-        path = caget(pv_names['detector'] + ':FilePath', as_string=True)
+        path = caget(epics_config['detector_file']+':FilePath', as_string=True)
         print(path)
-        filename = caget(pv_names['detector'] + ':FileName', as_string=True)
-        file_number = caget(pv_names['detector'] + ':FileNumber')
+        filename = caget(epics_config['detector_file']+':FileName', as_string=True)
+        file_number = caget(epics_config['detector_file']+':FileNumber')
         if path is None:
             path = ''
             filename = 'test'
@@ -503,12 +494,12 @@ class MainController(object):
         return path, filename, file_number
 
     def check_filepath_exists(self):
-        cur_epics_filepath = caget(pv_names['detector'] + ':FilePath', as_string=True)
+        cur_epics_filepath = caget(epics_config['detector_file']+':FilePath', as_string=True)
         print self.filepath
-        caput(pv_names['detector'] + ':FilePath', self.filepath, wait=True)
-        exists = caget("13MARCCD2:cam1:FilePathExists_RBV")
+        caput(epics_config['detector_file']+'1:FilePath', self.filepath, wait=True)
+        exists = caget(epics_config['detector_file']+':FilePathExists_RBV')
 
-        caput(pv_names['detector'] + ':FilePath', cur_epics_filepath)
+        caput(epics_config['detector_file']+':FilePath', cur_epics_filepath)
         return exists == 1
 
     @staticmethod
