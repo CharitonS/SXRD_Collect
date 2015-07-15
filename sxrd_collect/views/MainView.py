@@ -15,7 +15,6 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     step_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
     wide_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
 
-
     def __init__(self, version):
         super(MainView, self).__init__()
         self.setupUi(self)
@@ -24,11 +23,15 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.setup_table.setItemDelegate(self.table_delegate)
         self.sample_points_table.setItemDelegate(self.table_delegate)
 
-        self.standard_show_btn.clicked.connect(self.standard_show_btn_clicked)
-        self.hide_standards()
-
         self.setWindowTitle("SXRD Collect {}".format(version))
+
         self.point_txt.setValidator(QtGui.QIntValidator())
+        self.x_min_txt.setValidator(QtGui.QDoubleValidator())
+        self.x_max_txt.setValidator(QtGui.QDoubleValidator())
+        self.x_step_txt.setValidator(QtGui.QDoubleValidator())
+        self.y_min_txt.setValidator(QtGui.QDoubleValidator())
+        self.y_max_txt.setValidator(QtGui.QDoubleValidator())
+        self.y_step_txt.setValidator(QtGui.QDoubleValidator())
 
     def add_experiment_setup(self, name, detector_pos_x, detector_pos_y, omega_start,
                              omega_end, omega_step, exposure_time):
@@ -107,7 +110,6 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         for row, header_name in enumerate(header_names):
             header_item = self.sample_points_table.horizontalHeaderItem(row+6)
             header_item.setText(header_name)
-
 
     def add_sample_point(self, name, x, y, z):
         self.sample_points_table.blockSignals(True)
@@ -211,28 +213,6 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     def wide_cb_changed(self, row_index, exp_index, state):
         self.wide_cb_status_changed.emit(row_index, exp_index, bool(state))
 
-    def standard_show_btn_clicked(self):
-        if self.standard_show_btn.text() == '-':
-            self.hide_standards()
-        else:
-            self.show_standards()
-
-    def hide_standards(self):
-        self.standard_show_btn.setText('+')
-        self.standard_table.hide()
-        self.add_standard_btn.hide()
-        self.delete_standard_btn.hide()
-        self.clear_standard_btn.hide()
-        self.standard_footer_2.hide()
-
-    def show_standards(self):
-        self.standard_show_btn.setText('-')
-        self.standard_table.show()
-        self.add_standard_btn.show()
-        self.delete_standard_btn.show()
-        self.clear_standard_btn.show()
-        self.standard_footer_2.show()
-
 
 class TextDoubleDelegate(QtGui.QStyledItemDelegate):
     def __init__(self, parent):
@@ -279,22 +259,3 @@ class FirstItemStringDelegate(QtGui.QStyledItemDelegate):
 
     def updateEditorGeometry(self, editor, option, _):
         editor.setGeometry(option.rect)
-
-
-if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
-    view = MainView()
-    view.show()
-    view.add_sample_point('lbaslfjag', 3, 2, 4)
-    view.add_experiment_setup(-333, -100, -90, 0.5, 0.4)
-    view.add_sample_point('huhu', 0, 4, 3)
-    view.add_experiment_setup(-333, -100, -90, 0.2, 0.4)
-    view.add_sample_point('lbaslfjag', 3, 2, 4)
-    view.add_sample_point('lbaslfjag', 3, 2, 4)
-    view.add_sample_point('lbaslfjag', 3, 2, 4)
-    view.add_sample_point('lbaslfjag', 3, 2, 4)
-    view.add_experiment_setup(-333, -100, -90, 0.2, 0.4)
-    view.add_experiment_setup(-333, -100, -90, 0.2, 0.4)
-    view.add_experiment_setup(-333, -100, -90, 0.2, 0.4)
-    view.add_experiment_setup(-333, -100, -90, 0.2, 0.4)
-    app.exec_()

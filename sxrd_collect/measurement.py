@@ -150,7 +150,7 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     detector_checker = MarCCDChecker(epics_config['detector_control'])
 
     # start data collection
-    perform_background_collection()
+    # perform_background_collection()
     collect_data(exposure_time + 50)
 
     # start trajectory scan

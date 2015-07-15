@@ -12,7 +12,7 @@ from PyQt4 import QtGui, QtCore
 
 from config import epics_config
 from views.MainView import MainView
-from models import MainData
+from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data
 
 logger = logging.getLogger()
@@ -20,9 +20,9 @@ logger = logging.getLogger()
 
 class MainController(object):
     def __init__(self):
-        self.main_view = MainView(__version__)
-        self.main_view.show()
-        self.data = MainData()
+        self.widget = MainView(__version__)
+        self.widget.show()
+        self.model = SxrdModel()
         self.connect_buttons()
         self.connect_tables()
         self.connect_txt()
@@ -35,37 +35,34 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = True
 
     def connect_buttons(self):
-        self.main_view.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
-        self.main_view.delete_setup_btn.clicked.connect(self.delete_experiment_setup_btn_clicked)
-        self.main_view.clear_setup_btn.clicked.connect(self.clear_experiment_setup_btn_clicked)
+        self.widget.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
+        self.widget.delete_setup_btn.clicked.connect(self.delete_experiment_setup_btn_clicked)
+        self.widget.clear_setup_btn.clicked.connect(self.clear_experiment_setup_btn_clicked)
 
-        self.main_view.add_sample_btn.clicked.connect(self.add_sample_point_btn_clicked)
-        self.main_view.delete_sample_btn.clicked.connect(self.delete_sample_point_btn_clicked)
-        self.main_view.clear_sample_btn.clicked.connect(self.clear_sample_point_btn_clicked)
+        self.widget.add_sample_btn.clicked.connect(self.add_sample_point_btn_clicked)
+        self.widget.delete_sample_btn.clicked.connect(self.delete_sample_point_btn_clicked)
+        self.widget.clear_sample_btn.clicked.connect(self.clear_sample_point_btn_clicked)
+        self.widget.create_map_btn.clicked.connect(self.create_map_btn_clicked)
 
-        self.main_view.add_standard_btn.clicked.connect(self.add_standard_btn_clicked)
-        self.main_view.delete_standard_btn.clicked.connect(self.delete_standard_btn_clicked)
-        self.main_view.clear_standard_btn.clicked.connect(self.clear_standard_btn_clicked)
-
-        self.main_view.get_folder_btn.clicked.connect(self.get_folder_btn_clicked)
-        self.main_view.collect_btn.clicked.connect(self.collect_data)
+        self.widget.get_folder_btn.clicked.connect(self.get_folder_btn_clicked)
+        self.widget.collect_btn.clicked.connect(self.collect_data)
 
     def connect_tables(self):
-        self.main_view.setup_table.cellChanged.connect(self.setup_table_cell_changed)
-        self.main_view.sample_points_table.cellChanged.connect(self.sample_points_table_cell_changed)
+        self.widget.setup_table.cellChanged.connect(self.setup_table_cell_changed)
+        self.widget.sample_points_table.cellChanged.connect(self.sample_points_table_cell_changed)
 
-        self.main_view.move_sample_btn_clicked.connect(self.move_sample_btn_clicked)
-        self.main_view.set_sample_btn_clicked.connect(self.set_sample_btn_clicked)
+        self.widget.move_sample_btn_clicked.connect(self.move_sample_btn_clicked)
+        self.widget.set_sample_btn_clicked.connect(self.set_sample_btn_clicked)
 
-        self.main_view.step_cb_status_changed.connect(self.step_cb_status_changed)
-        self.main_view.wide_cb_status_changed.connect(self.wide_cb_status_changed)
+        self.widget.step_cb_status_changed.connect(self.step_cb_status_changed)
+        self.widget.wide_cb_status_changed.connect(self.wide_cb_status_changed)
 
     def connect_txt(self):
-        self.main_view.filename_txt.editingFinished.connect(self.basename_txt_changed)
-        self.main_view.filepath_txt.editingFinished.connect(self.filepath_txt_changed)
+        self.widget.filename_txt.editingFinished.connect(self.basename_txt_changed)
+        self.widget.filepath_txt.editingFinished.connect(self.filepath_txt_changed)
 
-        self.main_view.status_txt.textChanged.connect(self.update_status_txt_scrollbar)
-        self.main_view.status_txt.verticalScrollBar().valueChanged.connect(self.update_status_txt_scrollbar_value)
+        self.widget.status_txt.textChanged.connect(self.update_status_txt_scrollbar)
+        self.widget.status_txt.verticalScrollBar().valueChanged.connect(self.update_status_txt_scrollbar_value)
 
     def populate_filename(self):
         self.prev_filepath, self.prev_filename, self.prev_file_number = self.get_filename_info()
@@ -73,40 +70,40 @@ class MainController(object):
         self.filepath = self.prev_filepath
         self.basename = self.prev_filename
 
-        self.main_view.filename_txt.setText(self.prev_filename)
-        self.main_view.filepath_txt.setText(self.prev_filepath)
+        self.widget.filename_txt.setText(self.prev_filename)
+        self.widget.filepath_txt.setText(self.prev_filepath)
 
         self.set_example_lbl()
 
     def update_status_txt(self, msg):
-        self.main_view.status_txt.append(msg)
+        self.widget.status_txt.append(msg)
 
     def update_status_txt_scrollbar(self):
         if self.status_txt_scrollbar_is_at_max:
-            self.main_view.status_txt.verticalScrollBar().setValue(
-                self.main_view.status_txt.verticalScrollBar().maximum()
+            self.widget.status_txt.verticalScrollBar().setValue(
+                self.widget.status_txt.verticalScrollBar().maximum()
             )
 
     def get_folder_btn_clicked(self):
         self.prev_filepath, _, _ = self.get_filename_info()
         self.filepath = self.prev_filepath
-        self.main_view.filepath_txt.setText(self.prev_filepath)
+        self.widget.filepath_txt.setText(self.prev_filepath)
 
         self.set_example_lbl()
 
     def update_status_txt_scrollbar_value(self, value):
-        self.status_txt_scrollbar_is_at_max = value == self.main_view.status_txt.verticalScrollBar().maximum()
+        self.status_txt_scrollbar_is_at_max = value == self.widget.status_txt.verticalScrollBar().maximum()
 
     def add_experiment_setup_btn_clicked(self):
         detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()
-        default_name = 'E{}'.format(len(self.data.experiment_setups) + 1)
-        self.data.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
+        default_name = 'E{}'.format(len(self.model.experiment_setups) + 1)
+        self.model.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
                                        omega - 1, omega + 1, 0.1, exposure_time)
-        self.main_view.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
+        self.widget.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
                                             omega - 1, omega + 1, 0.1, exposure_time)
 
     def delete_experiment_setup_btn_clicked(self):
-        cur_ind = self.main_view.get_selected_experiment_setup()
+        cur_ind = self.widget.get_selected_experiment_setup()
         cur_ind.sort()
         cur_ind = cur_ind[::-1]
         if cur_ind is None or (len(cur_ind) == 0):
@@ -119,148 +116,156 @@ class MainController(object):
         response = msgBox.exec_()
         if response == QtGui.QMessageBox.Yes:
             for ind in cur_ind:
-                self.main_view.delete_experiment_setup(ind)
-                self.data.delete_experiment_setup(ind)
-            self.main_view.recreate_sample_point_checkboxes(self.data.get_experiment_state())
+                self.widget.delete_experiment_setup(ind)
+                self.model.delete_experiment_setup(ind)
+            self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
 
     def clear_experiment_setup_btn_clicked(self):
-        self.main_view.clear_experiment_setups()
-        self.data.clear_experiment_setups()
+        self.widget.clear_experiment_setups()
+        self.model.clear_experiment_setups()
 
     def add_sample_point_btn_clicked(self):
         x, y, z = self.get_current_sample_position()
-        num = len(self.data.sample_points)
-        self.main_view.add_sample_point('S{}'.format(num + 1), x, y, z)
-        self.data.add_sample_point('S{}'.format(num + 1), x, y, z)
+        num = len(self.model.sample_points)
+        self.widget.add_sample_point('S{}'.format(num + 1), x, y, z)
+        self.model.add_sample_point('S{}'.format(num + 1), x, y, z)
 
     def delete_sample_point_btn_clicked(self):
-        cur_ind = self.main_view.get_selected_sample_point()
+        cur_ind = self.widget.get_selected_sample_point()
         cur_ind.sort()
         cur_ind = cur_ind[::-1]
         for ind in cur_ind:
-            self.main_view.delete_sample_point(ind)
-            self.data.delete_sample_point(ind)
+            self.widget.delete_sample_point(ind)
+            self.model.delete_sample_point(ind)
 
     def clear_sample_point_btn_clicked(self):
-        self.main_view.clear_sample_points()
-        self.data.clear_sample_points()
+        self.widget.clear_sample_points()
+        self.model.clear_sample_points()
 
-    def add_standard_btn_clicked(self):
-        pass
+    def create_map_btn_clicked(self):
+        cur_ind = self.widget.get_selected_sample_point()[-1]
 
-    def delete_standard_btn_clicked(self):
-        pass
+        x_min = float(str(self.widget.x_min_txt.text()))
+        x_max = float(str(self.widget.x_max_txt.text()))
+        x_step = float(str(self.widget.x_step_txt.text()))
 
-    def clear_standard_btn_clicked(self):
-        pass
+        y_min = float(str(self.widget.y_min_txt.text()))
+        y_max = float(str(self.widget.y_max_txt.text()))
+        y_step = float(str(self.widget.y_step_txt.text()))
+
+        map = self.model.create_map(cur_ind, x_min, x_max, x_step, y_min, y_max, y_step)
+
+        for name, position in map.iteritems():
+            x, y, z = position
+            self.widget.add_sample_point(name, x, y, z)
 
     def setup_table_cell_changed(self, row, col):
-        label_item = self.main_view.setup_table.item(row, col)
+        label_item = self.widget.setup_table.item(row, col)
         value = str(label_item.text())
-        self.main_view.setup_table.blockSignals(True)
+        self.widget.setup_table.blockSignals(True)
         if col == 0:
-            if not self.data.setup_name_existent(value):
-                self.data.experiment_setups[row].name = str(value)
-                self.main_view.update_sample_table_setup_header(
-                    self.data.get_experiment_setup_names()
+            if not self.model.setup_name_existent(value):
+                self.model.experiment_setups[row].name = str(value)
+                self.widget.update_sample_table_setup_header(
+                    self.model.get_experiment_setup_names()
                 )
-                self.main_view.sample_points_table.resizeColumnsToContents()
+                self.widget.sample_points_table.resizeColumnsToContents()
             else:
                 self.create_name_existent_msg('Experiment setup')
-                name_item = self.main_view.setup_table.item(row, 0)
-                name_item.setText(self.data.experiment_setups[row].name)
+                name_item = self.widget.setup_table.item(row, 0)
+                name_item.setText(self.model.experiment_setups[row].name)
         else:
             value = float(value)
             if col == 1:
-                self.data.experiment_setups[row].detector_pos_x = value
+                self.model.experiment_setups[row].detector_pos_x = value
             elif col == 2:
-                self.data.experiment_setups[row].detector_pos_z = value
+                self.model.experiment_setups[row].detector_pos_z = value
             elif col == 3:
-                self.data.experiment_setups[row].omega_start = value
+                self.model.experiment_setups[row].omega_start = value
                 self.update_total_exposure_time(row)
             elif col == 4:
-                self.data.experiment_setups[row].omega_end = value
+                self.model.experiment_setups[row].omega_end = value
                 self.update_total_exposure_time(row)
             elif col == 5:
-                self.data.experiment_setups[row].omega_step = value
+                self.model.experiment_setups[row].omega_step = value
                 self.update_total_exposure_time(row)
             elif col == 6:
-                self.data.experiment_setups[row].time_per_step = value
+                self.model.experiment_setups[row].time_per_step = value
                 self.update_total_exposure_time(row)
             elif col == 7:
-                step_time = self.data.experiment_setups[row].get_step_exposure_time(value)
-                step_exposure_time_item = self.main_view.setup_table.item(row, 6)
+                step_time = self.model.experiment_setups[row].get_step_exposure_time(value)
+                step_exposure_time_item = self.widget.setup_table.item(row, 6)
                 step_exposure_time_item.setText(str(step_time))
-                self.data.experiment_setups[row].time_per_step = step_time
+                self.model.experiment_setups[row].time_per_step = step_time
 
-        self.main_view.setup_table.blockSignals(False)
-        self.main_view.setup_table.resizeColumnsToContents()
-        print(self.data.experiment_setups[row])
+        self.widget.setup_table.blockSignals(False)
+        self.widget.setup_table.resizeColumnsToContents()
+        print(self.model.experiment_setups[row])
 
     def update_total_exposure_time(self, row):
-        total_exposure_time_item = self.main_view.setup_table.item(row, 7)
-        total_exposure_time_item.setText(str(self.data.experiment_setups[row].get_total_exposure_time()))
+        total_exposure_time_item = self.widget.setup_table.item(row, 7)
+        total_exposure_time_item.setText(str(self.model.experiment_setups[row].get_total_exposure_time()))
 
     def sample_points_table_cell_changed(self, row, col):
-        label_item = self.main_view.sample_points_table.item(row, col)
+        label_item = self.widget.sample_points_table.item(row, col)
         value = str(label_item.text())
-        self.main_view.sample_points_table.blockSignals(True)
+        self.widget.sample_points_table.blockSignals(True)
         if col == 0:
-            if not self.data.sample_name_existent(value):
-                self.data.sample_points[row].name = str(value)
+            if not self.model.sample_name_existent(value):
+                self.model.sample_points[row].name = str(value)
             else:
                 self.create_name_existent_msg('Sample')
-                name_item = self.main_view.sample_points_table.item(row, 0)
-                name_item.setText(self.data.sample_points[row].name)
+                name_item = self.widget.sample_points_table.item(row, 0)
+                name_item.setText(self.model.sample_points[row].name)
         elif col == 1:
-            self.data.sample_points[row].x = float(value)
+            self.model.sample_points[row].x = float(value)
         elif col == 2:
-            self.data.sample_points[row].y = float(value)
+            self.model.sample_points[row].y = float(value)
         elif col == 3:
-            self.data.sample_points[row].z = float(value)
-        self.main_view.sample_points_table.blockSignals(False)
-        self.main_view.sample_points_table.resizeColumnsToContents()
+            self.model.sample_points[row].z = float(value)
+        self.widget.sample_points_table.blockSignals(False)
+        self.widget.sample_points_table.resizeColumnsToContents()
 
-        print(self.data.sample_points[row])
+        print(self.model.sample_points[row])
 
     def move_sample_btn_clicked(self, ind):
-        x, y, z = self.main_view.get_sample_point_values(ind)
+        x, y, z = self.widget.get_sample_point_values(ind)
         move_to_sample_pos(x, y, z)
 
     def set_sample_btn_clicked(self, ind):
         x, y, z = self.get_current_sample_position()
-        self.data.sample_points[ind].set_position(x, y, z)
-        self.main_view.set_sample_point_values(ind, x, y, z)
+        self.model.sample_points[ind].set_position(x, y, z)
+        self.widget.set_sample_point_values(ind, x, y, z)
 
     def step_cb_status_changed(self, row_ind, exp_ind, state):
-        cur_ind = self.main_view.get_selected_sample_point()
+        cur_ind = self.widget.get_selected_sample_point()
         if row_ind in cur_ind:
             for ind in cur_ind:
-                self.data.sample_points[ind].set_perform_step_scan_setup(exp_ind, state)
-            self.main_view.recreate_sample_point_checkboxes(self.data.get_experiment_state())
+                self.model.sample_points[ind].set_perform_step_scan_setup(exp_ind, state)
+            self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         else:
-            self.data.sample_points[row_ind].set_perform_step_scan_setup(exp_ind, state)
+            self.model.sample_points[row_ind].set_perform_step_scan_setup(exp_ind, state)
 
     def wide_cb_status_changed(self, row_ind, exp_ind, state):
-        cur_ind = self.main_view.get_selected_sample_point()
+        cur_ind = self.widget.get_selected_sample_point()
         if row_ind in cur_ind:
             for ind in cur_ind:
-                self.data.sample_points[ind].set_perform_wide_scan_setup(exp_ind, state)
-            self.main_view.recreate_sample_point_checkboxes(self.data.get_experiment_state())
+                self.model.sample_points[ind].set_perform_wide_scan_setup(exp_ind, state)
+            self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         else:
-            self.data.sample_points[row_ind].set_perform_wide_scan_setup(exp_ind, state)
+            self.model.sample_points[row_ind].set_perform_wide_scan_setup(exp_ind, state)
 
     def basename_txt_changed(self):
-        self.basename = str(self.main_view.filename_txt.text())
+        self.basename = str(self.widget.filename_txt.text())
         self.set_example_lbl()
 
     def filepath_txt_changed(self):
-        self.filepath = str(self.main_view.filepath_txt.text())
+        self.filepath = str(self.widget.filepath_txt.text())
         self.set_example_lbl()
 
     def set_example_lbl(self):
         example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
-        self.main_view.example_filename_lbl.setText(example_str)
+        self.widget.example_filename_lbl.setText(example_str)
 
     def collect_data(self):
         # check if the current file path exists
@@ -292,17 +297,17 @@ class MainController(object):
 
         # prepare for for abortion of the collection procedure
         self.abort_collection = False
-        self.main_view.collect_btn.setText('Abort')
-        self.main_view.collect_btn.clicked.disconnect(self.collect_data)
-        self.main_view.collect_btn.clicked.connect(self.abort_data_collection)
-        self.main_view.status_txt.clear()
+        self.widget.collect_btn.setText('Abort')
+        self.widget.collect_btn.clicked.disconnect(self.collect_data)
+        self.widget.collect_btn.clicked.connect(self.abort_data_collection)
+        self.widget.status_txt.clear()
         QtGui.QApplication.processEvents()
 
-        for exp_ind, experiment in enumerate(self.data.experiment_setups):
-            for sample_point in self.data.sample_points:
+        for exp_ind, experiment in enumerate(self.model.experiment_setups):
+            for sample_point in self.model.sample_points:
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
-                    if self.main_view.rename_files_cb.isChecked():
-                        point_number = str(self.main_view.point_txt.text())
+                    if self.widget.rename_files_cb.isChecked():
+                        point_number = str(self.widget.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + '_w'
                         print(filename)
@@ -343,8 +348,8 @@ class MainController(object):
                     break
 
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
-                    if self.main_view.rename_files_cb.isChecked():
-                        point_number = str(self.main_view.point_txt.text())
+                    if self.widget.rename_files_cb.isChecked():
+                        point_number = str(self.widget.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + '_s'
                         print filename
@@ -375,30 +380,30 @@ class MainController(object):
         caput(epics_config['detector_control']+':AcquireTime', previous_exposure_time)
 
         # move to previous detector position:
-        if self.main_view.reset_detector_position_cb.isChecked():
+        if self.widget.reset_detector_position_cb.isChecked():
             caput(epics_config['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
             caput(epics_config['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
 
         # move to previous sample position
-        if self.main_view.reset_sample_position_cb.isChecked():
+        if self.widget.reset_sample_position_cb.isChecked():
             caput(epics_config['sample_position_omega'], previous_omega_pos)
             move_to_sample_pos(sample_x, sample_y, sample_z)
 
         caput(epics_config['detector_control'] + ':ShutterMode', 1)  # enable epics PV shutter mode
 
-        if self.main_view.rename_files_cb.isChecked():
+        if self.widget.rename_files_cb.isChecked():
             self.increase_point_number()
 
-        if self.main_view.rename_after_cb.isChecked():
+        if self.widget.rename_after_cb.isChecked():
             caput(epics_config['detector_file']+':FilePath', previous_filepath)
             caput(epics_config['detector_file']+':FileName', previous_filename)
-            if self.main_view.rename_files_cb.isChecked():
+            if self.widget.rename_files_cb.isChecked():
                 caput(epics_config['detector_file']+':FileNumber', previous_filenumber)
 
         # reset the state of the gui:
-        self.main_view.collect_btn.setText('Collect')
-        self.main_view.collect_btn.clicked.connect(self.collect_data)
-        self.main_view.collect_btn.clicked.disconnect(self.abort_data_collection)
+        self.widget.collect_btn.setText('Collect')
+        self.widget.collect_btn.clicked.connect(self.collect_data)
+        self.widget.collect_btn.clicked.disconnect(self.abort_data_collection)
 
     def abort_data_collection(self):
         self.abort_collection = True
@@ -408,8 +413,8 @@ class MainController(object):
         return not self.abort_collection
 
     def increase_point_number(self):
-        cur_point_number = int(str(self.main_view.point_txt.text()))
-        self.main_view.point_txt.setText(str(cur_point_number + 1))
+        cur_point_number = int(str(self.widget.point_txt.text()))
+        self.widget.point_txt.setText(str(cur_point_number + 1))
 
     def estimate_collection_time(self, epics_config):
         total_time = 0
@@ -418,9 +423,9 @@ class MainController(object):
         det_x_pos = caget(epics_config['detector_position_x'])
         det_z_pos = caget(epics_config['detector_position_z'])
 
-        for exp_ind, experiment in enumerate(self.data.experiment_setups):
+        for exp_ind, experiment in enumerate(self.model.experiment_setups):
             exp_collection = False
-            for sample_point in self.data.sample_points:
+            for sample_point in self.model.sample_points:
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
                                     experiment.time_per_step
@@ -514,7 +519,7 @@ class MainController(object):
 
     def check_sample_point_distances(self):
         pos_x, pos_y, pos_z = self.get_current_sample_position()
-        largest_distance = self.data.get_largest_largest_collecting_sample_point_distance_to(pos_x, pos_y, pos_z)
+        largest_distance = self.model.get_largest_largest_collecting_sample_point_distance_to(pos_x, pos_y, pos_z)
 
         return largest_distance < 0.2
 

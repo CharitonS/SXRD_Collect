@@ -17,8 +17,11 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Clemens Prescher'
 
+import numpy as np
+from collections import OrderedDict
 
-class MainData(object):
+
+class SxrdModel(object):
     def __init__(self):
         self.experiment_setups = []
         self.sample_points = []
@@ -60,6 +63,30 @@ class MainData(object):
 
     def clear_sample_points(self):
         self.sample_points = []
+
+    def create_map(self, center_ind, x_min, x_max, x_step,
+                   y_min, y_max, y_step):
+
+        x_center = self.sample_points[center_ind].x
+        y_center = self.sample_points[center_ind].y
+        z_center = self.sample_points[center_ind].z
+        name_center = self.sample_points[center_ind].name
+
+        x_map = x_center + np.arange(x_min, x_max + x_step, x_step)
+        y_map = y_center + np.arange(y_min, y_max + y_step, y_step)
+
+        ind = 0
+
+        map = OrderedDict()
+
+        for x in x_map:
+            for y in y_map:
+                point_name = "{}_map_{}".format(name_center, ind+1)
+                self.add_sample_point(point_name, x, y, z_center)
+                map[point_name] = [x, y, z_center]
+                ind += 1
+
+        return map
 
     def get_experiment_setup_names(self):
         res = []
@@ -159,4 +186,3 @@ class SamplePoint(object):
 
     def __str__(self):
         return "{}, {}, {}, {}".format(self.name, self.x, self.y, self.z)
-
