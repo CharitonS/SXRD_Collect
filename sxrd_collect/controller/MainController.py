@@ -2,18 +2,18 @@ __author__ = 'DAC_User'
 __version__ = 0.1
 
 import time
+from threading import Thread
+import logging
 
 from epics import caget, caput
 import epics
+
 from PyQt4 import QtGui, QtCore
-from threading import Thread
 
 from config import epics_config
 from views.MainView import MainView
 from models import MainData
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data
-
-import logging
 
 logger = logging.getLogger()
 

@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+
 # - GUI program for fast processing of 2D X-ray data
 # Copyright (C) 2014  Clemens Prescher (clemens.prescher@gmail.com)
 # GSECARS, University of Chicago
@@ -19,14 +20,13 @@ __author__ = 'Clemens Prescher'
 
 import unittest
 import sys
+
 from PyQt4 import QtCore, QtGui
-import time
 
-from epics import caput, caget, PV, camonitor
+from .models import *
+from .xps_trajectory.xps_trajectory import XPSTrajectory
+from .views import MainView
 
-from models import *
-from xps_trajectory.xps_trajectory import XPSTrajectory
-from views.MainView import MainView
 
 class SamplePointTest(unittest.TestCase):
     def setUp(self):
@@ -64,7 +64,7 @@ class TrajectoryScanTest(unittest.TestCase):
 
 
 from PyQt4.QtTest import QTest
-from controller.MainController import MainController
+from sxrd_collect.controller import MainController
 
 
 class MainControllerTest(unittest.TestCase):

@@ -16,7 +16,6 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Clemens Prescher'
-from measurement import collect_single_data, collect_step_data, collect_wide_data
 
 
 class MainData(object):
