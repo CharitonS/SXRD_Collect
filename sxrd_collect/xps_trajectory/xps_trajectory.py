@@ -1,3 +1,22 @@
+# -*- coding: utf8 -*-
+# - GUI program for fast processing of 2D X-ray data
+# Copyright (C) 2014  Clemens Prescher (clemens.prescher@gmail.com)
+# GSECARS, University of Chicago
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+__author__ = 'Clemens Prescher'
+
 import time
 import numpy as np
 import ftplib
@@ -7,21 +26,6 @@ from .XPS_C8_drivers import XPS
 import logging
 
 logger = logging.getLevelName(__name__)
-
-# #
-# # used methods for collector.py
-# #    abortScan, clearabort
-# #    done ftp_connect
-# #    done ftp_disconnect
-# #
-# # mapscan:   Build (twice!)
-# # linescan:  Build , clearabort
-# # ExecTraj;  Execute(),   building<attribute>, executing<attribute>
-# # WriteTrajData:  Read_FTP(), SaveGatheringData()
-# #
-## need to have env and ROI written during traj scan:
-##   use a separate thread for ROI and ENV, allow
-##   XY trajectory to block.
 
 DEFAULT_ACCEL = {'z': 10.0, 'x': 10.0, 't': 2.0}
 

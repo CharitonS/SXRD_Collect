@@ -16,3 +16,14 @@
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Clemens Prescher'
+
+import sys
+
+from PyQt4 import QtGui
+
+from controller.MainController import MainController
+
+if __name__ == '__main__':
+    app = QtGui.QApplication(sys.argv)
+    controller = MainController()
+    app.exec_()
