@@ -19,7 +19,6 @@ __author__ = 'Clemens Prescher'
 
 from PyQt4 import QtGui, QtCore
 from functools import partial
-import sys
 
 from .UiFiles.mainUI import Ui_SXRDCollectWidget
 
