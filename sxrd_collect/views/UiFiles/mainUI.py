@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created: Wed Jul 15 15:53:26 2015
+# Created: Thu Jul 16 11:29:03 2015
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -263,6 +263,12 @@ class Ui_SXRDCollectWidget(object):
         self.horizontalLayout_11.setObjectName(_fromUtf8("horizontalLayout_11"))
         self.gridLayout_2 = QtGui.QGridLayout()
         self.gridLayout_2.setObjectName(_fromUtf8("gridLayout_2"))
+        self.label_8 = QtGui.QLabel(SXRDCollectWidget)
+        self.label_8.setObjectName(_fromUtf8("label_8"))
+        self.gridLayout_2.addWidget(self.label_8, 2, 0, 1, 1)
+        self.label_2 = QtGui.QLabel(SXRDCollectWidget)
+        self.label_2.setObjectName(_fromUtf8("label_2"))
+        self.gridLayout_2.addWidget(self.label_2, 1, 0, 1, 1)
         self.x_max_txt = QtGui.QLineEdit(SXRDCollectWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -350,16 +356,6 @@ class Ui_SXRDCollectWidget(object):
         self.y_max_txt.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.y_max_txt.setObjectName(_fromUtf8("y_max_txt"))
         self.gridLayout_2.addWidget(self.y_max_txt, 2, 2, 1, 1)
-        self.x_cb = QtGui.QCheckBox(SXRDCollectWidget)
-        self.x_cb.setChecked(True)
-        self.x_cb.setAutoExclusive(False)
-        self.x_cb.setObjectName(_fromUtf8("x_cb"))
-        self.gridLayout_2.addWidget(self.x_cb, 1, 0, 1, 1)
-        self.y_cb = QtGui.QCheckBox(SXRDCollectWidget)
-        self.y_cb.setChecked(True)
-        self.y_cb.setAutoExclusive(False)
-        self.y_cb.setObjectName(_fromUtf8("y_cb"))
-        self.gridLayout_2.addWidget(self.y_cb, 2, 0, 1, 1)
         self.horizontalLayout_11.addLayout(self.gridLayout_2)
         self.create_map_btn = QtGui.QPushButton(SXRDCollectWidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Preferred)
@@ -441,6 +437,8 @@ class Ui_SXRDCollectWidget(object):
         item.setText(_translate("SXRDCollectWidget", "y", None))
         item = self.sample_points_table.horizontalHeaderItem(3)
         item.setText(_translate("SXRDCollectWidget", "z", None))
+        self.label_8.setText(_translate("SXRDCollectWidget", "y", None))
+        self.label_2.setText(_translate("SXRDCollectWidget", "x", None))
         self.x_max_txt.setText(_translate("SXRDCollectWidget", "0.01", None))
         self.y_step_txt.setText(_translate("SXRDCollectWidget", "0.005", None))
         self.y_min_txt.setText(_translate("SXRDCollectWidget", "-0.01", None))
@@ -450,8 +448,6 @@ class Ui_SXRDCollectWidget(object):
         self.label_6.setText(_translate("SXRDCollectWidget", "min", None))
         self.label_7.setText(_translate("SXRDCollectWidget", "max", None))
         self.y_max_txt.setText(_translate("SXRDCollectWidget", "0.01", None))
-        self.x_cb.setText(_translate("SXRDCollectWidget", "x", None))
-        self.y_cb.setText(_translate("SXRDCollectWidget", "y", None))
         self.create_map_btn.setText(_translate("SXRDCollectWidget", "Create Map", None))
         self.collect_btn.setText(_translate("SXRDCollectWidget", "Collect", None))
 
