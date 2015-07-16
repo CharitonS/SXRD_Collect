@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created: Thu Jul 16 12:15:21 2015
+# Created: Thu Jul 16 13:01:04 2015
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -400,12 +400,15 @@ class Ui_SXRDCollectWidget(object):
         self.horizontalLayout_7.addItem(spacerItem6)
         self.verticalLayout_4 = QtGui.QVBoxLayout()
         self.verticalLayout_4.setObjectName(_fromUtf8("verticalLayout_4"))
-        self.status_lbl = QtGui.QLabel(SXRDCollectWidget)
-        self.status_lbl.setText(_fromUtf8(""))
-        self.status_lbl.setObjectName(_fromUtf8("status_lbl"))
-        self.verticalLayout_4.addWidget(self.status_lbl)
         spacerItem7 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_4.addItem(spacerItem7)
+        self.status_lbl = QtGui.QLabel(SXRDCollectWidget)
+        self.status_lbl.setText(_fromUtf8(""))
+        self.status_lbl.setAlignment(QtCore.Qt.AlignCenter)
+        self.status_lbl.setObjectName(_fromUtf8("status_lbl"))
+        self.verticalLayout_4.addWidget(self.status_lbl)
+        spacerItem8 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_4.addItem(spacerItem8)
         self.collect_btn = QtGui.QPushButton(SXRDCollectWidget)
         self.collect_btn.setMinimumSize(QtCore.QSize(130, 60))
         self.collect_btn.setObjectName(_fromUtf8("collect_btn"))

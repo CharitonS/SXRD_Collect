@@ -287,7 +287,10 @@ class MainController(object):
         self.widget.example_filename_lbl.setText(example_str)
 
     def collect_bkg_data(self):
+        self.set_status_lbl("Collecting", "#FF0000")
+        QtGui.QApplication.processEvents()
         collect_background()
+        self.set_status_lbl("Finished", "#00FF00")
 
     def collect_data(self):
         # check if the current file path exists
@@ -308,6 +311,8 @@ class MainController(object):
                 'position.<br> Do you want to continue?!')
             if reply == QtGui.QMessageBox.Abort:
                 return
+
+        self.set_status_lbl("Collecting", "#FF0000")
 
         # save current state to be able to restore after the measurement when the checkboxes are selected.
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
@@ -348,10 +353,9 @@ class MainController(object):
                                                               "exposure_time": abs(exposure_time),
                                                               "x": sample_point.x,
                                                               "y": sample_point.y,
-                                                              "z": sample_point.z,
-                                                              "collect_bkg_flag":
-                                                                  bool(self.widget.auto_bkg_cb.isChecked())
-                                                              })
+                                                              "z": sample_point.z
+                                                              }
+                                                      )
                     collect_wide_data_thread.start()
 
                     while collect_wide_data_thread.isAlive():
@@ -420,6 +424,7 @@ class MainController(object):
         self.widget.collect_btn.setText('Collect')
         self.widget.collect_btn.clicked.connect(self.collect_data)
         self.widget.collect_btn.clicked.disconnect(self.abort_data_collection)
+        self.set_status_lbl("Finished", "#00FF00")
 
     def abort_data_collection(self):
         self.abort_collection = True
@@ -427,6 +432,10 @@ class MainController(object):
     def check_if_aborted(self):
         # QtGui.QApplication.processEvents()
         return not self.abort_collection
+
+    def set_status_lbl(self, msg, color, size=20):
+        self.widget.status_lbl.setStyleSheet("font-size: {}px; color: {};".format(size, color))
+        self.widget.status_lbl.setText(msg)
 
     def increase_point_number(self):
         cur_point_number = int(str(self.widget.point_txt.text()))

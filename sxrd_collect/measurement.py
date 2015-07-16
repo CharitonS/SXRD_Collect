@@ -124,16 +124,16 @@ def collect_step(exposure_time, stage_xps):
 
     # start data collection
     collect_data(exposure_time + 50)
-    time.sleep(0.5)
+    time.sleep(0.25)
     stage_xps.run_line_trajectory_general()
     # stop detector
     caput('13MARCCD2:cam1:Acquire', 0, wait=True)
     # wait for readout
     while not detector_checker.is_finished():
-        time.sleep(0.001)
+        time.sleep(0.01)
     del detector_checker
     logger.info("Data collection finished.")
-    time.sleep(0.5)
+    time.sleep(0.25)
 
 
 def collect_background():
