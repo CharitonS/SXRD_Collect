@@ -22,38 +22,15 @@ import numpy as np
 import ftplib
 from cStringIO import StringIO
 from .XPS_C8_drivers import XPS
+from config import xps_config
 
 import logging
-
 logger = logging.getLevelName(__name__)
-
-DEFAULT_ACCEL = {'z': 10.0, 'x': 10.0, 't': 2.0}
-
-
-class config:
-    # host = '164.54.160.180' #xas user xps
-    host = '164.54.160.34'  #dac user xps
-    port = 5001
-    timeout = 10
-    user = 'Administrator'
-    passwd = 'Administrator'
-    traj_folder = 'Public/trajectories'
-    group_name = 'FINE'
-    positioners = 'X Y THETA'
-    gather_titles = "# XPS Gathering Data\n#--------------"
-    gather_outputs = ('CurrentPosition', 'FollowingError',
-                      'SetpointPosition', 'CurrentVelocity')
-    #gather_outputs = ('CurrentPosition', 'SetpointPosition')
 
 
 class XPSTrajectory(object):
     """XPS trajectory....
     """
-    xylinetraj_text = """FirstTangent = 0
-DiscontinuityAngle = 0.01
-
-Line = %f, %f
-"""
 
     ramp_template_xrd = "%(ramptime)f, %(xramp)f, %(xvelo)f, %(zramp)f, %(zvelo)f, %(yramp)f, %(yvelo)f, %(oramp)f, %(ovelo)f"
     move_template_xrd = "%(scantime)f, %(xdist)f, %(xvelo)f, %(zdist)f, %(zvelo)f, %(ydist)f, %(yvelo)f, %(odist)f, %(ovelo)f"
@@ -62,27 +39,27 @@ Line = %f, %f
     def __init__(self, host=None, user=None, passwd=None,
                  group=None, positioners=None, mode=None, type=None,
                  default_accel=[]):
-        self.host = host or config.host
-        self.user = user or config.user
-        self.passwd = passwd or config.passwd
-        self.group_name = group or config.group_name
-        self.positioners = positioners or config.positioners
+        self.host = host or xps_config['HOST']
+        self.user = user or xps_config['USER']
+        self.passwd = passwd or xps_config['PASSWORD']
+        self.group_name = group or xps_config['GROUP NAME']
+        self.positioners = positioners or xps_config['POSITIONERS']
         self.positioners = tuple(self.positioners.replace(',', ' ').split())
 
         gout = []
         gtit = []
         for pname in self.positioners:
-            for out in config.gather_outputs:
+            for out in xps_config['GATHER OUTPUTS']:
                 gout.append('%s.%s.%s' % (self.group_name, pname, out))
                 gtit.append('%s.%s' % (pname, out))
         self.gather_outputs = gout
-        self.gather_titles = "%s\n#%s\n" % (config.gather_titles,
+        self.gather_titles = "%s\n#%s\n" % (xps_config['GATHER TITLES'],
                                             "  ".join(gtit))
 
         # self.gather_titles  = "%s %s\n" % " ".join(gtit)
 
         self.xps = XPS()
-        self.ssid = self.xps.TCP_ConnectToServer(self.host, config.port, config.timeout)
+        self.ssid = self.xps.TCP_ConnectToServer(self.host, xps_config['PORT'], xps_config['TIMEOUT'])
         ret = self.xps.Login(self.ssid, self.user, self.passwd)
         self.trajectories = {}
 
@@ -121,7 +98,7 @@ Line = %f, %f
 
     def upload_trajectory_file(self, fname, data):
         self.ftp_connect()
-        self.ftpconn.cwd(config.traj_folder)
+        self.ftpconn.cwd(xps_config['TRAJ_FOLDER'])
         self.ftpconn.storbinary('STOR %s' % fname, StringIO(data))
         self.ftp_disconnect()
         #print 'Uploaded trajectory ', fname
@@ -231,10 +208,10 @@ Line = %f, %f
         gather_titles = []
 
         for positioner in self.positioners:
-            for out in config.gather_outputs:
+            for out in xps_config['GATHER OUTPUTS']:
                 self.gather_outputs.append('%s.%s.%s' % (self.group_name, positioner, out))
                 gather_titles.append('%s.%s' % (positioner, out))
-        self.gather_titles = "%s\n#%s\n" % (config.gather_titles,
+        self.gather_titles = "%s\n#%s\n" % (xps_config['GATHER TITLES'],
                                             "  ".join(gather_titles))
 
         self.xps.GatheringReset(self.ssid)
