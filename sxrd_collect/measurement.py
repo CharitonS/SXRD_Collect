@@ -47,7 +47,7 @@ def get_sample_position():
 
 
 def collect_step_data(detector_position_x, detector_position_z, omega_start, omega_end, omega_step, exposure_time, x, y,
-                      z, callback_fcn=None):
+                      z, callback_fcn=None, collect_bkg_flag=False):
     """
     Performs a single crystal step collection at the sample position x,y,z using the trajectory scan of the
     XPS motor controller. This
@@ -76,6 +76,8 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
         A user-defined function which will be called after each collection step is performed.
         If the function returns False the step collection will be aborted. Otherwise the data collection will proceed
         until the omega_end.
+    :param collect_bkg_flag:
+        boolean flag which determines if a background collection should be done prior to the step collection
     """
     # performs the actual step measurement
     # prepare the stage:
@@ -85,16 +87,16 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
 
     # perform measurements:
     num_steps = (omega_end - omega_start) / omega_step
-    print(num_steps)
 
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
     stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
                                                pulse_time=0.1, accel_values=DEFAULT_ACCEL)
 
-    if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
-        perform_background_collection()
-    else:
-        logger.info('Data collection was aborted!')
+    if collect_bkg_flag:
+        if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
+            collect_background()
+        else:
+            logger.info('Data collection was aborted!')
 
     if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
         for step in range(int(num_steps)):
@@ -102,7 +104,7 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
             logger.info('Running Omega-Trajectory from {} deg by {} deg {} s'.format(omega_start + step * omega_step,
                                                                                      omega_step,
                                                                                      exposure_time))
-            perform_step_collection(exposure_time, stage_xps)
+            collect_step(exposure_time, stage_xps)
             logger.info('Time needed for one single step collection {}.\n'.format(time.time() - t1))
 
             if callback_fcn is not None:
@@ -117,7 +119,7 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
     del stage_xps
 
 
-def perform_step_collection(exposure_time, stage_xps):
+def collect_step(exposure_time, stage_xps):
     detector_checker = MarCCDChecker(epics_config['detector_control'])
 
     # start data collection
@@ -134,7 +136,7 @@ def perform_step_collection(exposure_time, stage_xps):
     time.sleep(0.5)
 
 
-def perform_background_collection():
+def collect_background():
     logger.info("Acquiring Detector Background.")
     caput('13MARCCD2:cam1:FrameType', 1, wait=True)
     logger.info("Changed Frame type to Background.")

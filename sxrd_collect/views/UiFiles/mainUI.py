@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'main.ui'
 #
-# Created: Thu Jul 16 11:29:03 2015
+# Created: Thu Jul 16 12:15:21 2015
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -367,6 +367,23 @@ class Ui_SXRDCollectWidget(object):
         self.horizontalLayout_11.addWidget(self.create_map_btn)
         spacerItem5 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_11.addItem(spacerItem5)
+        self.verticalLayout_3 = QtGui.QVBoxLayout()
+        self.verticalLayout_3.setObjectName(_fromUtf8("verticalLayout_3"))
+        self.collect_bkg_btn = QtGui.QPushButton(SXRDCollectWidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.collect_bkg_btn.sizePolicy().hasHeightForWidth())
+        self.collect_bkg_btn.setSizePolicy(sizePolicy)
+        self.collect_bkg_btn.setDefault(False)
+        self.collect_bkg_btn.setFlat(False)
+        self.collect_bkg_btn.setObjectName(_fromUtf8("collect_bkg_btn"))
+        self.verticalLayout_3.addWidget(self.collect_bkg_btn)
+        self.auto_bkg_cb = QtGui.QCheckBox(SXRDCollectWidget)
+        self.auto_bkg_cb.setChecked(True)
+        self.auto_bkg_cb.setObjectName(_fromUtf8("auto_bkg_cb"))
+        self.verticalLayout_3.addWidget(self.auto_bkg_cb)
+        self.horizontalLayout_11.addLayout(self.verticalLayout_3)
         self.verticalLayout.addLayout(self.horizontalLayout_11)
         self.line_3 = QtGui.QFrame(SXRDCollectWidget)
         self.line_3.setFrameShape(QtGui.QFrame.HLine)
@@ -379,12 +396,21 @@ class Ui_SXRDCollectWidget(object):
         self.status_txt.setMinimumSize(QtCore.QSize(0, 75))
         self.status_txt.setObjectName(_fromUtf8("status_txt"))
         self.horizontalLayout_7.addWidget(self.status_txt)
-        spacerItem6 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
+        spacerItem6 = QtGui.QSpacerItem(10, 20, QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_7.addItem(spacerItem6)
+        self.verticalLayout_4 = QtGui.QVBoxLayout()
+        self.verticalLayout_4.setObjectName(_fromUtf8("verticalLayout_4"))
+        self.status_lbl = QtGui.QLabel(SXRDCollectWidget)
+        self.status_lbl.setText(_fromUtf8(""))
+        self.status_lbl.setObjectName(_fromUtf8("status_lbl"))
+        self.verticalLayout_4.addWidget(self.status_lbl)
+        spacerItem7 = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.verticalLayout_4.addItem(spacerItem7)
         self.collect_btn = QtGui.QPushButton(SXRDCollectWidget)
         self.collect_btn.setMinimumSize(QtCore.QSize(130, 60))
         self.collect_btn.setObjectName(_fromUtf8("collect_btn"))
-        self.horizontalLayout_7.addWidget(self.collect_btn)
+        self.verticalLayout_4.addWidget(self.collect_btn)
+        self.horizontalLayout_7.addLayout(self.verticalLayout_4)
         self.verticalLayout.addLayout(self.horizontalLayout_7)
 
         self.retranslateUi(SXRDCollectWidget)
@@ -449,5 +475,7 @@ class Ui_SXRDCollectWidget(object):
         self.label_7.setText(_translate("SXRDCollectWidget", "max", None))
         self.y_max_txt.setText(_translate("SXRDCollectWidget", "0.01", None))
         self.create_map_btn.setText(_translate("SXRDCollectWidget", "Create Map", None))
+        self.collect_bkg_btn.setText(_translate("SXRDCollectWidget", "Collect Background", None))
+        self.auto_bkg_cb.setText(_translate("SXRDCollectWidget", "automatic", None))
         self.collect_btn.setText(_translate("SXRDCollectWidget", "Collect", None))
 

@@ -30,7 +30,7 @@ from PyQt4 import QtGui, QtCore
 from config import epics_config
 from views.MainView import MainView
 from models import SxrdModel
-from measurement import move_to_sample_pos, collect_step_data, collect_wide_data
+from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
 
 logger = logging.getLogger()
 
@@ -62,6 +62,8 @@ class MainController(object):
         self.widget.create_map_btn.clicked.connect(self.create_map_btn_clicked)
 
         self.widget.get_folder_btn.clicked.connect(self.get_folder_btn_clicked)
+
+        self.widget.collect_bkg_btn.clicked.connect(self.collect_bkg_data)
         self.widget.collect_btn.clicked.connect(self.collect_data)
 
     def connect_tables(self):
@@ -284,6 +286,9 @@ class MainController(object):
         example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
         self.widget.example_filename_lbl.setText(example_str)
 
+    def collect_bkg_data(self):
+        collect_background()
+
     def collect_data(self):
         # check if the current file path exists
         if self.check_filepath_exists() is False:
@@ -343,7 +348,9 @@ class MainController(object):
                                                               "exposure_time": abs(exposure_time),
                                                               "x": sample_point.x,
                                                               "y": sample_point.y,
-                                                              "z": sample_point.z
+                                                              "z": sample_point.z,
+                                                              "collect_bkg_flag":
+                                                                  bool(self.widget.auto_bkg_cb.isChecked())
                                                               })
                     collect_wide_data_thread.start()
 
@@ -375,7 +382,9 @@ class MainController(object):
                                                               "x": sample_point.x,
                                                               "y": sample_point.y,
                                                               "z": sample_point.z,
-                                                              "callback_fcn": self.check_if_aborted})
+                                                              "callback_fcn": self.check_if_aborted,
+                                                              "collect_bkg_flag":
+                                                                  bool(self.widget.auto_bkg_cb.isChecked())})
                     collect_step_data_thread.start()
 
                     while collect_step_data_thread.isAlive():
