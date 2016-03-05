@@ -157,11 +157,11 @@ class MainController(object):
         print filename
         with open(filename) as f:
             for line in f:
-                name, detector_pos_x, detector_pos_z, omega_start, omega_end, step_time, total_exp_time = line.split(';')
+                name, detector_pos_x, detector_pos_z, omega_start, omega_end, omega_step, step_time = line.split(';')
                 self.model.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
-                                                float(omega_start), float(omega_end), float(step_time), float(total_exp_time))
+                                                float(omega_start), float(omega_end), float(omega_step), float(step_time))
                 self.widget.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
-                                                float(omega_start), float(omega_end), float(step_time), float(total_exp_time))
+                                                float(omega_start), float(omega_end), float(omega_step), float(step_time))
 
     def save_exp_setup(self):
         print 'connected'
