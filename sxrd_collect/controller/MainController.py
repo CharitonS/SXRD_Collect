@@ -396,7 +396,6 @@ class MainController(object):
             for sample_point in self.model.sample_points:
 
                 if sample_point.perform_still_for_setup[exp_ind]:
-
                     if self.widget.rename_files_cb.isChecked():
                         point_number = str(self.widget.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \

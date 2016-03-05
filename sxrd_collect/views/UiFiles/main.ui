@@ -100,6 +100,20 @@ Conifguration</string>
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="load_setup_btn">
+       <property name="text">
+        <string>Load</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="save_setup_btn">
+       <property name="text">
+        <string>Save</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
         <widget class="QPushButton" name="add_setup_btn">
