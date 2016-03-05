@@ -358,10 +358,6 @@ class MainController(object):
             self.show_error_message_box('The folder you specified does not exist. '
                                         'Please enter a valid path for saving the collected images!')
             return
-        # check if all motor positions are in a correct position
-        if self.check_conditions() is False:
-            self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
-            return
 
         # check if sample position are not very far away from the current position (in case users forgot to update
         # positions....) maximum value is right now set to 200um distance
@@ -371,12 +367,6 @@ class MainController(object):
                 'position.<br> Do you want to continue?!')
             if reply == QtGui.QMessageBox.Abort:
                 return
-
-        #check naming scheme
-        if self.check_naming_scheme() is False:
-            self.show_error_message_box('Please choose only ONE of the options'+
-                                                '"Rename Files" or "Do not add suffixes to basename"' )
-            return
 
         self.set_status_lbl("Collecting", "#FF0000")
 
@@ -432,7 +422,7 @@ class MainController(object):
                                                                 "x": sample_point.x,
                                                                 "y": sample_point.y,
                                                                 "z": sample_point.z,
-                                                                "omega": (experiment.omega_end + experiment.omega_start)/2
+                                                                "omega": -90.0
                                                                }
                                                         )
                     collect_single_data_thread.start()
@@ -445,6 +435,12 @@ class MainController(object):
                     break
 
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
+
+                    # check if all motor positions are in a correct position
+                    if self.check_conditions() is False:
+                        self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
+                        return
+
                     if self.widget.rename_files_cb.isChecked():
                         point_number = str(self.widget.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
@@ -486,6 +482,12 @@ class MainController(object):
                     break
 
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
+
+                    # check if all motor positions are in a correct position
+                    if self.check_conditions() is False:
+                        self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
+                        return
+
                     if self.widget.rename_files_cb.isChecked():
                         point_number = str(self.widget.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
@@ -696,14 +698,6 @@ class MainController(object):
         largest_distance = self.model.get_largest_largest_collecting_sample_point_distance_to(pos_x, pos_y, pos_z)
 
         return largest_distance < 0.2
-
-    def check_naming_scheme(self):
-        if self.widget.no_suffices_cb.isChecked() and self.widget.rename_files_cb.isChecked():
-            return False
-        if self.widget.no_suffices_cb.isChecked() and self.widget.rename_after_cb.isChecked():
-            return False
-        else:
-            return True
 
     @staticmethod
     def show_error_message_box(msg):
