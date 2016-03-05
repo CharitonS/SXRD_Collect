@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>702</width>
-    <height>793</height>
+    <width>760</width>
+    <height>863</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -134,20 +134,45 @@ Conifguration</string>
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="5,8">
+    <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,0">
      <property name="spacing">
       <number>10</number>
      </property>
      <item>
       <widget class="QWidget" name="widget" native="true">
+       <property name="maximumSize">
+        <size>
+         <width>300</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <layout class="QGridLayout" name="gridLayout">
+          <item row="3" column="2">
+           <widget class="QPushButton" name="get_framenr_btn">
+            <property name="maximumSize">
+             <size>
+              <width>35</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Will get current Frame Nr from epics</string>
+            </property>
+            <property name="text">
+             <string>Get</string>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="1">
            <widget class="QLineEdit" name="filepath_txt"/>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="filename_txt"/>
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_3">
@@ -159,18 +184,8 @@ Conifguration</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label">
-            <property name="layoutDirection">
-             <enum>Qt::LeftToRight</enum>
-            </property>
-            <property name="text">
-             <string>Point:</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="filename_txt"/>
           </item>
           <item row="2" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout_10">
@@ -205,6 +220,19 @@ Conifguration</string>
             </item>
            </layout>
           </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Point:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_4">
             <property name="text">
@@ -222,6 +250,51 @@ Conifguration</string>
               <width>35</width>
               <height>16777215</height>
              </size>
+            </property>
+            <property name="toolTip">
+             <string>Will get current epics filepath</string>
+            </property>
+            <property name="text">
+             <string>Get</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Frame Nr.</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="frame_number_txt">
+            <property name="maximumSize">
+             <size>
+              <width>50</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>1</string>
+            </property>
+            <property name="placeholderText">
+             <string>Number</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="get_basename_btn">
+            <property name="maximumSize">
+             <size>
+              <width>35</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Will get current basename from epics</string>
             </property>
             <property name="text">
              <string>Get</string>
@@ -249,6 +322,9 @@ Conifguration</string>
         </item>
         <item>
          <widget class="QCheckBox" name="rename_files_cb">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Will name files in the following way:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;basename_S1_P1_E1_s_FrameNr&lt;/span&gt;&lt;/p&gt;&lt;p&gt;S1 - sample name&lt;/p&gt;&lt;p&gt;P1 - point number&lt;/p&gt;&lt;p&gt;E1 - experimental setup name&lt;/p&gt;&lt;p&gt;s - step scan (w - for wide scan, empty for still image)&lt;/p&gt;&lt;p&gt;FrameNr - Frame number&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
           </property>
@@ -294,34 +370,55 @@ Conifguration</string>
          </widget>
         </item>
         <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
+         <widget class="QCheckBox" name="no_suffices_cb">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;If this option is checked, the filename will be: &lt;/span&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;Basename_Frame Nr&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;This option will not work if there are several experimental setups or sample points&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
-         </spacer>
+          <property name="text">
+           <string>Do not add suffixes to basename</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
      </item>
      <item>
       <widget class="QTableWidget" name="setup_table">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="selectionMode">
         <enum>QAbstractItemView::ExtendedSelection</enum>
        </property>
        <property name="selectionBehavior">
         <enum>QAbstractItemView::SelectRows</enum>
        </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+       <attribute name="horizontalHeaderVisible">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="horizontalHeaderCascadingSectionResizes">
+        <bool>false</bool>
+       </attribute>
        <attribute name="horizontalHeaderDefaultSectionSize">
-        <number>60</number>
+        <number>62</number>
        </attribute>
        <attribute name="horizontalHeaderHighlightSections">
         <bool>true</bool>
+       </attribute>
+       <attribute name="horizontalHeaderMinimumSectionSize">
+        <number>34</number>
        </attribute>
        <attribute name="verticalHeaderVisible">
         <bool>false</bool>
@@ -343,17 +440,17 @@ Conifguration</string>
        </column>
        <column>
         <property name="text">
-         <string>Ω Start</string>
+         <string>ω Start</string>
         </property>
        </column>
        <column>
         <property name="text">
-         <string>Ω End</string>
+         <string>ω End</string>
         </property>
        </column>
        <column>
         <property name="text">
-         <string>Ω Step</string>
+         <string>ω Step</string>
         </property>
        </column>
        <column>

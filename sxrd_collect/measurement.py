@@ -101,9 +101,14 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
     if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
         for step in range(int(num_steps)):
             t1 = time.time()
-            logger.info('Running Omega-Trajectory from {} deg by {} deg {} s'.format(omega_start + step * omega_step,
+            longstring = 'Running Omega-Trajectory from {} deg by {} deg {} s'.format(omega_start + step * omega_step,
                                                                                      omega_step,
-                                                                                     exposure_time))
+                                                                                     exposure_time)
+            shortstring = 'start {} step {} time {} s'.format(omega_start + step * omega_step,
+                                                 omega_step,          exposure_time)
+
+            caput('13MARCCD2:AcquireSequence.STRA', shortstring, wait=True)
+            logging.info(longstring)
             collect_step(exposure_time, stage_xps)
             logger.info('Time needed for one single step collection {}.\n'.format(time.time() - t1))
 
@@ -116,6 +121,7 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
 
     caput(epics_config['detector_control'] + ':ShutterMode', previous_shutter_mode, wait=True)
     logger.info('Data collection finished.\n')
+    caput('13MARCCD2:AcquireSequence.STRA', 'Step scan finished', wait=True)
     del stage_xps
 
 
@@ -138,6 +144,7 @@ def collect_step(exposure_time, stage_xps):
 
 def collect_background():
     logger.info("Acquiring Detector Background.")
+    caput('13MARCCD2:AcquireSequence.STRA', 'Acquiring Detector Background', wait=True)
     caput('13MARCCD2:cam1:FrameType', 1, wait=True)
     logger.info("Changed Frame type to Background.")
     caput('13MARCCD2:cam1:Acquire', 1, wait=True)
@@ -174,6 +181,11 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
 
     # start trajectory scan
     omega_range = omega_end - omega_start
+
+    wstring = 'start {} range {} time {} s'.format(omega_start,
+                                                 omega_range,          exposure_time)
+
+    caput('13MARCCD2:AcquireSequence.STRA', wstring, wait=True)
     print omega_range
     run_omega_trajectory(omega_range, exposure_time)
 
@@ -182,8 +194,9 @@ def collect_wide_data(detector_position_x, detector_position_z, omega_start, ome
     caput(epics_config['detector_control'] + ':Acquire', 0)
     caput(epics_config['detector_control'] + ':ShutterMode', previous_shutter_mode, wait=True)
     while not detector_checker.is_finished():
-        time.sleep(0.01)
+        time.sleep(0.1)
     logger.info('Wide data collection finished.\n')
+    #caput('13MARCCD2:AcquireSequence.STRA', 'Wide scan finished', wait=True)
     return
 
 
@@ -239,12 +252,26 @@ def run_omega_trajectory(omega, running_time):
     del stage_xps
 
 
-def collect_single_data(detector_position, exposure_time, x, y, z, omega):
+def collect_single_data(detector_position_x, detector_position_z, exposure_time, x, y, z, omega):
+    #new commands
+    previous_shutter_mode = prepare_detector()
+    detector_checker = MarCCDChecker(epics_config['detector_control'])
+
     # performs an actual single angle measurement:
     move_to_sample_pos(x, y, z)
     move_to_omega_position(omega)
-    move_to_detector_position(detector_position)
-    collect_data(exposure_time, wait=True)
+    move_to_detector_position(detector_position_x, detector_position_z)
+
+    #more new commands
+
+    caput(epics_config['detector_control'] + ':Acquire', 1)
+
+    caput(epics_config['detector_control'] + ':ShutterMode', previous_shutter_mode, wait=True)
+
+    while not detector_checker.is_finished():
+        time.sleep(0.1)
+    logger.info('Still data collection finished.\n')
+
     return
 
 
@@ -266,6 +293,7 @@ def move_to_sample_pos(x, y, z, wait=True, callbacks=[]):
             callback()
     time.sleep(0.5)
     logger.info('Moving Sample to x: {}, y: {}, z: {} finished.\n'.format(x, y, z))
+    caput('13MARCCD2:AcquireSequence.STRA', 'Scan finished', wait=True)
     return
 
 

@@ -49,7 +49,8 @@ class SxrdModel(object):
             point_data = []
             for ind, experiment in enumerate(self.experiment_setups):
                 point_data.append([point.perform_step_scan_for_setup[ind],
-                                   point.perform_wide_scan_for_setup[ind]])
+                                   point.perform_wide_scan_for_setup[ind],
+                                   point.perform_still_for_setup[ind]])
             data.append(point_data)
         return data
 
@@ -149,6 +150,7 @@ class SamplePoint(object):
         self.experiment_setups = []
         self.perform_wide_scan_for_setup = []
         self.perform_step_scan_for_setup = []
+        self.perform_still_for_setup = []
 
     def set_position(self, x, y, z):
         self.x = x
@@ -162,12 +164,14 @@ class SamplePoint(object):
         self.experiment_setups.append(experiment_setup)
         self.perform_step_scan_for_setup.append(False)
         self.perform_wide_scan_for_setup.append(False)
+        self.perform_still_for_setup.append(False)
 
     def unregister_setup(self, experiment_setup):
         ind = self.experiment_setups.index(experiment_setup)
         del self.experiment_setups[ind]
         del self.perform_step_scan_for_setup[ind]
         del self.perform_wide_scan_for_setup[ind]
+        del self.perform_still_for_setup[ind]
 
     def set_perform_wide_scan_setup(self, exp_ind, state):
         self.perform_wide_scan_for_setup[exp_ind] = state
@@ -175,11 +179,17 @@ class SamplePoint(object):
     def set_perform_step_scan_setup(self, exp_ind, state):
         self.perform_step_scan_for_setup[exp_ind] = state
 
+    def set_perform_still_setup(self, exp_ind, state):
+        self.perform_still_for_setup[exp_ind] = state
+
     def is_collecting(self):
         for state in self.perform_step_scan_for_setup:
             if state:
                 return True
         for state in self.perform_wide_scan_for_setup:
+            if state:
+                return True
+        for state in self.perform_still_for_setup:
             if state:
                 return True
         return False

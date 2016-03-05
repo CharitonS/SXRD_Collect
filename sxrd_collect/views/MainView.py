@@ -29,6 +29,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
 
     step_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
     wide_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
+    still_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
 
     def __init__(self, version):
         super(MainView, self).__init__()
@@ -158,18 +159,22 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.resizeColumnsToContents()
         self.sample_points_table.blockSignals(False)
 
-    def create_sample_point_checkboxes(self, row_index, exp_index, step_state=False, wide_state=False):
+    def create_sample_point_checkboxes(self, row_index, exp_index, step_state=False, wide_state=False, still_state = False):
         exp_widget = QtGui.QWidget()
         wide_cb = QtGui.QCheckBox('wide')
         step_cb = QtGui.QCheckBox('step')
+        still_cb = QtGui.QCheckBox('still')
         exp_layout = QtGui.QHBoxLayout()
+        exp_layout.addWidget(still_cb)
         exp_layout.addWidget(wide_cb)
         exp_layout.addWidget(step_cb)
         exp_widget.setLayout(exp_layout)
 
+        still_cb.setChecked(still_state)
         step_cb.setChecked(step_state)
         wide_cb.setChecked(wide_state)
 
+        still_cb.stateChanged.connect(partial(self.still_cb_changed, row_index, exp_index))
         step_cb.stateChanged.connect(partial(self.step_cb_changed, row_index, exp_index))
         wide_cb.stateChanged.connect(partial(self.wide_cb_changed, row_index, exp_index))
         self.sample_points_table.setCellWidget(row_index, exp_index + 6, exp_widget)
@@ -177,7 +182,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     def recreate_sample_point_checkboxes(self, values):
         for row_index, row in enumerate(values):
             for exp_index, experiment_state in enumerate(row):
-                self.create_sample_point_checkboxes(row_index, exp_index, experiment_state[0], experiment_state[1])
+                self.create_sample_point_checkboxes(row_index, exp_index, experiment_state[0], experiment_state[1], experiment_state[2])
 
     def get_selected_sample_point(self):
         selected = self.sample_points_table.selectionModel().selectedRows()
@@ -195,7 +200,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.blockSignals(False)
 
     def clear_sample_points(self):
-        self.sample_points_table.clear()
+        self.sample_points_table.clearContents()
         self.sample_points_table.setRowCount(0)
 
     def set_sample_point_values(self, ind, x, y, z):
@@ -228,6 +233,8 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     def wide_cb_changed(self, row_index, exp_index, state):
         self.wide_cb_status_changed.emit(row_index, exp_index, bool(state))
 
+    def still_cb_changed(self, row_index, exp_index, state):
+        self.still_cb_status_changed.emit(row_index, exp_index, bool(state))
 
 class TextDoubleDelegate(QtGui.QStyledItemDelegate):
     def __init__(self, parent):
