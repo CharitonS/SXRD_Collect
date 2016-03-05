@@ -87,6 +87,9 @@ class MainController(object):
         self.widget.collect_bkg_btn.clicked.connect(self.collect_bkg_data)
         self.widget.collect_btn.clicked.connect(self.collect_data)
 
+        self.widget.load_setup_btn.clicked.connect(self.load_exp_setup)
+        self.widget.save_setup_btn.clicked.connect(self.save_exp_setup)
+
 
     def connect_tables(self):
         self.widget.setup_table.cellChanged.connect(self.setup_table_cell_changed)
@@ -148,6 +151,20 @@ class MainController(object):
 
     def update_status_txt_scrollbar_value(self, value):
         self.status_txt_scrollbar_is_at_max = value == self.widget.status_txt.verticalScrollBar().maximum()
+
+    def load_exp_setup(self):
+        filename = str(QtGui.QFileDialog.getOpenFileName(self.widget, caption="Load Calibration Image", directory='C:'))
+        print filename
+        with open(filename) as f:
+            for line in f:
+                name, detector_pos_x, detector_pos_z, omega_start, omega_end, step_time, total_exp_time = line.split(';')
+                self.model.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
+                                                float(omega_start), float(omega_end), float(step_time), float(total_exp_time))
+                self.widget.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
+                                                float(omega_start), float(omega_end), float(step_time), float(total_exp_time))
+
+    def save_exp_setup(self):
+        print 'connected'
 
     def add_experiment_setup_btn_clicked(self):
         detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()
