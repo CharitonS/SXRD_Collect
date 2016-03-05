@@ -154,7 +154,6 @@ class MainController(object):
 
     def load_exp_setup(self):
         filename = str(QtGui.QFileDialog.getOpenFileName(self.widget, caption="Load Calibration Image", directory='C:'))
-        print filename
         with open(filename) as f:
             for line in f:
                 name, detector_pos_x, detector_pos_z, omega_start, omega_end, omega_step, step_time = line.split(';')
@@ -162,6 +161,7 @@ class MainController(object):
                                                 float(omega_start), float(omega_end), float(omega_step), float(step_time))
                 self.widget.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
                                                 float(omega_start), float(omega_end), float(omega_step), float(step_time))
+        self.widget.setup_table.resizeColumnsToContents()
 
     def save_exp_setup(self):
         print 'connected'
@@ -173,6 +173,7 @@ class MainController(object):
                                         omega - 1, omega + 1, 1, exposure_time)
         self.widget.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
                                          omega - 1, omega + 1, 1, exposure_time)
+        self.widget.setup_table.resizeColumnsToContents()
 
     def delete_experiment_setup_btn_clicked(self):
         cur_ind = self.widget.get_selected_experiment_setup()
@@ -181,7 +182,7 @@ class MainController(object):
         if cur_ind is None or (len(cur_ind) == 0):
             return
         msgBox = QtGui.QMessageBox()
-        msgBox.setText('Do you really want to delete the selected experiment(s).')
+        msgBox.setText('Do you really want to delete selected experiment(s)?')
         msgBox.setWindowTitle('Confirmation')
         msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
         msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
@@ -193,8 +194,17 @@ class MainController(object):
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
 
     def clear_experiment_setup_btn_clicked(self):
-        self.widget.clear_experiment_setups()
-        self.model.clear_experiment_setups()
+        msgBox = QtGui.QMessageBox()
+        msgBox.setText('Do you really want to delete all experiments?')
+        msgBox.setWindowTitle('Confirmation')
+        msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
+        msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        response = msgBox.exec_()
+        if response == QtGui.QMessageBox.Yes:
+            self.widget.clear_experiment_setups()
+            self.model.clear_experiment_setups()
+            self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+
 
     def add_sample_point_btn_clicked(self):
         x, y, z = self.get_current_sample_position()

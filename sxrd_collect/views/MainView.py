@@ -108,6 +108,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     def delete_experiment_setup(self, row_ind):
         self.setup_table.blockSignals(True)
         self.setup_table.removeRow(row_ind)
+
         # rename row Headers:
         for row_ind in range(self.setup_table.rowCount()):
             self.setup_table.setVerticalHeaderItem(row_ind,
@@ -116,6 +117,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
 
         self.sample_points_table.blockSignals(True)
         self.sample_points_table.removeColumn(6 + row_ind)
+
         #rename column Headers:
         for row_ind in range(self.setup_table.rowCount()):
             self.sample_points_table.setHorizontalHeaderItem(
@@ -202,6 +204,17 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     def clear_sample_points(self):
         self.sample_points_table.clearContents()
         self.sample_points_table.setRowCount(0)
+
+    def clear_experiment_setups(self):
+        self.setup_table.blockSignals(True)
+        self.setup_table.clearContents()
+        self.setup_table.setRowCount(0)
+        self.setup_table.blockSignals(False)
+        self.sample_points_table.blockSignals(True)
+        for col_ind in reversed(range(self.sample_points_table.columnCount())):
+            if col_ind >= 6:
+                self.sample_points_table.removeColumn(col_ind)
+        self.sample_points_table.blockSignals(False)
 
     def set_sample_point_values(self, ind, x, y, z):
         x_item = self.sample_points_table.item(ind, 1)
