@@ -153,24 +153,24 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = value == self.widget.status_txt.verticalScrollBar().maximum()
 
     def load_exp_setup(self):
-        filename = str(QtGui.QFileDialog.getOpenFileName(self.widget, caption="Load Calibration Image", directory='C:',
-                                                         selectedFilter='*.ini'))
-        with open(filename) as f:
-            for line in f:
-                name, detector_pos_x, detector_pos_z, omega_start, omega_end, omega_step, step_time = line.split(';')
-                self.model.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
-                                                float(omega_start), float(omega_end), float(omega_step), float(step_time))
-                self.widget.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
-                                                float(omega_start), float(omega_end), float(omega_step), float(step_time))
+        filename = str(QtGui.QFileDialog.getOpenFileName(self.widget, caption="Load Calibration Image", filter='*.ini'))
+        if filename is not '':
+            with open(filename) as f:
+                for line in f:
+                    name, detector_pos_x, detector_pos_z, omega_start, omega_end, omega_step, step_time = line.split(';')
+                    self.model.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
+                                                    float(omega_start), float(omega_end), float(omega_step), float(step_time))
+                    self.widget.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
+                                                    float(omega_start), float(omega_end), float(omega_step), float(step_time))
         self.widget.setup_table.resizeColumnsToContents()
 
     def save_exp_setup(self):
-        filename = str(QtGui.QFileDialog.getSaveFileName(self.widget, caption="Save Calibration Image", directory='C:',
-                                                         selectedFilter='*.ini'))
-        with open(filename, 'w+') as f:
-             for experiment_setup in self.model.experiment_setups:
-                f.write(experiment_setup.save())
-                f.write('\n')
+        filename = str(QtGui.QFileDialog.getSaveFileName(self.widget, caption="Save Calibration Image", filter='*.ini'))
+        if filename is not '':
+            with open(filename, 'w+') as f:
+                for experiment_setup in self.model.experiment_setups:
+                    f.write(experiment_setup.save())
+                    f.write('\n')
 
     def add_experiment_setup_btn_clicked(self):
         detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()

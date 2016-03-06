@@ -113,15 +113,18 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         for row_ind in range(self.setup_table.rowCount()):
             self.setup_table.setVerticalHeaderItem(row_ind,
                                                    QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
+
         self.setup_table.blockSignals(False)
 
         self.sample_points_table.blockSignals(True)
         self.sample_points_table.removeColumn(6 + row_ind)
 
+        #
         #rename column Headers:
-        for row_ind in range(self.setup_table.rowCount()):
-            self.sample_points_table.setHorizontalHeaderItem(
-                6 + row_ind, QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
+        # for row_ind in range(self.setup_table.rowCount()):
+        #     self.sample_points_table.setHorizontalHeaderItem(
+        #         6 + row_ind, QtGui.QTableWidgetItem(name))
+
         self.sample_points_table.blockSignals(False)
 
     def update_sample_table_setup_header(self, header_names):
