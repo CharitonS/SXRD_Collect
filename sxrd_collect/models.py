@@ -138,6 +138,10 @@ class ExperimentSetup(object):
         return "{}: {}, {}, {}, {}, {}, {}".format(self.name, self.detector_pos_x, self.detector_pos_z,
                                                    self.omega_start, self.omega_end, self.omega_step,
                                                    self.time_per_step)
+    def save(self):
+        return "{};{};{};{};{};{};{}".format(self.name, self.detector_pos_x, self.detector_pos_z,
+                                                   self.omega_start, self.omega_end, self.omega_step,
+                                                   self.time_per_step)
 
 
 class SamplePoint(object):
