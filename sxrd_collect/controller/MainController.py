@@ -269,11 +269,24 @@ class MainController(object):
             elif col == 2:
                 self.model.experiment_setups[row].detector_pos_z = value
             elif col == 3:
-                self.model.experiment_setups[row].omega_start = value
-                self.update_total_exposure_time(row)
+                if value >= -135.0 and value <= -45.0:
+                    self.model.experiment_setups[row].omega_start = value
+                    self.update_total_exposure_time(row)
+                else:
+                    self.model.experiment_setups[row].omega_start = -90.0
+                    self.widget.setup_table.item(row, 3).setText('-90.0')
+                    print self.model.experiment_setups[row].omega_start
+                    self.update_total_exposure_time(row)
+                    self.create_omega_error_msg('Starting omega value is incorrect')
             elif col == 4:
-                self.model.experiment_setups[row].omega_end = value
-                self.update_total_exposure_time(row)
+                if value >= -135 and value <= -45:
+                    self.model.experiment_setups[row].omega_end = value
+                    self.update_total_exposure_time(row)
+                else:
+                    self.model.experiment_setups[row].omega_end = -90.0
+                    self.widget.setup_table.item(row, 4).setText('-90.0')
+                    self.update_total_exposure_time(row)
+                    self.create_omega_error_msg('End omega value is incorrect')
             elif col == 5:
                 self.model.experiment_setups[row].omega_step = value
                 self.update_total_exposure_time(row)
@@ -645,6 +658,17 @@ class MainController(object):
         msg_box = QtGui.QMessageBox()
         msg_box.setWindowFlags(QtCore.Qt.Tool)
         msg_box.setText('{} name already exists.'.format(name_type))
+        msg_box.setIcon(QtGui.QMessageBox.Critical)
+        msg_box.setWindowTitle('Error')
+        msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
+        msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+        msg_box.exec_()
+
+    @staticmethod
+    def create_omega_error_msg(msg):
+        msg_box = QtGui.QMessageBox()
+        msg_box.setWindowFlags(QtCore.Qt.Tool)
+        msg_box.setText(msg)
         msg_box.setIcon(QtGui.QMessageBox.Critical)
         msg_box.setWindowTitle('Error')
         msg_box.setStandardButtons(QtGui.QMessageBox.Ok)

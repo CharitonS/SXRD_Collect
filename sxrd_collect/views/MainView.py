@@ -119,11 +119,14 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.blockSignals(True)
         self.sample_points_table.removeColumn(6 + row_ind)
 
-        #
         #rename column Headers:
         # for row_ind in range(self.setup_table.rowCount()):
         #     self.sample_points_table.setHorizontalHeaderItem(
-        #         6 + row_ind, QtGui.QTableWidgetItem(name))
+        #          6 + row_ind, QtGui.QTableWidgetItem(name))
+
+        for row_ind in range(self.setup_table.rowCount()):
+            self.sample_points_table.setHorizontalHeaderItem(
+                 6 + row_ind, QtGui.QTableWidgetItem(self.setup_table.item(row_ind,0).text()))
 
         self.sample_points_table.blockSignals(False)
 
