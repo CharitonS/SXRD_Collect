@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>760</width>
-    <height>863</height>
+    <width>917</width>
+    <height>881</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -101,6 +101,9 @@ Conifguration</string>
      </item>
      <item>
       <widget class="QPushButton" name="load_setup_btn">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Load experiment setup(s) from *.ini file&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Load</string>
        </property>
@@ -108,6 +111,9 @@ Conifguration</string>
      </item>
      <item>
       <widget class="QPushButton" name="save_setup_btn">
+       <property name="toolTip">
+        <string>Save current experiment setup(s) to *.ini file</string>
+       </property>
        <property name="text">
         <string>Save</string>
        </property>
@@ -148,7 +154,7 @@ Conifguration</string>
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,0">
+    <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,0,0">
      <property name="spacing">
       <number>10</number>
      </property>
@@ -318,14 +324,21 @@ Conifguration</string>
          </layout>
         </item>
         <item>
-         <widget class="QLabel" name="example_filename_lbl">
-          <property name="text">
-           <string>Examplefilename</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QLabel" name="example_filename_lbl">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#888888;&quot;&gt;Grey&lt;/span&gt;: Example Filename&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#aa0000;&quot;&gt;Red&lt;/span&gt;: The file with the same name exists and will be overwritten&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#ff5500;&quot;&gt;Orange&lt;/span&gt;: Path does not exist&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#228b22;&quot;&gt;Green&lt;/span&gt;: Everything Ok (at least the first file will not be overwritten)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string>Examplefilename</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
          <widget class="Line" name="line_4">
@@ -337,7 +350,7 @@ Conifguration</string>
         <item>
          <widget class="QCheckBox" name="rename_files_cb">
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Will name files in the following way:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;basename_S1_P1_E1_s_FrameNr&lt;/span&gt;&lt;/p&gt;&lt;p&gt;S1 - sample name&lt;/p&gt;&lt;p&gt;P1 - point number&lt;/p&gt;&lt;p&gt;E1 - experimental setup name&lt;/p&gt;&lt;p&gt;s - step scan (w - for wide scan, empty for still image)&lt;/p&gt;&lt;p&gt;FrameNr - Frame number&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Will name files in the following way:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;basename_S1_P1_E1_s_FrameNr&lt;/span&gt;&lt;/p&gt;&lt;p&gt;S1 - sample name&lt;/p&gt;&lt;p&gt;P1 - point number&lt;/p&gt;&lt;p&gt;E1 - experimental setup name&lt;/p&gt;&lt;p&gt;s - step scan (w - for wide scan, empty for still image)&lt;/p&gt;&lt;p&gt;FrameNr - Frame number (will always start with 001)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="layoutDirection">
            <enum>Qt::LeftToRight</enum>
@@ -406,9 +419,18 @@ Conifguration</string>
       <widget class="QTableWidget" name="setup_table">
        <property name="minimumSize">
         <size>
-         <width>0</width>
+         <width>500</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string/>
        </property>
        <property name="selectionMode">
         <enum>QAbstractItemView::ExtendedSelection</enum>
@@ -478,6 +500,109 @@ Conifguration</string>
         </property>
        </column>
       </widget>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_5">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetMinAndMaxSize</enum>
+       </property>
+       <item>
+        <widget class="QPushButton" name="omega_pm1_btn">
+         <property name="maximumSize">
+          <size>
+           <width>50</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set:&lt;/p&gt;&lt;p&gt;ω Start = -91.0&lt;/p&gt;&lt;p&gt;ω End   = -89.0&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>ω ± 1</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="omega_pm3_btn">
+         <property name="maximumSize">
+          <size>
+           <width>50</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set:&lt;/p&gt;&lt;p&gt;ω Start = -93.0&lt;/p&gt;&lt;p&gt;ω End   = -87.0&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>ω ± 3</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="omega_pm10_btn">
+         <property name="maximumSize">
+          <size>
+           <width>50</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set:&lt;/p&gt;&lt;p&gt;ω Start = -100.0&lt;/p&gt;&lt;p&gt;ω End   = -80.0&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>ω ± 10</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="omega_pm20_btn">
+         <property name="maximumSize">
+          <size>
+           <width>50</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set:&lt;/p&gt;&lt;p&gt;ω Start = -110.0&lt;/p&gt;&lt;p&gt;ω End   = -70.0&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>ω ± 20</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="omega_pm38_btn">
+         <property name="maximumSize">
+          <size>
+           <width>50</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set:&lt;/p&gt;&lt;p&gt;ω Start = -128.0&lt;/p&gt;&lt;p&gt;ω End   = -52.0&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>ω ± 38</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>25</width>
+           <height>120</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
@@ -576,6 +701,9 @@ QPushButton::hover{
      <property name="columnCount">
       <number>6</number>
      </property>
+     <attribute name="horizontalHeaderVisible">
+      <bool>true</bool>
+     </attribute>
      <attribute name="horizontalHeaderDefaultSectionSize">
       <number>80</number>
      </attribute>

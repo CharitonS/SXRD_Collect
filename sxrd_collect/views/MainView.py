@@ -37,6 +37,13 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
 
         self.table_delegate = FirstItemStringDelegate(self)
         self.setup_table.setItemDelegate(self.table_delegate)
+        self.setup_table.horizontalHeaderItem(4).setToolTip('For BX90 + BA diamonds \n'
+                                                            'Wide scan: -70 \n'
+                                                            'Step scan: -52')
+        self.setup_table.horizontalHeaderItem(3).setToolTip('For BX90 + BA diamonds \n'
+                                                            'Wide scan: -110 \n'
+                                                            'Step scan: -128')
+
         self.sample_points_table.setItemDelegate(self.table_delegate)
 
         self.setWindowTitle("SXRD Collect {}".format(version))

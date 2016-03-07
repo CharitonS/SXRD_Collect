@@ -23,6 +23,8 @@ from threading import Thread
 import logging
 
 from epics import caget, caput
+
+import os.path
 import epics
 
 from PyQt4 import QtGui, QtCore
@@ -90,6 +92,12 @@ class MainController(object):
         self.widget.load_setup_btn.clicked.connect(self.load_exp_setup)
         self.widget.save_setup_btn.clicked.connect(self.save_exp_setup)
 
+        self.widget.omega_pm1_btn.clicked.connect(lambda: self.omega_btn_clicked(1.0))
+        self.widget.omega_pm3_btn.clicked.connect(lambda: self.omega_btn_clicked(3.0))
+        self.widget.omega_pm10_btn.clicked.connect(lambda: self.omega_btn_clicked(10.0))
+        self.widget.omega_pm20_btn.clicked.connect(lambda: self.omega_btn_clicked(20.0))
+        self.widget.omega_pm38_btn.clicked.connect(lambda: self.omega_btn_clicked(38.0))
+
 
     def connect_tables(self):
         self.widget.setup_table.cellChanged.connect(self.setup_table_cell_changed)
@@ -153,7 +161,7 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = value == self.widget.status_txt.verticalScrollBar().maximum()
 
     def load_exp_setup(self):
-        filename = str(QtGui.QFileDialog.getOpenFileName(self.widget, caption="Load Calibration Image", filter='*.ini'))
+        filename = str(QtGui.QFileDialog.getOpenFileName(self.widget, caption="Load experiment setup file", filter='*.ini'))
         if filename is not '':
             with open(filename) as f:
                 for line in f:
@@ -162,10 +170,11 @@ class MainController(object):
                                                     float(omega_start), float(omega_end), float(omega_step), float(step_time))
                     self.widget.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
                                                     float(omega_start), float(omega_end), float(omega_step), float(step_time))
+        print self.model.get_experiment_setup_names()
         self.widget.setup_table.resizeColumnsToContents()
 
     def save_exp_setup(self):
-        filename = str(QtGui.QFileDialog.getSaveFileName(self.widget, caption="Save Calibration Image", filter='*.ini'))
+        filename = str(QtGui.QFileDialog.getSaveFileName(self.widget, caption="Save experiment setup file", filter='*.ini'))
         if filename is not '':
             with open(filename, 'w+') as f:
                 for experiment_setup in self.model.experiment_setups:
@@ -275,7 +284,6 @@ class MainController(object):
                 else:
                     self.model.experiment_setups[row].omega_start = -90.0
                     self.widget.setup_table.item(row, 3).setText('-90.0')
-                    print self.model.experiment_setups[row].omega_start
                     self.update_total_exposure_time(row)
                     self.create_omega_error_msg('Starting omega value is incorrect')
             elif col == 4:
@@ -328,6 +336,20 @@ class MainController(object):
         self.widget.sample_points_table.resizeColumnsToContents()
 
         print(self.model.sample_points[row])
+
+    def omega_btn_clicked(self, omega_range):
+        cur_ind = self.widget.get_selected_experiment_setup()
+        cur_ind.sort()
+        cur_ind = cur_ind[::-1]
+        omega_start = -90.0 - omega_range
+        omega_end = -90 + omega_range
+        if cur_ind is None or (len(cur_ind) == 0):
+            return
+        for ind in cur_ind:
+            self.widget.setup_table.item(ind, 3).setText(str(omega_start))
+            self.widget.setup_table.item(ind, 4).setText(str(omega_end))
+            self.model.experiment_setups[ind].omega_start = omega_start
+            self.model.experiment_setups[ind].omega_end = omega_end
 
     def move_sample_btn_clicked(self, ind):
         x, y, z = self.widget.get_sample_point_values(ind)
@@ -383,13 +405,38 @@ class MainController(object):
     def set_example_lbl(self):
         if self.widget.no_suffices_cb.isChecked():
             example_str = self.filepath + '/' + self.basename + '_' + str('%03d' %self.get_framenumber())
+
         elif self.widget.rename_files_cb.isChecked():
-            example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
+            if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0:
+                example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
+            else:
+                for exp_ind, experiment in enumerate(self.model.experiment_setups):
+                    for sample_point in self.model.sample_points:
+                        if sample_point.perform_still_for_setup[exp_ind]:
+                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                   experiment.name + '001'
+                            break
+                        elif sample_point.perform_wide_scan_for_setup[exp_ind]:
+                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                   experiment.name + 'w_001'
+                            break
+                        elif sample_point.perform_still_for_setup[exp_ind]:
+                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                   experiment.name + 's_001'
+                            break
         else:
             example_str = self.filepath + '/' + caget(epics_config['detector_file'] + ':FileName', as_string=True)+'_'+str('%03d' %caget(epics_config['detector_file'] + ':FileNumber'))
             if example_str == None:
-                example_str = 'tesstt'
-        self.widget.example_filename_lbl.setText(example_str)
+                example_str = self.filepath + '/None'
+
+        if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0:
+            self.widget.example_filename_lbl.setText("<font color = '#888888'>"+example_str+'</font>')
+        elif self.check_filename_exists(example_str):
+            self.widget.example_filename_lbl.setText("<font color = '#AA0000'>"+example_str+'</font>')
+        elif not self.check_filepath_exists():
+            self.widget.example_filename_lbl.setText("<font color = '#FF5500'>"+example_str+'</font>')
+        else:
+            self.widget.example_filename_lbl.setText("<font color = '#228B22'>"+example_str+'</font>')
 
     def collect_bkg_data(self):
         self.set_status_lbl("Collecting", "#FF0000")
@@ -597,7 +644,7 @@ class MainController(object):
             if self.widget.rename_files_cb.isChecked():
                 caput(epics_config['detector_file'] + ':FileNumber', previous_filenumber)
 
-         #update frame number
+        #update frame number
 
         if self.widget.no_suffices_cb.isChecked():
             _, _, filenumber = self.get_filename_info()
@@ -718,7 +765,7 @@ class MainController(object):
 
     def get_framenumber(self):
         if str(self.widget.frame_number_txt.text()) == '':
-            return 222
+            return 1
         else:
             return int(str(self.widget.frame_number_txt.text()))
 
@@ -730,6 +777,9 @@ class MainController(object):
 
         caput(epics_config['detector_file'] + ':FilePath', cur_epics_filepath)
         return exists == 1
+
+    def check_filename_exists(self, filename):
+        return os.path.isfile(filename + '.tif')
 
     @staticmethod
     def check_conditions():

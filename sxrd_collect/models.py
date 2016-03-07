@@ -40,8 +40,10 @@ class SxrdModel(object):
         del self.experiment_setups[ind]
 
     def clear_experiment_setups(self):
-        for ind, setup in enumerate(self.experiment_setups):
-            self.delete_experiment_setup(ind)
+        exp_setup_nr = len(self.experiment_setups)
+        for ind in range(exp_setup_nr):
+            cur_ind = exp_setup_nr - ind -1
+            self.delete_experiment_setup(cur_ind)
 
     def get_experiment_state(self):
         data = []
