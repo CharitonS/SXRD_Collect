@@ -22,7 +22,7 @@ import time
 from threading import Thread
 import logging
 
-from epics import caget, caput
+from epics import caget, caput, camonitor
 
 import os.path
 import epics
@@ -35,6 +35,7 @@ from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
 from measurement import collect_single_data
 
+MONITOR = True
 logger = logging.getLogger()
 
 
@@ -460,6 +461,14 @@ class MainController(object):
                 'position.<br> Do you want to continue?!')
             if reply == QtGui.QMessageBox.Abort:
                 return
+        #
+        if MONITOR:
+            omega_log = open(self.filepath+'omega_log.log','w')
+            shutter_log = open(self.filepath+'shutter_log.log' 'w')
+            camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
+            #camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
+
+
 
         self.set_status_lbl("Collecting", "#FF0000")
 
@@ -497,7 +506,7 @@ class MainController(object):
 
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
-                        filenumber = int(str(self.widget.frame_number_txt.text()))
+                        _, _, filenumber = self.get_filename_info()
 
                     caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
                     caput(epics_config['detector_file'] + ':FileName', str(filename))
@@ -541,7 +550,7 @@ class MainController(object):
 
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
-                        filenumber = int(str(self.widget.frame_number_txt.text()))
+                        _, _, filenumber = self.get_filename_info()
 
                     caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
                     caput(epics_config['detector_file'] + ':FileName', str(filename))
@@ -589,7 +598,7 @@ class MainController(object):
 
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
-                        filenumber = int(str(self.widget.frame_number_txt.text()))
+                        _, _, filenumber = self.get_filename_info()
 
                     caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
                     caput(epics_config['detector_file'] + ':FileName', str(filename))
@@ -649,6 +658,10 @@ class MainController(object):
         if self.widget.no_suffices_cb.isChecked():
             _, _, filenumber = self.get_filename_info()
             self.widget.frame_number_txt.setText(str(filenumber))
+
+        if MONITOR:
+            omega_log.close()
+            shutter_log.close()
 
         # reset the state of the gui:
         self.widget.collect_btn.setText('Collect')
