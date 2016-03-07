@@ -36,7 +36,7 @@ from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
 from measurement import collect_single_data
 
-MONITOR = True
+MONITOR = False
 logger = logging.getLogger()
 
 
@@ -410,24 +410,24 @@ class MainController(object):
 
         elif self.widget.rename_files_cb.isChecked():
             if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0:
-                example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
+                example_str = self.filepath + self.basename + '_' + 'S1_P1_E1_s_001'
             else:
                 for exp_ind, experiment in enumerate(self.model.experiment_setups):
                     for sample_point in self.model.sample_points:
                         if sample_point.perform_still_for_setup[exp_ind]:
-                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                            example_str = self.filepath + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + '001'
                             break
                         elif sample_point.perform_wide_scan_for_setup[exp_ind]:
-                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                            example_str = self.filepath + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + 'w_001'
                             break
                         elif sample_point.perform_still_for_setup[exp_ind]:
-                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                            example_str = self.filepath + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + 's_001'
                             break
         else:
-            example_str = self.filepath + '/' + caget(epics_config['detector_file'] + ':FileName', as_string=True)+'_'+str('%03d' %caget(epics_config['detector_file'] + ':FileNumber'))
+            example_str = self.filepath + caget(epics_config['detector_file'] + ':FileName', as_string=True)+'_'+str('%03d' %caget(epics_config['detector_file'] + ':FileNumber'))
             if example_str == None:
                 example_str = self.filepath + '/None'
 
@@ -464,8 +464,8 @@ class MainController(object):
                 return
         #
         if MONITOR:
-            omega_log = open(self.filepath+'omega_log.log','w')
-            shutter_log = open(self.filepath+'shutter_log.log' 'w')
+            omega_log = os.open(self.filepath+'omega_log.log','w')
+            shutter_log = os.open(self.filepath+'shutter_log.log' 'w')
             camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
             #camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
 
@@ -791,6 +791,7 @@ class MainController(object):
         return exists == 1
 
     def check_filename_exists(self, filename):
+        print filename
         return os.path.isfile(filename + '.tif')
 
     @staticmethod

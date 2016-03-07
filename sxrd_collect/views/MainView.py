@@ -142,7 +142,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
             header_item = self.sample_points_table.horizontalHeaderItem(row+6)
             header_item.setText(header_name)
 
-    def add_sample_point(self, name, x, y, z):
+    def add_sample_point(self, name, x, y, z, still_state=False, wide_state=False, step_state=False):
         self.sample_points_table.blockSignals(True)
         new_row_ind = int(self.sample_points_table.rowCount())
         self.sample_points_table.setRowCount(new_row_ind + 1)
@@ -170,11 +170,11 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.setCellWidget(new_row_ind, 5, move_btn)
 
         for exp_row in range(self.setup_table.rowCount()):
-            self.create_sample_point_checkboxes(new_row_ind, exp_row)
+            self.create_sample_point_checkboxes(new_row_ind, exp_row, step_state, wide_state, still_state)
         self.sample_points_table.resizeColumnsToContents()
         self.sample_points_table.blockSignals(False)
 
-    def create_sample_point_checkboxes(self, row_index, exp_index, step_state=False, wide_state=False, still_state = False):
+    def create_sample_point_checkboxes(self, row_index, exp_index, step_state=False, wide_state=False, still_state=False):
         exp_widget = QtGui.QWidget()
         wide_cb = QtGui.QCheckBox('wide')
         step_cb = QtGui.QCheckBox('step')
