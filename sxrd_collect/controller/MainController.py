@@ -17,6 +17,7 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Clemens Prescher'
 __version__ = 0.2
+#Modified by Maxim Bykov and Elena Bykova on 08 March 2016
 
 import time
 from threading import Thread
@@ -405,7 +406,7 @@ class MainController(object):
 
     def set_example_lbl(self):
         if self.widget.no_suffices_cb.isChecked():
-            example_str = self.filepath + '/' + self.basename + '_' + str('%03d' %self.get_framenumber())
+            example_str = self.filepath + self.basename + '_' + str('%03d' %self.get_framenumber())
 
         elif self.widget.rename_files_cb.isChecked():
             if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0:
@@ -467,8 +468,6 @@ class MainController(object):
             shutter_log = open(self.filepath+'shutter_log.log' 'w')
             camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
             #camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
-
-
 
         self.set_status_lbl("Collecting", "#FF0000")
 

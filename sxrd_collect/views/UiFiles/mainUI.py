@@ -515,7 +515,7 @@ class Ui_SXRDCollectWidget(object):
         self.rename_after_cb.setText(_translate("SXRDCollectWidget", "Reset name after Measurement", None))
         self.reset_sample_position_cb.setText(_translate("SXRDCollectWidget", "Reset Sample Position", None))
         self.reset_detector_position_cb.setText(_translate("SXRDCollectWidget", "Reset Detector Position", None))
-        self.no_suffices_cb.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p><span style=\" color:#000000;\">If this option is checked, the filename will be: </span><span style=\" color:#0000ff;\">Basename_Frame Nr</span></p><p><span style=\" color:#ff0000;\">This option will not work if there are several experimental setups or sample points</span></p></body></html>", None))
+        self.no_suffices_cb.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p><span style=\" color:#000000;\">If this option is checked, the filename will be: </span><span style=\" color:#0000ff;\">Basename_Frame Nr</span></p><p><span style=\" color:#ff0000;\">In case of several experimental setups/sample points, the Frame Nr will continuously increase wihtout any changes in the basename!</span></p></body></html>", None))
         self.no_suffices_cb.setText(_translate("SXRDCollectWidget", "Do not add suffixes to basename", None))
         item = self.setup_table.horizontalHeaderItem(0)
         item.setText(_translate("SXRDCollectWidget", "Name", None))

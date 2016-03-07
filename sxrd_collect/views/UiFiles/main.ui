@@ -405,7 +405,7 @@ Conifguration</string>
            </sizepolicy>
           </property>
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;If this option is checked, the filename will be: &lt;/span&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;Basename_Frame Nr&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;This option will not work if there are several experimental setups or sample points&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#000000;&quot;&gt;If this option is checked, the filename will be: &lt;/span&gt;&lt;span style=&quot; color:#0000ff;&quot;&gt;Basename_Frame Nr&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;In case of several experimental setups/sample points, the Frame Nr will continuously increase wihtout any changes in the basename!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string>Do not add suffixes to basename</string>
