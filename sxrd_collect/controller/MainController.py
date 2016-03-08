@@ -471,7 +471,7 @@ class MainController(object):
             self.widget.example_filename_lbl.setText("<font color = '#888888'>"+example_str+'.tif</font>')
             return
         elif self.check_filename_exists(FILEPATH + example_str[4:]):
-            self.widget.example_filename_lbl.setText("<font color = '#AA0000'>"+example_str+'.tif</font>')
+            self.widget.example_filename_lbl.setText("<font color = '#AA0000' style='font-weight:bold'>"+example_str+'.tif</font>')
             return
         elif not self.check_filepath_exists():
             self.widget.example_filename_lbl.setText("<font color = '#FF5500'>"+example_str+'.tif</font>')
