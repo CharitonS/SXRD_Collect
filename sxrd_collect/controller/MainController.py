@@ -36,7 +36,7 @@ from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
 from measurement import collect_single_data
 
-MONITOR = False
+MONITOR = True
 logger = logging.getLogger()
 
 
@@ -450,7 +450,7 @@ class MainController(object):
             self.widget.example_filename_lbl.setText("<font color = '#888888'>"+example_str+'.tif</font>')
             return
         elif self.check_filename_exists(FILEPATH + example_str[4:]):
-            self.widget.example_filename_lbl.setText("<font color = '#AA0000'"+example_str+'.tif</font>')
+            self.widget.example_filename_lbl.setText("<font color = '#AA0000'>"+example_str+'.tif</font>')
             return
         elif not self.check_filepath_exists():
             self.widget.example_filename_lbl.setText("<font color = '#FF5500'>"+example_str+'.tif</font>')
@@ -483,10 +483,13 @@ class MainController(object):
                 return
         #
         if MONITOR:
-            omega_log = open(FILEPATH+'/BGI/omega_log.log', 'w')
+            omega_RBV = open(FILEPATH+'/BGI/omega_RBV.log', 'w')
+            omega_VAL = open(FILEPATH+'/BGI/omega_VAL.log', 'w')
             shutter_log = open(FILEPATH+'/BGI/shutter_log.log', 'w')
-            camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
-            camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV',writer = shutter_log.write)
+
+            camonitor(epics_config['sample_position_omega']+'.RBV', writer=omega_RBV.write)
+            camonitor(epics_config['sample_position_omega']+'.VAL', writer=omega_VAL.write)
+            camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV', writer=shutter_log.write)
 
         self.set_status_lbl("Collecting", "#FF0000")
 
@@ -678,7 +681,8 @@ class MainController(object):
             self.widget.frame_number_txt.setText(str(filenumber))
 
         if MONITOR:
-            omega_log.close()
+            omega_RBV.close()
+            omega_VAL.close()
             shutter_log.close()
 
         # reset the state of the gui:

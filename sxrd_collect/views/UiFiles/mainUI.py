@@ -150,7 +150,7 @@ class Ui_SXRDCollectWidget(object):
         self.horizontalLayout_4 = QtGui.QHBoxLayout()
         self.horizontalLayout_4.setObjectName(_fromUtf8("horizontalLayout_4"))
         self.example_filename_lbl = QtGui.QLabel(self.widget)
-        self.example_filename_lbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
+        self.example_filename_lbl.setAlignment(QtCore.Qt.AlignLeft|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.example_filename_lbl.setObjectName(_fromUtf8("example_filename_lbl"))
         self.horizontalLayout_4.addWidget(self.example_filename_lbl)
         self.verticalLayout_2.addLayout(self.horizontalLayout_4)

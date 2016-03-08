@@ -56,10 +56,10 @@ class SxrdModel(object):
             data.append(point_data)
         return data
 
-    def add_sample_point(self, name, x, y, z):
+    def add_sample_point(self, name, x, y, z, step_state=False, wide_state=False, still_state=False):
         self.sample_points.append(SamplePoint(name, x, y, z))
         for setup in self.experiment_setups:
-            self.sample_points[-1].register_setup(setup)
+            self.sample_points[-1].register_setup(setup, step_state, wide_state, still_state)
 
     def delete_sample_point(self, ind):
         del self.sample_points[ind]
@@ -166,11 +166,11 @@ class SamplePoint(object):
     def distance_to(self, x, y, z):
         return ((self.x - x) ** 2 + (self.y - y) ** 2 + (self.z - z) ** 2) ** 0.5
 
-    def register_setup(self, experiment_setup):
+    def register_setup(self, experiment_setup, step_state=False, wide_state=False, still_state=False):
         self.experiment_setups.append(experiment_setup)
-        self.perform_step_scan_for_setup.append(False)
-        self.perform_wide_scan_for_setup.append(False)
-        self.perform_still_for_setup.append(False)
+        self.perform_step_scan_for_setup.append(step_state)
+        self.perform_wide_scan_for_setup.append(wide_state)
+        self.perform_still_for_setup.append(still_state)
 
     def unregister_setup(self, experiment_setup):
         ind = self.experiment_setups.index(experiment_setup)
