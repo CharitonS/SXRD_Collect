@@ -25,3 +25,5 @@ epics_config = {
     'sample_position_z': '13IDD:m82',
     'sample_position_omega': '13IDD:m96',
 }
+
+FILEPATH = 'T:/dac_user/2016/IDD_2016-1'

@@ -30,7 +30,7 @@ import epics
 
 from PyQt4 import QtGui, QtCore
 
-from config import epics_config
+from config import epics_config, FILEPATH
 from views.MainView import MainView
 from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
@@ -128,6 +128,7 @@ class MainController(object):
 
         self.widget.filename_txt.setText(self.prev_filename)
         self.widget.filepath_txt.setText(self.prev_filepath)
+        self.widget.frame_number_txt.setText(str(self.prev_file_number))
 
         self.set_example_lbl()
 
@@ -236,6 +237,7 @@ class MainController(object):
         for ind in cur_ind:
             self.widget.delete_sample_point(ind)
             self.model.delete_sample_point(ind)
+        self.set_example_lbl()
 
     def clear_sample_point_btn_clicked(self):
         self.widget.clear_sample_points()
@@ -311,6 +313,7 @@ class MainController(object):
 
         self.widget.setup_table.blockSignals(False)
         self.widget.setup_table.resizeColumnsToContents()
+        self.set_example_lbl()
         print(self.model.experiment_setups[row])
 
     def update_total_exposure_time(self, row):
@@ -336,7 +339,7 @@ class MainController(object):
             self.model.sample_points[row].z = float(value)
         self.widget.sample_points_table.blockSignals(False)
         self.widget.sample_points_table.resizeColumnsToContents()
-
+        self.set_example_lbl()
         print(self.model.sample_points[row])
 
     def omega_btn_clicked(self, omega_range):
@@ -370,6 +373,7 @@ class MainController(object):
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         else:
             self.model.sample_points[row_ind].set_perform_step_scan_setup(exp_ind, state)
+        self.set_example_lbl()
 
     def wide_cb_status_changed(self, row_ind, exp_ind, state):
         cur_ind = self.widget.get_selected_sample_point()
@@ -379,6 +383,7 @@ class MainController(object):
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         else:
             self.model.sample_points[row_ind].set_perform_wide_scan_setup(exp_ind, state)
+        self.set_example_lbl()
 
     def still_cb_status_changed(self, row_ind, exp_ind, state):
         cur_ind = self.widget.get_selected_sample_point()
@@ -388,6 +393,7 @@ class MainController(object):
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         else:
             self.model.sample_points[row_ind].set_perform_still_setup(exp_ind, state)
+        self.set_example_lbl()
 
     def basename_txt_changed(self):
         self.basename = str(self.widget.filename_txt.text())
@@ -405,40 +411,53 @@ class MainController(object):
         self.set_example_lbl()
 
     def set_example_lbl(self):
+        no_exp = False
         if self.widget.no_suffices_cb.isChecked():
-            example_str = self.filepath + self.basename + '_' + str('%03d' %self.get_framenumber())
+            _, _, filenumber = self.get_filename_info()
+            example_str = self.filepath + '/' + self.basename + '_' + str('%03d' %filenumber)
 
         elif self.widget.rename_files_cb.isChecked():
+            no_exp = True
             if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0:
-                example_str = self.filepath + self.basename + '_' + 'S1_P1_E1_s_001'
+                example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
             else:
                 for exp_ind, experiment in enumerate(self.model.experiment_setups):
                     for sample_point in self.model.sample_points:
+                        point_number = str(self.widget.point_txt.text())
                         if sample_point.perform_still_for_setup[exp_ind]:
-                            example_str = self.filepath + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name + '001'
+                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                   experiment.name + '_001'
+                            no_exp = False
                             break
                         elif sample_point.perform_wide_scan_for_setup[exp_ind]:
-                            example_str = self.filepath + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name + 'w_001'
+                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                   experiment.name + '_w_001'
+                            no_exp = False
                             break
-                        elif sample_point.perform_still_for_setup[exp_ind]:
-                            example_str = self.filepath + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name + 's_001'
+                        elif sample_point.perform_step_scan_for_setup[exp_ind]:
+                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                   experiment.name + '_s_001'
+                            no_exp = False
                             break
+                if no_exp:
+                    example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
         else:
-            example_str = self.filepath + caget(epics_config['detector_file'] + ':FileName', as_string=True)+'_'+str('%03d' %caget(epics_config['detector_file'] + ':FileNumber'))
-            if example_str == None:
+            example_str = self.filepath + '/' + caget(epics_config['detector_file'] + ':FileName', as_string=True)+'_'+str('%03d' %caget(epics_config['detector_file'] + ':FileNumber'))
+            if example_str is None:
                 example_str = self.filepath + '/None'
 
-        if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0:
-            self.widget.example_filename_lbl.setText("<font color = '#888888'>"+example_str+'</font>')
-        elif self.check_filename_exists(example_str):
-            self.widget.example_filename_lbl.setText("<font color = '#AA0000'>"+example_str+'</font>')
+        if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0 or no_exp:
+            self.widget.example_filename_lbl.setText("<font color = '#888888'>"+example_str+'.tif</font>')
+            return
+        elif self.check_filename_exists(FILEPATH + example_str[4:]):
+            self.widget.example_filename_lbl.setText("<font color = '#AA0000'"+example_str+'.tif</font>')
+            return
         elif not self.check_filepath_exists():
-            self.widget.example_filename_lbl.setText("<font color = '#FF5500'>"+example_str+'</font>')
+            self.widget.example_filename_lbl.setText("<font color = '#FF5500'>"+example_str+'.tif</font>')
+            return
         else:
-            self.widget.example_filename_lbl.setText("<font color = '#228B22'>"+example_str+'</font>')
+            self.widget.example_filename_lbl.setText("<font color = '#228B22'>"+example_str+'.tif</font>')
+            return
 
     def collect_bkg_data(self):
         self.set_status_lbl("Collecting", "#FF0000")
@@ -464,10 +483,10 @@ class MainController(object):
                 return
         #
         if MONITOR:
-            omega_log = os.open(self.filepath+'omega_log.log','w')
-            shutter_log = os.open(self.filepath+'shutter_log.log' 'w')
+            omega_log = open(FILEPATH+'/BGI/omega_log.log', 'w')
+            shutter_log = open(FILEPATH+'/BGI/shutter_log.log', 'w')
             camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
-            #camonitor(epics_config['sample_position_omega']+'.RBV',writer = omega_log.write)
+            camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV',writer = shutter_log.write)
 
         self.set_status_lbl("Collecting", "#FF0000")
 
@@ -791,7 +810,7 @@ class MainController(object):
         return exists == 1
 
     def check_filename_exists(self, filename):
-        print filename
+        print filename+'.tif'
         return os.path.isfile(filename + '.tif')
 
     @staticmethod
