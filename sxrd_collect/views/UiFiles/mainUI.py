@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\Max\Dropbox\Python_prog\SXRD_Collect\sxrd_collect\views\UiFiles\main.ui'
+# Form implementation generated from reading ui file '\PP\SXRD_Collect\sxrd_collect\views\UiFiles\main.ui'
 #
 # Created by: PyQt4 UI code generator 4.11.4
 #
@@ -25,7 +25,7 @@ except AttributeError:
 class Ui_SXRDCollectWidget(object):
     def setupUi(self, SXRDCollectWidget):
         SXRDCollectWidget.setObjectName(_fromUtf8("SXRDCollectWidget"))
-        SXRDCollectWidget.resize(917, 881)
+        SXRDCollectWidget.resize(924, 881)
         SXRDCollectWidget.setStyleSheet(_fromUtf8("#experiment_lbl, #sample_lbl, #standards_lbl {\n"
 "    font: italic 20px;\n"
 "}\n"
@@ -150,6 +150,8 @@ class Ui_SXRDCollectWidget(object):
         self.horizontalLayout_4 = QtGui.QHBoxLayout()
         self.horizontalLayout_4.setObjectName(_fromUtf8("horizontalLayout_4"))
         self.example_filename_lbl = QtGui.QLabel(self.widget)
+        self.example_filename_lbl.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.example_filename_lbl.setScaledContents(False)
         self.example_filename_lbl.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.example_filename_lbl.setObjectName(_fromUtf8("example_filename_lbl"))
         self.horizontalLayout_4.addWidget(self.example_filename_lbl)
@@ -276,6 +278,8 @@ class Ui_SXRDCollectWidget(object):
         self.line_5.setFrameShadow(QtGui.QFrame.Sunken)
         self.line_5.setObjectName(_fromUtf8("line_5"))
         self.verticalLayout.addWidget(self.line_5)
+        self.horizontalLayout_2 = QtGui.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
         self.sample_points_table = QtGui.QTableWidget(SXRDCollectWidget)
         self.sample_points_table.setStyleSheet(_fromUtf8("QPushButton {\n"
 "    height: 18px;\n"
@@ -314,7 +318,23 @@ class Ui_SXRDCollectWidget(object):
         self.sample_points_table.horizontalHeader().setVisible(True)
         self.sample_points_table.horizontalHeader().setDefaultSectionSize(80)
         self.sample_points_table.verticalHeader().setVisible(False)
-        self.verticalLayout.addWidget(self.sample_points_table)
+        self.horizontalLayout_2.addWidget(self.sample_points_table)
+        self.verticalLayout_8 = QtGui.QVBoxLayout()
+        self.verticalLayout_8.setObjectName(_fromUtf8("verticalLayout_8"))
+        self.label_10 = QtGui.QLabel(SXRDCollectWidget)
+        self.label_10.setObjectName(_fromUtf8("label_10"))
+        self.verticalLayout_8.addWidget(self.label_10)
+        self.check_all_still_cb = QtGui.QCheckBox(SXRDCollectWidget)
+        self.check_all_still_cb.setObjectName(_fromUtf8("check_all_still_cb"))
+        self.verticalLayout_8.addWidget(self.check_all_still_cb)
+        self.check_all_wide_cb = QtGui.QCheckBox(SXRDCollectWidget)
+        self.check_all_wide_cb.setObjectName(_fromUtf8("check_all_wide_cb"))
+        self.verticalLayout_8.addWidget(self.check_all_wide_cb)
+        self.check_all_step_cb = QtGui.QCheckBox(SXRDCollectWidget)
+        self.check_all_step_cb.setObjectName(_fromUtf8("check_all_step_cb"))
+        self.verticalLayout_8.addWidget(self.check_all_step_cb)
+        self.horizontalLayout_2.addLayout(self.verticalLayout_8)
+        self.verticalLayout.addLayout(self.horizontalLayout_2)
         self.line_2 = QtGui.QFrame(SXRDCollectWidget)
         self.line_2.setFrameShape(QtGui.QFrame.HLine)
         self.line_2.setFrameShadow(QtGui.QFrame.Sunken)
@@ -509,7 +529,7 @@ class Ui_SXRDCollectWidget(object):
         self.get_basename_btn.setToolTip(_translate("SXRDCollectWidget", "Will get current basename from epics", None))
         self.get_basename_btn.setText(_translate("SXRDCollectWidget", "Get", None))
         self.example_filename_lbl.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p><span style=\" font-weight:600; color:#888888;\">Grey</span>: Example Filename</p><p><span style=\" font-weight:600; color:#aa0000;\">Red</span>: The file with the same name exists and will be overwritten</p><p><span style=\" font-weight:600; color:#ff5500;\">Orange</span>: Path does not exist</p><p><span style=\" font-weight:600; color:#228b22;\">Green</span>: Everything Ok (at least the first file will not be overwritten)</p></body></html>", None))
-        self.example_filename_lbl.setText(_translate("SXRDCollectWidget", "Examplefilename", None))
+        self.example_filename_lbl.setText(_translate("SXRDCollectWidget", "example_lbl", None))
         self.rename_files_cb.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p>Will name files in the following way:</p><p><span style=\" color:#0000ff;\">basename_S1_P1_E1_s_FrameNr</span></p><p>S1 - sample name</p><p>P1 - point number</p><p>E1 - experimental setup name</p><p>s - step scan (w - for wide scan, empty for still image)</p><p>FrameNr - Frame number (will always start with 001)</p></body></html>", None))
         self.rename_files_cb.setText(_translate("SXRDCollectWidget", "Rename Files", None))
         self.rename_after_cb.setText(_translate("SXRDCollectWidget", "Reset name after Measurement", None))
@@ -555,6 +575,10 @@ class Ui_SXRDCollectWidget(object):
         item.setText(_translate("SXRDCollectWidget", "y", None))
         item = self.sample_points_table.horizontalHeaderItem(3)
         item.setText(_translate("SXRDCollectWidget", "z", None))
+        self.label_10.setText(_translate("SXRDCollectWidget", "Select all:", None))
+        self.check_all_still_cb.setText(_translate("SXRDCollectWidget", "still", None))
+        self.check_all_wide_cb.setText(_translate("SXRDCollectWidget", "wide", None))
+        self.check_all_step_cb.setText(_translate("SXRDCollectWidget", "step", None))
         self.label_8.setText(_translate("SXRDCollectWidget", "y", None))
         self.label_2.setText(_translate("SXRDCollectWidget", "x", None))
         self.x_max_txt.setText(_translate("SXRDCollectWidget", "0.01", None))

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>917</width>
+    <width>924</width>
     <height>881</height>
    </rect>
   </property>
@@ -330,8 +330,14 @@ Conifguration</string>
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#888888;&quot;&gt;Grey&lt;/span&gt;: Example Filename&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#aa0000;&quot;&gt;Red&lt;/span&gt;: The file with the same name exists and will be overwritten&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#ff5500;&quot;&gt;Orange&lt;/span&gt;: Path does not exist&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#228b22;&quot;&gt;Green&lt;/span&gt;: Everything Ok (at least the first file will not be overwritten)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
             <property name="text">
-             <string>Examplefilename</string>
+             <string>example_lbl</string>
+            </property>
+            <property name="scaledContents">
+             <bool>false</bool>
             </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -670,9 +676,11 @@ Conifguration</string>
     </widget>
    </item>
    <item>
-    <widget class="QTableWidget" name="sample_points_table">
-     <property name="styleSheet">
-      <string notr="true">QPushButton {
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QTableWidget" name="sample_points_table">
+       <property name="styleSheet">
+        <string notr="true">QPushButton {
 	height: 18px;
 	border: 1px solid #000;
 	border-radius:2px;
@@ -688,59 +696,93 @@ QPushButton::pressed{
 QPushButton::hover{
 	background-color: #EEE
 }</string>
-     </property>
-     <property name="lineWidth">
-      <number>0</number>
-     </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::ExtendedSelection</enum>
-     </property>
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
-     </property>
-     <property name="columnCount">
-      <number>6</number>
-     </property>
-     <attribute name="horizontalHeaderVisible">
-      <bool>true</bool>
-     </attribute>
-     <attribute name="horizontalHeaderDefaultSectionSize">
-      <number>80</number>
-     </attribute>
-     <attribute name="verticalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-     <column>
-      <property name="text">
-       <string>Point</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>x</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>y</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>z</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string/>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string/>
-      </property>
-     </column>
-    </widget>
+       </property>
+       <property name="lineWidth">
+        <number>0</number>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+       <property name="columnCount">
+        <number>6</number>
+       </property>
+       <attribute name="horizontalHeaderVisible">
+        <bool>true</bool>
+       </attribute>
+       <attribute name="horizontalHeaderDefaultSectionSize">
+        <number>80</number>
+       </attribute>
+       <attribute name="verticalHeaderVisible">
+        <bool>false</bool>
+       </attribute>
+       <column>
+        <property name="text">
+         <string>Point</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>x</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>y</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>z</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string/>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string/>
+        </property>
+       </column>
+      </widget>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_8">
+       <item>
+        <widget class="QLabel" name="label_10">
+         <property name="text">
+          <string>Select all:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="check_all_still_cb">
+         <property name="text">
+          <string>still</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="check_all_wide_cb">
+         <property name="text">
+          <string>wide</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="check_all_step_cb">
+         <property name="text">
+          <string>step</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="Line" name="line_2">
