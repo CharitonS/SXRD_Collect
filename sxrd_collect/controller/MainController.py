@@ -62,6 +62,9 @@ class MainController(object):
         self.widget.no_suffices_cb.clicked.connect(lambda: self.update_cb('no_suffices'))
         self.widget.rename_after_cb.clicked.connect(lambda: self.update_cb('rename'))
         self.widget.rename_files_cb.clicked.connect(lambda: self.update_cb('rename'))
+        self.widget.check_all_still_cb.clicked.connect(self.check_all_still)
+        self.widget.check_all_wide_cb.clicked.connect(self.check_all_wide)
+        self.widget.check_all_step_cb.clicked.connect(self.check_all_step)
 
 
     def update_cb(self, emitter):
@@ -394,6 +397,24 @@ class MainController(object):
         else:
             self.model.sample_points[row_ind].set_perform_still_setup(exp_ind, state)
         self.set_example_lbl()
+
+    def check_all_still(self):
+        for exp_ind, experiment in enumerate(self.model.experiment_setups):
+            for sample_point in self.model.sample_points:
+                sample_point.set_perform_still_setup(exp_ind, self.widget.check_all_still_cb.isChecked())
+        self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+
+    def check_all_wide(self):
+        for exp_ind, experiment in enumerate(self.model.experiment_setups):
+            for sample_point in self.model.sample_points:
+                sample_point.set_perform_wide_scan_setup(exp_ind, self.widget.check_all_wide_cb.isChecked())
+        self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+
+    def check_all_step(self):
+        for exp_ind, experiment in enumerate(self.model.experiment_setups):
+            for sample_point in self.model.sample_points:
+                sample_point.set_perform_step_scan_setup(exp_ind, self.widget.check_all_step_cb.isChecked())
+        self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
 
     def basename_txt_changed(self):
         self.basename = str(self.widget.filename_txt.text())
