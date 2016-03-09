@@ -409,18 +409,21 @@ class MainController(object):
             for sample_point in self.model.sample_points:
                 sample_point.set_perform_still_setup(exp_ind, self.widget.check_all_still_cb.isChecked())
         self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+        self.set_example_lbl()
 
     def check_all_wide(self):
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
             for sample_point in self.model.sample_points:
                 sample_point.set_perform_wide_scan_setup(exp_ind, self.widget.check_all_wide_cb.isChecked())
         self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+        self.set_example_lbl()
 
     def check_all_step(self):
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
             for sample_point in self.model.sample_points:
                 sample_point.set_perform_step_scan_setup(exp_ind, self.widget.check_all_step_cb.isChecked())
         self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+        self.set_example_lbl()
 
     def basename_txt_changed(self):
         self.basename = str(self.widget.filename_txt.text())
@@ -429,6 +432,11 @@ class MainController(object):
 
     def filepath_txt_changed(self):
         self.filepath = str(self.widget.filepath_txt.text())
+        if self.filepath[-1] == '/':
+            self.filepath = self.filepath[:-1]
+
+        self.widget.filepath_txt.setText(self.filepath)
+
         caput(epics_config['detector_file'] + ':FilePath', self.filepath)
         self.set_example_lbl()
 
@@ -441,7 +449,7 @@ class MainController(object):
         no_exp = False
         if self.widget.no_suffices_cb.isChecked():
             _, _, filenumber = self.get_filename_info()
-            example_str = self.filepath + '/' + self.basename + '_' + str('%03d' %filenumber)
+            example_str = self.filepath + '/'+  self.basename + '_' + str('%03d' %filenumber)
 
         elif self.widget.rename_files_cb.isChecked():
             no_exp = True
@@ -462,16 +470,19 @@ class MainController(object):
                             no_exp = False
                             break
                         elif sample_point.perform_step_scan_for_setup[exp_ind]:
-                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                            example_str = self.filepath+ '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + '_s_001'
                             no_exp = False
                             break
                 if no_exp:
-                    example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
+                    example_str = self.filepath + self.basename + '_' + 'S1_P1_E1_s_001'
         else:
             example_str = self.filepath + '/' + caget(epics_config['detector_file'] + ':FileName', as_string=True)+'_'+str('%03d' %caget(epics_config['detector_file'] + ':FileNumber'))
             if example_str is None:
                 example_str = self.filepath + '/None'
+
+        if len(example_str) > 44:
+            example_str = '...' + example_str[len(example_str)-40:]
 
         if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0 or no_exp:
             self.widget.example_filename_lbl.setText("<font color = '#888888'>"+example_str+'.tif</font>')
@@ -488,7 +499,7 @@ class MainController(object):
 
     def open_path_btn_clicked(self):
         path = FILEPATH + self.filepath[4:]
-        subprocess.Popen('explorer', cwd = path)
+        os.startfile(path)
 
     def collect_bkg_data(self):
         self.set_status_lbl("Collecting", "#FF0000")
@@ -515,11 +526,11 @@ class MainController(object):
         #
         if MONITOR:
             omega_RBV = open(FILEPATH+'/BGI/omega_RBV.log', 'w')
-            omega_VAL = open(FILEPATH+'/BGI/omega_VAL.log', 'w')
+            #omega_VAL = open(FILEPATH+'/BGI/omega_VAL.log', 'w')
             shutter_log = open(FILEPATH+'/BGI/shutter_log.log', 'w')
 
             camonitor(epics_config['sample_position_omega']+'.RBV', writer=omega_RBV.write)
-            camonitor(epics_config['sample_position_omega']+'.VAL', writer=omega_VAL.write)
+            #camonitor(epics_config['sample_position_omega']+'.VAL', writer=omega_VAL.write)
             camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV', writer=shutter_log.write)
 
         self.set_status_lbl("Collecting", "#FF0000")
@@ -713,7 +724,7 @@ class MainController(object):
 
         if MONITOR:
             omega_RBV.close()
-            omega_VAL.close()
+            #omega_VAL.close()
             shutter_log.close()
 
         # reset the state of the gui:
