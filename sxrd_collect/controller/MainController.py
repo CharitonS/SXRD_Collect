@@ -39,7 +39,7 @@ from measurement import collect_single_data
 
 
 
-MONITOR = True
+#MONITOR = False
 logger = logging.getLogger()
 
 
@@ -60,7 +60,6 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = True
         
         self.widget.setup_table.resizeColumnsToContents()
-
 
     def connect_checkboxes(self):
         self.widget.no_suffices_cb.clicked.connect(lambda: self.update_cb('no_suffices'))
@@ -232,12 +231,12 @@ class MainController(object):
             self.model.clear_experiment_setups()
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
 
-
     def add_sample_point_btn_clicked(self):
         x, y, z = self.get_current_sample_position()
         num = len(self.model.sample_points)
-        self.widget.add_sample_point('S{}'.format(num + 1), x, y, z)
-        self.model.add_sample_point('S{}'.format(num + 1), x, y, z)
+        self.widget.add_sample_point('S{}'.format(num + 1), x, y, z, self.widget.check_all_still_cb.isChecked(), self.widget.check_all_wide_cb.isChecked(), self.widget.check_all_step_cb.isChecked())
+        self.model.add_sample_point('S{}'.format(num + 1), x, y, z, self.widget.check_all_step_cb.isChecked(), self.widget.check_all_wide_cb.isChecked(), self.widget.check_all_still_cb.isChecked())
+        self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
 
     def delete_sample_point_btn_clicked(self):
         cur_ind = self.widget.get_selected_sample_point()
@@ -524,14 +523,13 @@ class MainController(object):
             if reply == QtGui.QMessageBox.Abort:
                 return
         #
-        if MONITOR:
-            omega_RBV = open(FILEPATH+'/BGI/omega_RBV.log', 'w')
+        #if MONITOR:
+            #omega_RBV = open(FILEPATH+'/BGI/omega_RBV.log', 'w')
             #omega_VAL = open(FILEPATH+'/BGI/omega_VAL.log', 'w')
-            shutter_log = open(FILEPATH+'/BGI/shutter_log.log', 'w')
-
-            camonitor(epics_config['sample_position_omega']+'.RBV', writer=omega_RBV.write)
+            #shutter_log = open(FILEPATH+'/BGI/shutter_log.log', 'w')
+            #camonitor(epics_config['sample_position_omega']+'.RBV', writer=omega_RBV.write)
             #camonitor(epics_config['sample_position_omega']+'.VAL', writer=omega_VAL.write)
-            camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV', writer=shutter_log.write)
+            #camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV', writer=shutter_log.write)
 
         self.set_status_lbl("Collecting", "#FF0000")
 
@@ -722,10 +720,10 @@ class MainController(object):
             _, _, filenumber = self.get_filename_info()
             self.widget.frame_number_txt.setText(str(filenumber))
 
-        if MONITOR:
-            omega_RBV.close()
+        #if MONITOR:
+            #omega_RBV.close()
             #omega_VAL.close()
-            shutter_log.close()
+            #shutter_log.close()
 
         # reset the state of the gui:
         self.widget.collect_btn.setText('Collect')
