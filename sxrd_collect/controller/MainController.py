@@ -27,6 +27,7 @@ from epics import caget, caput, camonitor
 
 import os.path
 import epics
+import subprocess
 
 from PyQt4 import QtGui, QtCore
 
@@ -35,6 +36,8 @@ from views.MainView import MainView
 from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
 from measurement import collect_single_data
+
+
 
 MONITOR = True
 logger = logging.getLogger()
@@ -57,6 +60,7 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = True
         
         self.widget.setup_table.resizeColumnsToContents()
+
 
     def connect_checkboxes(self):
         self.widget.no_suffices_cb.clicked.connect(lambda: self.update_cb('no_suffices'))
@@ -102,6 +106,8 @@ class MainController(object):
         self.widget.omega_pm10_btn.clicked.connect(lambda: self.omega_btn_clicked(10.0))
         self.widget.omega_pm20_btn.clicked.connect(lambda: self.omega_btn_clicked(20.0))
         self.widget.omega_pm38_btn.clicked.connect(lambda: self.omega_btn_clicked(38.0))
+
+        self.widget.open_path_btn.clicked.connect(self.open_path_btn_clicked)
 
 
     def connect_tables(self):
@@ -479,6 +485,10 @@ class MainController(object):
         else:
             self.widget.example_filename_lbl.setText("<font color = '#228B22'>"+example_str+'.tif</font>')
             return
+
+    def open_path_btn_clicked(self):
+        path = FILEPATH + self.filepath[4:]
+        subprocess.Popen('explorer', cwd = path)
 
     def collect_bkg_data(self):
         self.set_status_lbl("Collecting", "#FF0000")
@@ -923,7 +933,6 @@ class ThreadRunner():
     def update_status(self):
         print "updating status"
         self.worker_finished = True
-
 
 class WorkerThread(QtCore.QThread):
     def __init__(self, func, args):
