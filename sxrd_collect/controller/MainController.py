@@ -105,6 +105,7 @@ class MainController(object):
         self.widget.omega_pm10_btn.clicked.connect(lambda: self.omega_btn_clicked(10.0))
         self.widget.omega_pm20_btn.clicked.connect(lambda: self.omega_btn_clicked(20.0))
         self.widget.omega_pm38_btn.clicked.connect(lambda: self.omega_btn_clicked(38.0))
+        self.widget.omega_set_btn.clicked.connect(lambda: self.omega_btn_clicked(abs(float(self.widget.omega_range_txt.text()))))
 
         self.widget.open_path_btn.clicked.connect(self.open_path_btn_clicked)
 
@@ -448,7 +449,7 @@ class MainController(object):
         no_exp = False
         if self.widget.no_suffices_cb.isChecked():
             _, _, filenumber = self.get_filename_info()
-            example_str = self.filepath + '/'+  self.basename + '_' + str('%03d' %filenumber)
+            example_str = self.filepath + '/' + self.basename + '_' + str('%03d' %filenumber)
 
         elif self.widget.rename_files_cb.isChecked():
             no_exp = True
@@ -474,13 +475,13 @@ class MainController(object):
                             no_exp = False
                             break
                 if no_exp:
-                    example_str = self.filepath + self.basename + '_' + 'S1_P1_E1_s_001'
+                    example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
         else:
             example_str = self.filepath + '/' + caget(epics_config['detector_file'] + ':FileName', as_string=True)+'_'+str('%03d' %caget(epics_config['detector_file'] + ':FileNumber'))
             if example_str is None:
                 example_str = self.filepath + '/None'
 
-        if len(example_str) > 44:
+        if len(example_str) > 40:
             example_str = '...' + example_str[len(example_str)-40:]
 
         if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0 or no_exp:
@@ -716,7 +717,7 @@ class MainController(object):
 
         #update frame number
 
-        if self.widget.no_suffices_cb.isChecked():
+        if self.widget.no_suffices_cb.isChecked() or ((not self.widget.rename_files_cb.isChecked()) and (not self.widget.no_suffices_cb.isChecked())):
             _, _, filenumber = self.get_filename_info()
             self.widget.frame_number_txt.setText(str(filenumber))
 
@@ -730,6 +731,7 @@ class MainController(object):
         self.widget.collect_btn.clicked.connect(self.collect_data)
         self.widget.collect_btn.clicked.disconnect(self.abort_data_collection)
         self.set_status_lbl("Finished", "#00FF00")
+        self.set_example_lbl()
 
     def abort_data_collection(self):
         self.abort_collection = True

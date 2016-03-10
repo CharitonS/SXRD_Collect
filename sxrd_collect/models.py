@@ -75,8 +75,13 @@ class SxrdModel(object):
         z_center = self.sample_points[center_ind].z
         name_center = self.sample_points[center_ind].name
 
-        x_map = x_center + np.arange(x_min, x_max + x_step, x_step)
-        y_map = y_center + np.arange(y_min, y_max + y_step, y_step)
+        # x_map = x_center + np.arange(x_min, x_max + x_step, x_step)
+        # y_map = y_center + np.arange(y_min, y_max + y_step, y_step)
+        x_map = x_center + np.arange(x_min, x_max + 0.0001, x_step)
+        y_map = y_center + np.arange(y_min, y_max + 0.0001, y_step)
+        # x_map = x_center + np.arange(x_min, x_max, x_step)
+        # y_map = y_center + np.arange(y_min, y_max, y_step)
+
 
         ind = 0
 
