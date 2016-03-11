@@ -182,7 +182,6 @@ class MainController(object):
                                                     float(omega_start), float(omega_end), float(omega_step), float(step_time))
                     self.widget.add_experiment_setup(name, float(detector_pos_x), float(detector_pos_z),
                                                     float(omega_start), float(omega_end), float(omega_step), float(step_time))
-        print self.model.get_experiment_setup_names()
         self.widget.setup_table.resizeColumnsToContents()
 
     def save_exp_setup(self):
@@ -224,6 +223,9 @@ class MainController(object):
                 self.widget.delete_experiment_setup(ind)
                 self.model.delete_experiment_setup(ind)
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+        self.set_example_lbl()
+        self.set_total_frames()
+
 
     def clear_experiment_setup_btn_clicked(self):
         msgBox = QtGui.QMessageBox()
@@ -236,6 +238,8 @@ class MainController(object):
             self.widget.clear_experiment_setups()
             self.model.clear_experiment_setups()
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+        self.set_example_lbl()
+        self.set_total_frames()
 
     def add_sample_point_btn_clicked(self):
         x, y, z = self.get_current_sample_position()
@@ -243,6 +247,8 @@ class MainController(object):
         self.widget.add_sample_point('S{}'.format(num + 1), x, y, z, self.widget.check_all_still_cb.isChecked(), self.widget.check_all_wide_cb.isChecked(), self.widget.check_all_step_cb.isChecked())
         self.model.add_sample_point('S{}'.format(num + 1), x, y, z, self.widget.check_all_step_cb.isChecked(), self.widget.check_all_wide_cb.isChecked(), self.widget.check_all_still_cb.isChecked())
         self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
+        self.set_example_lbl()
+        self.set_total_frames()
 
     def delete_sample_point_btn_clicked(self):
         cur_ind = self.widget.get_selected_sample_point()
@@ -252,10 +258,13 @@ class MainController(object):
             self.widget.delete_sample_point(ind)
             self.model.delete_sample_point(ind)
         self.set_example_lbl()
+        self.set_total_frames()
 
     def clear_sample_point_btn_clicked(self):
         self.widget.clear_sample_points()
         self.model.clear_sample_points()
+        self.set_total_frames()
+        self.set_example_lbl()
 
     def create_map_btn_clicked(self):
         cur_ind = self.widget.get_selected_sample_point()[-1]
@@ -273,6 +282,8 @@ class MainController(object):
         for name, position in map.iteritems():
             x, y, z = position
             self.widget.add_sample_point(name, x, y, z)
+
+        self.set_total_frames()
 
     def setup_table_cell_changed(self, row, col):
         label_item = self.widget.setup_table.item(row, col)
@@ -328,6 +339,7 @@ class MainController(object):
         self.widget.setup_table.blockSignals(False)
         self.widget.setup_table.resizeColumnsToContents()
         self.set_example_lbl()
+        self.set_total_frames()
         print(self.model.experiment_setups[row])
 
     def update_total_exposure_time(self, row):
@@ -388,6 +400,7 @@ class MainController(object):
         else:
             self.model.sample_points[row_ind].set_perform_step_scan_setup(exp_ind, state)
         self.set_example_lbl()
+        self.set_total_frames()
 
     def wide_cb_status_changed(self, row_ind, exp_ind, state):
         cur_ind = self.widget.get_selected_sample_point()
@@ -398,6 +411,7 @@ class MainController(object):
         else:
             self.model.sample_points[row_ind].set_perform_wide_scan_setup(exp_ind, state)
         self.set_example_lbl()
+        self.set_total_frames()
 
     def still_cb_status_changed(self, row_ind, exp_ind, state):
         cur_ind = self.widget.get_selected_sample_point()
@@ -408,6 +422,7 @@ class MainController(object):
         else:
             self.model.sample_points[row_ind].set_perform_still_setup(exp_ind, state)
         self.set_example_lbl()
+        self.set_total_frames()
 
     def check_all_still(self):
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
@@ -415,6 +430,7 @@ class MainController(object):
                 sample_point.set_perform_still_setup(exp_ind, self.widget.check_all_still_cb.isChecked())
         self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         self.set_example_lbl()
+        self.set_total_frames()
 
     def check_all_wide(self):
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
@@ -422,6 +438,7 @@ class MainController(object):
                 sample_point.set_perform_wide_scan_setup(exp_ind, self.widget.check_all_wide_cb.isChecked())
         self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         self.set_example_lbl()
+        self.set_total_frames()
 
     def check_all_step(self):
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
@@ -429,6 +446,7 @@ class MainController(object):
                 sample_point.set_perform_step_scan_setup(exp_ind, self.widget.check_all_step_cb.isChecked())
         self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         self.set_example_lbl()
+        self.set_total_frames()
 
     def basename_txt_changed(self):
         self.basename = str(self.widget.filename_txt.text())
@@ -449,6 +467,16 @@ class MainController(object):
         self.framenr = int(self.widget.frame_number_txt.text())
         caput(epics_config['detector_file'] + ':FileNumber', self.framenr)
         self.set_example_lbl()
+
+    def set_total_frames(self):
+        nr = self.frame_counter()
+        tm = self.estimate_collection_time(epics_config)
+        if nr == 0:
+            self.widget.total_frames_txt.setText(' ')
+        elif nr == 1:
+            self.widget.total_frames_txt.setText(str(nr) + ' image' + "\n" + str(int(tm)) + ' s')
+        else:
+            self.widget.total_frames_txt.setText(str(nr) + ' images' + "\n" + str(int(tm)) + ' s')
 
     def set_example_lbl(self):
         no_exp = False
@@ -486,19 +514,24 @@ class MainController(object):
             if example_str is None:
                 example_str = self.filepath + '/None'
 
-        if len(example_str) > 40:
-            example_str = '...' + example_str[len(example_str)-40:]
-
         if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0 or no_exp:
+            if len(example_str) > 40:
+                example_str = '...' + example_str[len(example_str)-40:]
             self.widget.example_filename_lbl.setText("<font color = '#888888'>"+example_str+'.tif</font>')
             return
         elif self.check_filename_exists(FILEPATH + example_str[4:]):
+            if len(example_str) > 40:
+                example_str = '...' + example_str[len(example_str)-40:]
             self.widget.example_filename_lbl.setText("<font color = '#AA0000' style='font-weight:bold'>"+example_str+'.tif</font>')
             return
         elif not self.check_filepath_exists():
+            if len(example_str) > 40:
+                example_str = '...' + example_str[len(example_str)-40:]
             self.widget.example_filename_lbl.setText("<font color = '#FF5500'>"+example_str+'.tif</font>')
             return
         else:
+            if len(example_str) > 40:
+                example_str = '...' + example_str[len(example_str)-40:]
             self.widget.example_filename_lbl.setText("<font color = '#228B22'>"+example_str+'.tif</font>')
             return
 
@@ -536,6 +569,7 @@ class MainController(object):
             #camonitor(epics_config['sample_position_omega']+'.RBV', writer=omega_RBV.write)
             #camonitor(epics_config['sample_position_omega']+'.VAL', writer=omega_VAL.write)
             #camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV', writer=shutter_log.write)
+
         nr = self.frame_counter()
         if nr == 1:
             self.set_status_lbl("Collecting" + "\n" + str(nr) + ' image', "#FF0000")
@@ -766,15 +800,20 @@ class MainController(object):
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
             exp_collection = False
             for sample_point in self.model.sample_points:
+                if sample_point.perform_still_for_setup[exp_ind]:
+                    exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
+                                    experiment.time_per_step
+                    total_time += exposure_time + 4.5
+                    exp_collection = True
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
                                     experiment.time_per_step
-                    total_time += exposure_time
+                    total_time += exposure_time + 4.5
                     exp_collection = True
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
                     print("Performing step scan for {}, with setup {}".format(sample_point, experiment))
                     number_of_steps = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step
-                    exposure_time = number_of_steps * (4 + experiment.time_per_step)
+                    exposure_time = number_of_steps * (4.5 + experiment.time_per_step)
                     total_time += exposure_time
                     exp_collection = True
                 if exp_collection:
