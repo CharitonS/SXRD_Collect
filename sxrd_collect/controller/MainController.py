@@ -108,7 +108,7 @@ class MainController(object):
         self.widget.omega_set_btn.clicked.connect(lambda: self.omega_btn_clicked(abs(float(self.widget.omega_range_txt.text()))))
 
         self.widget.open_path_btn.clicked.connect(self.open_path_btn_clicked)
-
+        self.widget.framenr_reset_btn.clicked.connect(self.reset_frame_nr)
 
     def connect_tables(self):
         self.widget.setup_table.cellChanged.connect(self.setup_table_cell_changed)
@@ -192,6 +192,11 @@ class MainController(object):
                 for experiment_setup in self.model.experiment_setups:
                     f.write(experiment_setup.save())
                     f.write('\n')
+
+    def reset_frame_nr(self):
+        self.widget.frame_number_txt.setText('1')
+        caput(epics_config['detector_file'] + ':FileNumber', 1)
+        self.set_example_lbl()
 
     def add_experiment_setup_btn_clicked(self):
         detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()
@@ -531,8 +536,11 @@ class MainController(object):
             #camonitor(epics_config['sample_position_omega']+'.RBV', writer=omega_RBV.write)
             #camonitor(epics_config['sample_position_omega']+'.VAL', writer=omega_VAL.write)
             #camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV', writer=shutter_log.write)
-
-        self.set_status_lbl("Collecting", "#FF0000")
+        nr = self.frame_counter()
+        if nr == 1:
+            self.set_status_lbl("Collecting" + "\n" + str(nr) + ' image', "#FF0000")
+        else:
+            self.set_status_lbl("Collecting" + "\n" + str(nr) + ' images', "#FF0000")
 
         # save current state to be able to restore after the measurement when the checkboxes are selected.
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
@@ -776,6 +784,19 @@ class MainController(object):
                     det_x_pos = experiment.detector_pos_x
                     det_z_pos = experiment.detector_pos_z
         return total_time
+
+    def frame_counter(self):
+        counter = 0
+        for exp_ind, experiment in enumerate(self.model.experiment_setups):
+            for sample_point in self.model.sample_points:
+                if sample_point.perform_wide_scan_for_setup[exp_ind]:
+                    counter += 1
+                if sample_point.perform_step_scan_for_setup[exp_ind]:
+                    number_of_steps = int(abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step)
+                    counter += number_of_steps
+                if sample_point.perform_still_for_setup[exp_ind]:
+                    counter += 1
+        return counter
 
     @staticmethod
     def create_name_existent_msg(name_type):

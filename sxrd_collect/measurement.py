@@ -265,8 +265,8 @@ def collect_single_data(detector_position_x, detector_position_z, exposure_time,
     #more new commands
 
     caput(epics_config['detector_control']+':AcquireTime', exposure_time)
-    caput(epics_config['detector_control'] + ':Acquire', 1)
-    time.sleep(0.1)
+    caput(epics_config['detector_control'] + ':Acquire', 1, wait=True)
+    time.sleep(1)
     caput(epics_config['detector_control'] + ':Acquire', 0, wait=True)
 
     #caput(epics_config['detector_control'] + ':ShutterMode', previous_shutter_mode, wait=True)
