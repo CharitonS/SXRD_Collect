@@ -625,6 +625,9 @@ class MainController(object):
                         filename = self.basename
                         _, _, filenumber = self.get_filename_info()
 
+                    else:
+                        _, filename, filenumber = self.get_filename_info()
+
                     caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
                     caput(epics_config['detector_file'] + ':FileName', str(filename))
                     caput(epics_config['detector_file'] + ':FileNumber', filenumber)
@@ -668,6 +671,9 @@ class MainController(object):
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
                         _, _, filenumber = self.get_filename_info()
+
+                    else:
+                        _, filename, filenumber = self.get_filename_info()
 
                     caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
                     caput(epics_config['detector_file'] + ':FileName', str(filename))
@@ -716,6 +722,9 @@ class MainController(object):
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
                         _, _, filenumber = self.get_filename_info()
+
+                    else:
+                        _, filename, filenumber = self.get_filename_info()
 
                     caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
                     caput(epics_config['detector_file'] + ':FileName', str(filename))
