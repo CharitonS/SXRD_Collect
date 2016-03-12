@@ -60,6 +60,12 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = True
         
         self.widget.setup_table.resizeColumnsToContents()
+        self.example_str = ' '
+
+        # self.filename_update_timer = QtCore.QTimer()
+        # self.filename_update_timer.timeout.connect(self.set_example_lbl)
+        # self.filename_update_timer.start(1000)
+
 
     def connect_checkboxes(self):
         self.widget.no_suffices_cb.clicked.connect(lambda: self.update_cb('no_suffices'))
@@ -514,14 +520,16 @@ class MainController(object):
             if example_str is None:
                 example_str = self.filepath + '/None'
 
+        self.example_str = example_str
+
         if len(self.model.experiment_setups) == 0 or len(self.model.sample_points) == 0 or no_exp:
             if len(example_str) > 40:
                 example_str = '...' + example_str[len(example_str)-40:]
             self.widget.example_filename_lbl.setText("<font color = '#888888'>"+example_str+'.tif</font>')
             return
         elif self.check_filename_exists(FILEPATH + example_str[4:]):
-            if len(example_str) > 40:
-                example_str = '...' + example_str[len(example_str)-40:]
+            if len(example_str) > 30:
+                example_str = '...' + example_str[len(example_str)-30:]
             self.widget.example_filename_lbl.setText("<font color = '#AA0000' style='font-weight:bold'>"+example_str+'.tif</font>')
             return
         elif not self.check_filepath_exists():
@@ -551,6 +559,11 @@ class MainController(object):
         if self.check_filepath_exists() is False:
             self.show_error_message_box('The folder you specified does not exist. '
                                         'Please enter a valid path for saving the collected images!')
+            return
+
+        if self.check_filename_exists(FILEPATH + self.example_str[4:]):
+            self.show_error_message_box('The filename already exists' + '\n'
+                                        'Please used different filename!')
             return
 
         # check if sample position are not very far away from the current position (in case users forgot to update
@@ -891,7 +904,6 @@ class MainController(object):
     @staticmethod
     def get_filename_info():
         path = caget(epics_config['detector_file'] + ':FilePath', as_string=True)
-        print(path)
         filename = caget(epics_config['detector_file'] + ':FileName', as_string=True)
         file_number = caget(epics_config['detector_file'] + ':FileNumber')
         if path is None:
@@ -908,7 +920,6 @@ class MainController(object):
 
     def check_filepath_exists(self):
         cur_epics_filepath = caget(epics_config['detector_file'] + ':FilePath', as_string=True)
-        print self.filepath
         caput(epics_config['detector_file'] + ':FilePath', self.filepath, wait=True)
         exists = caget(epics_config['detector_file'] + ':FilePathExists_RBV')
 
@@ -916,7 +927,6 @@ class MainController(object):
         return exists == 1
 
     def check_filename_exists(self, filename):
-        print filename+'.tif'
         return os.path.isfile(filename + '.tif')
 
     @staticmethod
