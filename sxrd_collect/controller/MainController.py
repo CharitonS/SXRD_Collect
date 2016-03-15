@@ -113,6 +113,18 @@ class MainController(object):
         self.widget.omega_pm38_btn.clicked.connect(lambda: self.omega_btn_clicked(38.0))
         self.widget.omega_set_btn.clicked.connect(lambda: self.omega_btn_clicked(abs(float(self.widget.omega_range_txt.text()))))
 
+        self.widget.set_map_range_02_btn.clicked.connect(lambda: self.set_map_range(0.02))
+        self.widget.set_map_range_01_btn.clicked.connect(lambda: self.set_map_range(0.01))
+        self.widget.set_map_range_006_btn.clicked.connect(lambda: self.set_map_range(0.006))
+        self.widget.set_map_range_004_btn.clicked.connect(lambda: self.set_map_range(0.004))
+        self.widget.set_map_range_btn.clicked.connect(lambda: self.set_map_range(self.widget.map_range_txt.text()))
+
+        self.widget.set_map_step_005_btn.clicked.connect(lambda: self.set_map_step(0.005))
+        self.widget.set_map_step_003_btn.clicked.connect(lambda: self.set_map_step(0.003))
+        self.widget.set_map_step_002_btn.clicked.connect(lambda: self.set_map_step(0.002))
+        self.widget.set_map_step_001_btn.clicked.connect(lambda: self.set_map_step(0.001))
+        self.widget.set_map_step_btn.clicked.connect(lambda: self.set_map_step(self.widget.map_step_txt.text()))
+
         self.widget.open_path_btn.clicked.connect(self.open_path_btn_clicked)
         self.widget.framenr_reset_btn.clicked.connect(self.reset_frame_nr)
 
@@ -387,6 +399,16 @@ class MainController(object):
             self.widget.setup_table.item(ind, 4).setText(str(omega_end))
             self.model.experiment_setups[ind].omega_start = omega_start
             self.model.experiment_setups[ind].omega_end = omega_end
+
+    def set_map_range(self, orange):
+        self.widget.y_min_txt.setText('-'+str(orange))
+        self.widget.x_min_txt.setText('-'+str(orange))
+        self.widget.y_max_txt.setText(str(orange))
+        self.widget.x_max_txt.setText(str(orange))
+
+    def set_map_step(self, step):
+        self.widget.x_step_txt.setText(str(step))
+        self.widget.y_step_txt.setText(str(step))
 
     def move_sample_btn_clicked(self, ind):
         x, y, z = self.widget.get_sample_point_values(ind)
