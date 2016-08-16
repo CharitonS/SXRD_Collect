@@ -87,8 +87,8 @@ class SxrdModel(object):
 
         map = OrderedDict()
 
-        for x in x_map:
-            for y in y_map:
+        for y in y_map:
+            for x in x_map:
                 point_name = "{}_map_{}".format(name_center, ind+1)
                 self.add_sample_point(point_name, x, y, z_center)
                 map[point_name] = [x, y, z_center]

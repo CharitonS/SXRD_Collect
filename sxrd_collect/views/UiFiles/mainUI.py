@@ -27,12 +27,12 @@ class Ui_SXRDCollectWidget(object):
         SXRDCollectWidget.setObjectName(_fromUtf8("SXRDCollectWidget"))
         SXRDCollectWidget.resize(919, 906)
         SXRDCollectWidget.setStyleSheet(_fromUtf8("#experiment_lbl, #sample_lbl, #standards_lbl {\n"
-"    font: italic 20px;\n"
-"}\n"
-"\n"
-"#title_lbl {\n"
-"    font: bold 25px;\n"
-"}"))
+                                                  "    font: italic 20px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "#title_lbl {\n"
+                                                  "    font: bold 25px;\n"
+                                                  "}"))
         self.verticalLayout = QtGui.QVBoxLayout(SXRDCollectWidget)
         self.verticalLayout.setObjectName(_fromUtf8("verticalLayout"))
         self.horizontalLayout_9 = QtGui.QHBoxLayout()
@@ -42,10 +42,15 @@ class Ui_SXRDCollectWidget(object):
         self.horizontalLayout_9.addWidget(self.title_lbl)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_9.addItem(spacerItem)
-        self.pushButton = QtGui.QPushButton(SXRDCollectWidget)
-        self.pushButton.setMinimumSize(QtCore.QSize(160, 60))
-        self.pushButton.setObjectName(_fromUtf8("pushButton"))
-        self.horizontalLayout_9.addWidget(self.pushButton)
+        self.choose_detector_btn = QtGui.QPushButton('Using MARCCD')
+        self.choose_detector_btn.setCheckable(True)
+        self.choose_detector_btn.setChecked(False)
+        self.horizontalLayout_9.addWidget(self.choose_detector_btn)
+
+        self.epics_config_btn = QtGui.QPushButton(SXRDCollectWidget)
+        self.epics_config_btn.setMinimumSize(QtCore.QSize(160, 60))
+        self.epics_config_btn.setObjectName(_fromUtf8("epics_config_btn"))
+        self.horizontalLayout_9.addWidget(self.epics_config_btn)
         self.verticalLayout.addLayout(self.horizontalLayout_9)
         self.line_8 = QtGui.QFrame(SXRDCollectWidget)
         self.line_8.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -127,11 +132,15 @@ class Ui_SXRDCollectWidget(object):
         self.label_4.setObjectName(_fromUtf8("label_4"))
         self.gridLayout.addWidget(self.label_4, 1, 0, 1, 1)
         self.get_folder_btn = QtGui.QPushButton(self.widget)
-        self.get_folder_btn.setMaximumSize(QtCore.QSize(35, 16777215))
+        self.get_folder_btn.setMaximumSize(QtCore.QSize(45, 16777215))
         self.get_folder_btn.setObjectName(_fromUtf8("get_folder_btn"))
         self.gridLayout.addWidget(self.get_folder_btn, 1, 3, 1, 1)
+        self.select_folder_btn = QtGui.QPushButton(self.widget)
+        self.select_folder_btn.setMaximumSize(QtCore.QSize(45, 16777215))
+        self.select_folder_btn.setObjectName(_fromUtf8("select_folder_btn"))
+        self.gridLayout.addWidget(self.select_folder_btn, 1, 4, 1, 1)
         self.get_basename_btn = QtGui.QPushButton(self.widget)
-        self.get_basename_btn.setMaximumSize(QtCore.QSize(35, 16777215))
+        self.get_basename_btn.setMaximumSize(QtCore.QSize(45, 16777215))
         self.get_basename_btn.setObjectName(_fromUtf8("get_basename_btn"))
         self.gridLayout.addWidget(self.get_basename_btn, 0, 3, 1, 1)
         self.horizontalLayout_14 = QtGui.QHBoxLayout()
@@ -153,7 +162,7 @@ class Ui_SXRDCollectWidget(object):
         self.label_9.setObjectName(_fromUtf8("label_9"))
         self.gridLayout.addWidget(self.label_9, 3, 0, 1, 1)
         self.get_framenr_btn = QtGui.QPushButton(self.widget)
-        self.get_framenr_btn.setMaximumSize(QtCore.QSize(35, 16777215))
+        self.get_framenr_btn.setMaximumSize(QtCore.QSize(45, 16777215))
         self.get_framenr_btn.setObjectName(_fromUtf8("get_framenr_btn"))
         self.gridLayout.addWidget(self.get_framenr_btn, 3, 3, 1, 1)
         self.verticalLayout_2.addLayout(self.gridLayout)
@@ -329,21 +338,21 @@ class Ui_SXRDCollectWidget(object):
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
         self.sample_points_table = QtGui.QTableWidget(SXRDCollectWidget)
         self.sample_points_table.setStyleSheet(_fromUtf8("QPushButton {\n"
-"    height: 18px;\n"
-"    border: 1px solid #000;\n"
-"    border-radius:2px;\n"
-"    padding-left: 8px;\n"
-"    padding-right: 8px;\n"
-"    margin: 5px;\n"
-"}\n"
-"\n"
-"QPushButton::pressed{\n"
-"    margin-left: 7px;\n"
-"    margin-top: 7px;\n"
-"}\n"
-"QPushButton::hover{\n"
-"    background-color: #EEE\n"
-"}"))
+                                                         "    height: 18px;\n"
+                                                         "    border: 1px solid #000;\n"
+                                                         "    border-radius:2px;\n"
+                                                         "    padding-left: 8px;\n"
+                                                         "    padding-right: 8px;\n"
+                                                         "    margin: 5px;\n"
+                                                         "}\n"
+                                                         "\n"
+                                                         "QPushButton::pressed{\n"
+                                                         "    margin-left: 7px;\n"
+                                                         "    margin-top: 7px;\n"
+                                                         "}\n"
+                                                         "QPushButton::hover{\n"
+                                                         "    background-color: #EEE\n"
+                                                         "}"))
         self.sample_points_table.setLineWidth(0)
         self.sample_points_table.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
         self.sample_points_table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -380,8 +389,14 @@ class Ui_SXRDCollectWidget(object):
         self.check_all_step_cb = QtGui.QCheckBox(SXRDCollectWidget)
         self.check_all_step_cb.setObjectName(_fromUtf8("check_all_step_cb"))
         self.verticalLayout_8.addWidget(self.check_all_step_cb)
+
         spacerItem6 = QtGui.QSpacerItem(20, 50, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout_8.addItem(spacerItem6)
+
+        self.play_sound_cb = QtGui.QCheckBox(SXRDCollectWidget)
+        self.play_sound_cb.setObjectName(_fromUtf8("play_sound_cb"))
+        self.verticalLayout_8.addWidget(self.play_sound_cb)
+
         self.total_frames_txt = QtGui.QLabel(SXRDCollectWidget)
         self.total_frames_txt.setText(_fromUtf8(""))
         self.total_frames_txt.setObjectName(_fromUtf8("total_frames_txt"))
@@ -622,8 +637,7 @@ class Ui_SXRDCollectWidget(object):
     def retranslateUi(self, SXRDCollectWidget):
         SXRDCollectWidget.setWindowTitle(_translate("SXRDCollectWidget", "Form", None))
         self.title_lbl.setText(_translate("SXRDCollectWidget", "Single Crystal X-ray Diffraction", None))
-        self.pushButton.setText(_translate("SXRDCollectWidget", "EPICS \n"
-"Conifguration", None))
+        self.epics_config_btn.setText(_translate("SXRDCollectWidget", "EPICS \n Configuration", None))
         self.experiment_lbl.setText(_translate("SXRDCollectWidget", "Experiment Setup", None))
         self.load_setup_btn.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p>Load experiment setup(s) from *.ini file</p></body></html>", None))
         self.load_setup_btn.setText(_translate("SXRDCollectWidget", "Load", None))
@@ -637,15 +651,18 @@ class Ui_SXRDCollectWidget(object):
         self.label.setText(_translate("SXRDCollectWidget", "Point:", None))
         self.label_4.setText(_translate("SXRDCollectWidget", "Folder:", None))
         self.get_folder_btn.setToolTip(_translate("SXRDCollectWidget", "Will get current epics filepath", None))
-        self.get_folder_btn.setText(_translate("SXRDCollectWidget", "Get", None))
+        self.get_folder_btn.setText(_translate("SXRDCollectWidget", "Update", None))
+
+        self.select_folder_btn.setText(_translate("SXRDCollectWidget", "Select", None))
+
         self.get_basename_btn.setToolTip(_translate("SXRDCollectWidget", "Will get current basename from epics", None))
-        self.get_basename_btn.setText(_translate("SXRDCollectWidget", "Get", None))
+        self.get_basename_btn.setText(_translate("SXRDCollectWidget", "Update", None))
         self.frame_number_txt.setText(_translate("SXRDCollectWidget", "1", None))
         self.frame_number_txt.setPlaceholderText(_translate("SXRDCollectWidget", "Number", None))
         self.framenr_reset_btn.setText(_translate("SXRDCollectWidget", "Reset", None))
         self.label_9.setText(_translate("SXRDCollectWidget", "Frame Nr.", None))
         self.get_framenr_btn.setToolTip(_translate("SXRDCollectWidget", "Will get current Frame Nr from epics", None))
-        self.get_framenr_btn.setText(_translate("SXRDCollectWidget", "Get", None))
+        self.get_framenr_btn.setText(_translate("SXRDCollectWidget", "Update", None))
         self.example_filename_lbl.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p><span style=\" font-weight:600; color:#888888;\">Grey</span>: Example Filename</p><p><span style=\" font-weight:600; color:#aa0000;\">Red</span>: The file with the same name exists and will be overwritten</p><p><span style=\" font-weight:600; color:#ff5500;\">Orange</span>: Path does not exist</p><p><span style=\" font-weight:600; color:#228b22;\">Green</span>: Everything Ok (at least the first file will not be overwritten)</p></body></html>", None))
         self.example_filename_lbl.setText(_translate("SXRDCollectWidget", "<html><head/><body><p align=\"right\">example_lbl</p></body></html>", None))
         self.rename_files_cb.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p>Will name files in the following way:</p><p><span style=\" color:#0000ff;\">basename_S1_P1_E1_s_FrameNr</span></p><p>S1 - sample name</p><p>P1 - point number</p><p>E1 - experimental setup name</p><p>s - step scan (w - for wide scan, empty for still image)</p><p>FrameNr - Frame number (will always start with 001)</p></body></html>", None))
@@ -700,6 +717,7 @@ class Ui_SXRDCollectWidget(object):
         self.check_all_still_cb.setText(_translate("SXRDCollectWidget", "still", None))
         self.check_all_wide_cb.setText(_translate("SXRDCollectWidget", "wide", None))
         self.check_all_step_cb.setText(_translate("SXRDCollectWidget", "step", None))
+        self.play_sound_cb.setText(_translate("SXRDCollectWidget", "sound", None))
         self.label_8.setText(_translate("SXRDCollectWidget", "y", None))
         self.label_2.setText(_translate("SXRDCollectWidget", "x", None))
         self.x_max_txt.setText(_translate("SXRDCollectWidget", "0.01", None))

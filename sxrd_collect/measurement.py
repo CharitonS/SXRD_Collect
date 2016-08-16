@@ -15,13 +15,16 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-__author__ = 'Clemens Prescher'
 
 import time
 import logging
 from functools import partial
-
+import thread
 from epics import caput, caget, PV, camonitor, camonitor_clear
+from threading import Thread
+
+__author__ = 'Clemens Prescher'
+
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -46,11 +49,13 @@ def get_sample_position():
     return x_pos, y_pos, z_pos
 
 
-def collect_step_data(detector_position_x, detector_position_z, omega_start, omega_end, omega_step, exposure_time, x, y,
-                      z, callback_fcn=None, collect_bkg_flag=False):
+def collect_step_data(detector_choice, detector_position_x, detector_position_z, omega_start, omega_end, omega_step,
+                      exposure_time, x, y, z, callback_fcn=None, collect_bkg_flag=False):
     """
     Performs a single crystal step collection at the sample position x,y,z using the trajectory scan of the
     XPS motor controller. This
+    :param detector_choice:
+        Which detector to use (Pilatus or MARCCD).
     :param detector_position_x:
         Detector x position. Whereby the X motor PV is defined in epics_config as "detector_position_x".
     :param detector_position_z:
@@ -83,57 +88,84 @@ def collect_step_data(detector_position_x, detector_position_z, omega_start, ome
     # prepare the stage:
     prepare_stage(detector_position_x, detector_position_z, omega_start, x, y, z)
     # prepare the detector
-    previous_shutter_mode = prepare_detector()
+    previous_shutter_mode = prepare_detector(detector_choice)
+
 
     # perform measurements:
     num_steps = (omega_end - omega_start) / omega_step
 
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
-    stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
-                                               pulse_time=0.1, accel_values=DEFAULT_ACCEL)
+    if detector_choice == 'marccd':
+        stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
+                                                   pulse_time=0.1, accel_values=DEFAULT_ACCEL)
+    elif detector_choice == 'pilatus':
+        omega_range = omega_end - omega_start
+        stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_range]],
+                                                   scan_time=(exposure_time+0.001)*num_steps,
+                                                   pulse_time=0.1, accel_values=DEFAULT_ACCEL)
 
     if collect_bkg_flag:
         if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
-            collect_background()
+            collect_background(detector_choice)
         else:
             logger.info('Data collection was aborted!')
 
     if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
-        for step in range(int(num_steps)):
+        if detector_choice == 'pilatus':
+            caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
+            caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time+0.001, wait=True)
+            caput(epics_config['pilatus'] + ':cam1:NumImages', num_steps, wait=True)
+
+            pilatus_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
             t1 = time.time()
-            longstring = 'Running Omega-Trajectory from {} deg by {} deg {} s'.format(omega_start + step * omega_step,
-                                                                                     omega_step,
-                                                                                     exposure_time)
-            shortstring = 'start {} step {} time {} s'.format(omega_start + step * omega_step,
-                                                 omega_step,          exposure_time)
+            pilatus_trajectory_thread.start()
 
-            caput('13MARCCD2:AcquireSequence.STRA', shortstring, wait=True)
-            logging.info(longstring)
-            collect_step(exposure_time, stage_xps)
-            logger.info('Time needed for one single step collection {}.\n'.format(time.time() - t1))
+            while caget(epics_config['table_shutter']):
+                continue
+            t2 = time.time()
+            caput(epics_config['pilatus'] + ':cam1:Acquire', 1, wait=True)
+            t3 = time.time()
+            print "Opened table shutter after " + str(t2-t1)
+            print "collected data within " + str(t3-t2)
 
-            if callback_fcn is not None:
-                if callback_fcn() is False:
-                    logger.info('Data collection was aborted!')
-                    break
+        elif detector_choice == 'marccd':
+            for step in range(int(num_steps)):
+                t1 = time.time()
+                longstring = 'Running Omega-Trajectory from {} deg by {} deg {} s: frame {} of {}'
+                longstring = longstring.format(omega_start + step * omega_step, omega_step, exposure_time, step+1,
+                                               int(num_steps))
+                shortstring = 'start {} step {} time {} s'.format(omega_start + step * omega_step,
+                                                     omega_step,          exposure_time)
+
+                caput(epics_config['marccd'] + ':AcquireSequence.STRA', shortstring, wait=True)
+                logging.info(longstring)
+
+                collect_step(exposure_time, stage_xps, detector_choice)
+
+                logger.info('Time needed for one single step collection {}.\n'.format(time.time() - t1))
+
+                if callback_fcn is not None:
+                    if callback_fcn() is False:
+                        logger.info('Data collection was aborted!')
+                        break
     else:
         logger.info('Data collection was aborted!')
 
-    caput(epics_config['detector_control'] + ':ShutterMode', previous_shutter_mode, wait=True)
+    caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     logger.info('Data collection finished.\n')
-    caput('13MARCCD2:AcquireSequence.STRA', 'Step scan finished', wait=True)
+    caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Step scan finished', wait=True)
     del stage_xps
 
 
-def collect_step(exposure_time, stage_xps):
-    detector_checker = MarCCDChecker(epics_config['detector_control'])
+def collect_step(exposure_time, stage_xps, detector_choice):
+    detector_checker = DetectorChecker(detector_choice)
 
     # start data collection
-    collect_data(exposure_time + 50)
+    collect_data(exposure_time + 50, detector_choice)
     time.sleep(0.25)
     stage_xps.run_line_trajectory_general()
     # stop detector
-    caput('13MARCCD2:cam1:Acquire', 0, wait=True)
+    caput(epics_config[detector_choice] + ':cam1:Acquire', 0, wait=True)
     # wait for readout
     while not detector_checker.is_finished():
         time.sleep(0.01)
@@ -142,15 +174,16 @@ def collect_step(exposure_time, stage_xps):
     time.sleep(0.25)
 
 
-def collect_background():
-    logger.info("Acquiring Detector Background.")
-    caput('13MARCCD2:AcquireSequence.STRA', 'Acquiring Detector Background', wait=True)
-    caput('13MARCCD2:cam1:FrameType', 1, wait=True)
-    logger.info("Changed Frame type to Background.")
-    caput('13MARCCD2:cam1:Acquire', 1, wait=True)
-    logger.info("Finished Acquiring.")
-    caput('13MARCCD2:cam1:FrameType', 0, wait=True)
-    logger.info("Acquiring Detector Background finished.\n")
+def collect_background(detector_choice):
+    if detector_choice == 'marccd':
+        logger.info("Acquiring Detector Background.")
+        caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Acquiring Detector Background', wait=True)
+        caput(epics_config[detector_choice] + ':cam1:FrameType', 1, wait=True)
+        logger.info("Changed Frame type to Background.")
+        caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=True)
+        logger.info("Finished Acquiring.")
+        caput(epics_config[detector_choice] + ':cam1:FrameType', 0, wait=True)
+        logger.info("Acquiring Detector Background finished.\n")
 
 
 def prepare_stage(detector_position_x, detector_pos_z, omega_start, x, y, z):
@@ -159,72 +192,108 @@ def prepare_stage(detector_position_x, detector_pos_z, omega_start, x, y, z):
     move_to_detector_position(detector_position_x, detector_pos_z)
 
 
-def prepare_detector():
-    previous_shutter_mode = caget(epics_config['detector_control'] + ':ShutterMode')
-    caput(epics_config['detector_control'] + ':ShutterMode', 0, wait=True)
+def prepare_detector(detector_choice):
+    previous_shutter_mode = caget(epics_config[detector_choice] + ':cam1:ShutterMode')
+    if detector_choice == 'marccd':
+        caput(epics_config[detector_choice] + ':cam1:ShutterMode', 0, wait=True)
+    elif detector_choice == 'pilatus':
+        caput(epics_config[detector_choice] + ':cam1:ShutterMode', 0, wait=True)
     return previous_shutter_mode
 
 
-def collect_wide_data(detector_position_x, detector_position_z, omega_start, omega_end, exposure_time, x, y, z):
+def collect_wide_data(detector_choice, detector_position_x, detector_position_z, omega_start, omega_end, exposure_time,
+                      x, y, z):
     # performs the actual wide measurement
 
     # prepare the stage:
     prepare_stage(detector_position_x, detector_position_z, omega_start, x, y, z)
 
     # prepare the detector
-    previous_shutter_mode = prepare_detector()
-    detector_checker = MarCCDChecker(epics_config['detector_control'])
+    previous_shutter_mode = prepare_detector(detector_choice)
+    detector_checker = DetectorChecker(detector_choice)
 
     # start data collection
     # perform_background_collection()
-    collect_data(exposure_time + 50)
 
-    # start trajectory scan
     omega_range = omega_end - omega_start
 
     wstring = 'start {} range {} time {} s'.format(omega_start,
-                                                 omega_range,          exposure_time)
+                                                   omega_range,          exposure_time)
 
-    caput('13MARCCD2:AcquireSequence.STRA', wstring, wait=True)
+    caput(epics_config['marccd'] + ':AcquireSequence.STRA', wstring, wait=True)
     print omega_range
-    run_omega_trajectory(omega_range, exposure_time)
-
-    # stop detector and wait for the detector readout
-    time.sleep(0.1)
-    caput(epics_config['detector_control'] + ':Acquire', 0)
-    caput(epics_config['detector_control'] + ':ShutterMode', previous_shutter_mode, wait=True)
-    while not detector_checker.is_finished():
+    if detector_choice == 'marccd':
+        collect_data(exposure_time + 50, detector_choice)
+        # start trajectory scan
+        run_omega_trajectory(omega_range, exposure_time)
+        # stop detector and wait for the detector readout
         time.sleep(0.1)
+        caput(epics_config[detector_choice] + ':cam1:Acquire', 0)
+
+        while not detector_checker.is_finished():
+            time.sleep(0.1)
+    elif detector_choice == 'pilatus':
+        stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
+
+        stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_range]],
+                                                   scan_time=exposure_time+0.001,
+                                                   pulse_time=0.1, accel_values=DEFAULT_ACCEL)
+        caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
+        caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time+0.001, wait=True)
+        caput(epics_config['pilatus'] + ':cam1:NumImages', 1, wait=True)
+
+        pilatus_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
+        t1 = time.time()
+        pilatus_trajectory_thread.start()
+
+        while caget(epics_config['table_shutter']):
+            continue
+        t2 = time.time()
+        caput(epics_config['pilatus'] + ':cam1:Acquire', 1, wait=True)
+        t3 = time.time()
+        print "Opened table shutter after " + str(t2-t1)
+        print "collected wide data within " + str(t3-t2)
+
+    caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     logger.info('Wide data collection finished.\n')
-    #caput('13MARCCD2:AcquireSequence.STRA', 'Wide scan finished', wait=True)
+    # caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Wide scan finished', wait=True)
     return
 
 
-class MarCCDChecker(object):
-    def __init__(self, pv_name):
-        self.detector_status = self.StatusChecker(3)
-        self.pv_name = pv_name
-        camonitor(pv_name + ':MarReadoutStatus_RBV',
-                  writer=partial(self.detector_status.set_status, 0, 'Idle', True))
-        camonitor(pv_name + ':MarCorrectStatus_RBV',
-                  writer=partial(self.detector_status.set_status, 1, 'Idle', True))
-        camonitor(pv_name + ':MarWritingStatus_RBV',
-                  writer=partial(self.detector_status.set_status, 2, 'Idle', True))
+class DetectorChecker(object):
+    def __init__(self, detector_choice):
+        self.detector_choice = detector_choice
+        self.pv_name = epics_config[detector_choice] + ':cam1'
+
+        if detector_choice == 'marccd':
+            self.detector_status = self.StatusChecker(3)
+            camonitor(self.pv_name + ':MarReadoutStatus_RBV',
+                      writer=partial(self.detector_status.set_status, 0, 'Idle', True))
+            camonitor(self.pv_name + ':MarCorrectStatus_RBV',
+                      writer=partial(self.detector_status.set_status, 1, 'Idle', True))
+            camonitor(self.pv_name + ':MarWritingStatus_RBV',
+                      writer=partial(self.detector_status.set_status, 2, 'Idle', True))
 
     def is_finished(self):
-        if self.detector_status.is_true():
-            camonitor_clear(self.pv_name + ':MarReadoutStatus_RBV')
-            camonitor_clear(self.pv_name + ':MarCorrectStatus_RBV')
-            camonitor_clear(self.pv_name + ':MarWritingStatus_RBV')
-            return True
-        else:
-            return False
+        if self.detector_choice == 'marccd':
+            if self.detector_status.is_true():
+                camonitor_clear(self.pv_name + ':MarReadoutStatus_RBV')
+                camonitor_clear(self.pv_name + ':MarCorrectStatus_RBV')
+                camonitor_clear(self.pv_name + ':MarWritingStatus_RBV')
+                return True
+            else:
+                return False
+        elif self.detector_choice == 'pilatus':
+            if not caget(epics_config[self.detector_choice] + ':cam1:Acquire'):
+                return True
+            else:
+                return False
 
     def read_out_is_finished(self):
         if self.detector_status.status[0]:
             return True
         else:
-            False
+            return False
 
     class StatusChecker(object):
         def __init__(self, num_status):
@@ -252,24 +321,28 @@ def run_omega_trajectory(omega, running_time):
     del stage_xps
 
 
-def collect_single_data(detector_position_x, detector_position_z, exposure_time, x, y, z, omega):
-    #new commands
-    #previous_shutter_mode = prepare_detector()
-    detector_checker = MarCCDChecker(epics_config['detector_control'])
+def collect_single_data(detector_choice, detector_position_x, detector_position_z, exposure_time, x, y, z, omega):
+    # new commands
+    # previous_shutter_mode = prepare_detector(detector_choice)
+    detector_checker = DetectorChecker(detector_choice)
 
     # performs an actual single angle measurement:
     move_to_sample_pos(x, y, z)
     move_to_omega_position(omega)
     move_to_detector_position(detector_position_x, detector_position_z)
 
-    #more new commands
+    # more new commands
 
-    caput(epics_config['detector_control']+':AcquireTime', exposure_time)
-    caput(epics_config['detector_control'] + ':Acquire', 1, wait=True)
-    time.sleep(1)
-    caput(epics_config['detector_control'] + ':Acquire', 0, wait=True)
+    caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time)
+    if detector_choice == 'pilatus':
+        caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time+0.001)
+        caput(epics_config[detector_choice] + ':cam1:NumImages', 1)
+    caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=True)
+    if detector_choice == 'marccd':
+        time.sleep(1)
+        caput(epics_config[detector_choice] + ':cam1:Acquire', 0, wait=True)
 
-    #caput(epics_config['detector_control'] + ':ShutterMode', previous_shutter_mode, wait=True)
+    # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
 
     while not detector_checker.is_finished():
         time.sleep(0.1)
@@ -296,7 +369,7 @@ def move_to_sample_pos(x, y, z, wait=True, callbacks=[]):
             callback()
     time.sleep(0.5)
     logger.info('Moving Sample to x: {}, y: {}, z: {} finished.\n'.format(x, y, z))
-    caput('13MARCCD2:AcquireSequence.STRA', 'Scan finished', wait=True)
+    caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Scan finished', wait=True)
     return
 
 
@@ -315,10 +388,12 @@ def move_to_detector_position(detector_position_x, detector_position_z):
     logger.info('Moving Detector finished. \n')
 
 
-def collect_data(exposure_time, wait=False):
-    caput(epics_config['detector_control'] + ':AcquireTime', exposure_time, wait=True)
+def collect_data(exposure_time, detector_choice, wait=False):
+    caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
+    if detector_choice == 'pilatus':
+        caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time+0.001, wait=True)
     logger.info('Starting data collection.')
-    caput(epics_config['detector_control'] + ':Acquire', 1, wait=wait, timeout=exposure_time + 20)
+    caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=wait, timeout=exposure_time + 20)
     if wait:
         logger.info('Finished data collection.\n')
 

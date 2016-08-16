@@ -20,8 +20,9 @@ __version__ = 0.2
 #Modified by Maxim Bykov and Elena Bykova on 08 March 2016
 
 import time
-from threading import Thread
+import thread
 import logging
+import winsound
 
 from epics import caget, caput, camonitor
 
@@ -36,17 +37,15 @@ from views.MainView import MainView
 from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
 from measurement import collect_single_data
+from threading import Thread
 
-
-
-#MONITOR = False
 logger = logging.getLogger()
-
 
 class MainController(object):
     def __init__(self):
         self.widget = MainView(__version__)
         self.widget.show()
+        self.detector = 'marccd'
         self.model = SxrdModel()
         self.connect_buttons()
         self.connect_tables()
@@ -56,16 +55,9 @@ class MainController(object):
         self.abort_collection = False
         self.logging_handler = InfoLoggingHandler(self.update_status_txt)
         logger.addHandler(self.logging_handler)
-
         self.status_txt_scrollbar_is_at_max = True
-        
         self.widget.setup_table.resizeColumnsToContents()
         self.example_str = ' '
-
-        # self.filename_update_timer = QtCore.QTimer()
-        # self.filename_update_timer.timeout.connect(self.set_example_lbl)
-        # self.filename_update_timer.start(1000)
-
 
     def connect_checkboxes(self):
         self.widget.no_suffices_cb.clicked.connect(lambda: self.update_cb('no_suffices'))
@@ -74,7 +66,6 @@ class MainController(object):
         self.widget.check_all_still_cb.clicked.connect(self.check_all_still)
         self.widget.check_all_wide_cb.clicked.connect(self.check_all_wide)
         self.widget.check_all_step_cb.clicked.connect(self.check_all_step)
-
 
     def update_cb(self, emitter):
         if emitter == 'no_suffices':
@@ -87,6 +78,9 @@ class MainController(object):
         self.set_example_lbl()
 
     def connect_buttons(self):
+        self.widget.epics_config_btn.clicked.connect(self.configure_epics_clicked)
+        self.widget.choose_detector_btn.clicked.connect(self.choose_detector_clicked)
+
         self.widget.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
         self.widget.delete_setup_btn.clicked.connect(self.delete_experiment_setup_btn_clicked)
         self.widget.clear_setup_btn.clicked.connect(self.clear_experiment_setup_btn_clicked)
@@ -97,6 +91,8 @@ class MainController(object):
         self.widget.create_map_btn.clicked.connect(self.create_map_btn_clicked)
 
         self.widget.get_folder_btn.clicked.connect(self.get_folder_btn_clicked)
+        self.widget.select_folder_btn.clicked.connect(self.select_folder_btn_clicked)
+
         self.widget.get_basename_btn.clicked.connect(self.get_basename_btn_clicked)
         self.widget.get_framenr_btn.clicked.connect(self.get_framenr_btn_clicked)
 
@@ -148,7 +144,7 @@ class MainController(object):
         self.widget.status_txt.verticalScrollBar().valueChanged.connect(self.update_status_txt_scrollbar_value)
 
     def populate_filename(self):
-        self.prev_filepath, self.prev_filename, self.prev_file_number = self.get_filename_info()
+        self.prev_filepath, self.prev_filename, self.prev_file_number = self.get_filename_info(self.detector)
 
         self.filepath = self.prev_filepath
         self.basename = self.prev_filename
@@ -169,20 +165,37 @@ class MainController(object):
             )
 
     def get_folder_btn_clicked(self):
-        self.prev_filepath, _, _ = self.get_filename_info()
+
+        self.prev_filepath, _, _ = self.get_filename_info(self.detector)
         self.filepath = self.prev_filepath
         self.widget.filepath_txt.setText(self.prev_filepath)
+        self.filepath_txt_changed()
+        self.set_example_lbl()
 
+    def select_folder_btn_clicked(self):
+        """
+        Initiates a folder browser dialog. Sets a new filepath.
+        """
+        path = FILEPATH + self.filepath[4:]
+        folder = str(QtGui.QFileDialog.getExistingDirectory(self.widget, 'Select Directory', path))
+
+        if folder is not '':
+            nr = len(FILEPATH)
+            text = '/DAC' + folder[nr:]
+            text = text.replace("\\", "/")
+            self.widget.filepath_txt.setText(text)
+
+        self.filepath_txt_changed()
         self.set_example_lbl()
 
     def get_basename_btn_clicked(self):
-        _, self.prev_filename, _ = self.get_filename_info()
+        _, self.prev_filename, _ = self.get_filename_info(self.detector)
         self.basename = self.prev_filename
         self.widget.filename_txt.setText(self.basename)
         self.set_example_lbl()
 
     def get_framenr_btn_clicked(self):
-        _, _, self.prev_file_number = self.get_filename_info()
+        _, _, self.prev_file_number = self.get_filename_info(self.detector)
         self.file_number = self.prev_file_number
         self.widget.frame_number_txt.setText(str(self.file_number))
         self.set_example_lbl()
@@ -212,11 +225,11 @@ class MainController(object):
 
     def reset_frame_nr(self):
         self.widget.frame_number_txt.setText('1')
-        caput(epics_config['detector_file'] + ':FileNumber', 1)
+        caput(epics_config[self.detector] + ':TIFF1:FileNumber', 1)
         self.set_example_lbl()
 
     def add_experiment_setup_btn_clicked(self):
-        detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()
+        detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup(self.detector)
         default_name = 'E{}'.format(len(self.model.experiment_setups) + 1)
         self.model.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
                                         omega - 1, omega + 1, 1, exposure_time)
@@ -243,7 +256,6 @@ class MainController(object):
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
         self.set_example_lbl()
         self.set_total_frames()
-
 
     def clear_experiment_setup_btn_clicked(self):
         msgBox = QtGui.QMessageBox()
@@ -346,7 +358,13 @@ class MainController(object):
                 self.model.experiment_setups[row].omega_step = value
                 self.update_total_exposure_time(row)
             elif col == 6:
-                self.model.experiment_setups[row].time_per_step = value
+                if value/self.model.experiment_setups[row].omega_step < 0.5:
+                    fixed_value = 0.5*self.model.experiment_setups[row].omega_step
+                    self.model.experiment_setups[row].time_per_step = fixed_value
+                    self.widget.setup_table.item(row, col).setText(str(fixed_value))
+                    self.create_omega_error_msg('Time per degree of rotation must be at least 0.5 sec')
+                else:
+                    self.model.experiment_setups[row].time_per_step = value
                 self.update_total_exposure_time(row)
             elif col == 7:
                 step_time = self.model.experiment_setups[row].get_step_exposure_time(value)
@@ -399,6 +417,20 @@ class MainController(object):
             self.widget.setup_table.item(ind, 4).setText(str(omega_end))
             self.model.experiment_setups[ind].omega_start = omega_start
             self.model.experiment_setups[ind].omega_end = omega_end
+            #Speeding up experiment parameter modifications for most used wide and step scans
+            #This is a step scan ===> modify step size and exposure time
+            if omega_range >= 30:
+                self.widget.setup_table.item(ind, 5).setText(str(0.5))
+                self.model.experiment_setups[ind].omega_step = 0.5
+                self.widget.setup_table.item(ind, 6).setText(str(2))
+                self.model.experiment_setups[ind].time_per_step = 2
+            #This is a wide scan ===> modify step size and exposure time
+            elif omega_range == 20:
+                self.widget.setup_table.item(ind, 5).setText(str(40))
+                self.model.experiment_setups[ind].omega_step = 40
+                self.widget.setup_table.item(ind, 6).setText(str(20))
+                self.model.experiment_setups[ind].time_per_step = 20
+            self.update_total_exposure_time(ind)
 
     def set_map_range(self, orange):
         self.widget.y_min_txt.setText('-'+str(orange))
@@ -478,7 +510,7 @@ class MainController(object):
 
     def basename_txt_changed(self):
         self.basename = str(self.widget.filename_txt.text())
-        caput(epics_config['detector_file'] + ':FileName', self.basename)
+        caput(epics_config[self.detector] + ':TIFF1:FileName', self.basename)
         self.set_example_lbl()
 
     def filepath_txt_changed(self):
@@ -488,12 +520,12 @@ class MainController(object):
 
         self.widget.filepath_txt.setText(self.filepath)
 
-        caput(epics_config['detector_file'] + ':FilePath', self.filepath)
+        caput(epics_config[self.detector] + ':TIFF1:FilePath', self.filepath)
         self.set_example_lbl()
 
     def frame_number_txt_changed(self):
         self.framenr = int(self.widget.frame_number_txt.text())
-        caput(epics_config['detector_file'] + ':FileNumber', self.framenr)
+        caput(epics_config[self.detector] + ':TIFF1:FileNumber', self.framenr)
         self.set_example_lbl()
 
     def set_total_frames(self):
@@ -509,7 +541,7 @@ class MainController(object):
     def set_example_lbl(self):
         no_exp = False
         if self.widget.no_suffices_cb.isChecked():
-            _, _, filenumber = self.get_filename_info()
+            _, _, filenumber = self.get_filename_info(self.detector)
             example_str = self.filepath + '/' + self.basename + '_' + str('%03d' %filenumber)
 
         elif self.widget.rename_files_cb.isChecked():
@@ -538,7 +570,8 @@ class MainController(object):
                 if no_exp:
                     example_str = self.filepath + '/' + self.basename + '_' + 'S1_P1_E1_s_001'
         else:
-            example_str = self.filepath + '/' + caget(epics_config['detector_file'] + ':FileName', as_string=True)+'_'+str('%03d' %caget(epics_config['detector_file'] + ':FileNumber'))
+            example_str = self.filepath + '/' + caget(epics_config[self.detector] + ':TIFF1:FileName', as_string=True) + \
+                          '_' + str('%03d' %caget(epics_config[self.detector] + ':TIFF1:FileNumber'))
             if example_str is None:
                 example_str = self.filepath + '/None'
 
@@ -565,6 +598,17 @@ class MainController(object):
             self.widget.example_filename_lbl.setText("<font color = '#228B22'>"+example_str+'.tif</font>')
             return
 
+    def configure_epics_clicked(self):
+        pass
+
+    def choose_detector_clicked(self):
+        if self.widget.choose_detector_btn.isChecked():
+            self.widget.choose_detector_btn.setText('Using Pilatus')
+            self.detector = 'pilatus'
+        else:
+            self.widget.choose_detector_btn.setText('Using MARCCD')
+            self.detector = 'marccd'
+
     def open_path_btn_clicked(self):
         path = FILEPATH + self.filepath[4:]
         os.startfile(path)
@@ -572,7 +616,7 @@ class MainController(object):
     def collect_bkg_data(self):
         self.set_status_lbl("Collecting", "#FF0000")
         QtGui.QApplication.processEvents()
-        collect_background()
+        collect_background(self.detector)
         self.set_status_lbl("Finished", "#00FF00")
 
     def collect_data(self):
@@ -590,30 +634,31 @@ class MainController(object):
 
         # check if sample position are not very far away from the current position (in case users forgot to update
         # positions....) maximum value is right now set to 200um distance
-        if self.check_sample_point_distances() is False:
+        if self.check_sample_point_distances(0.2) is False:
             reply = self.show_continue_abort_message_box(
                 'Some measurement points are more than 200um away from the current sample ' +
                 'position.<br> Do you want to continue?!')
             if reply == QtGui.QMessageBox.Abort:
                 return
-        #
-        #if MONITOR:
-            #omega_RBV = open(FILEPATH+'/BGI/omega_RBV.log', 'w')
-            #omega_VAL = open(FILEPATH+'/BGI/omega_VAL.log', 'w')
-            #shutter_log = open(FILEPATH+'/BGI/shutter_log.log', 'w')
-            #camonitor(epics_config['sample_position_omega']+'.RBV', writer=omega_RBV.write)
-            #camonitor(epics_config['sample_position_omega']+'.VAL', writer=omega_VAL.write)
-            #camonitor(epics_config['detector_control']+':ShutterStatusEPICS_RBV', writer=shutter_log.write)
+
+        if len(self.model.sample_points) == 1:
+            if self.check_sample_point_distances(0.0) is False:
+                reply = self.show_continue_abort_message_box(
+                    'The measurement point is away from the current sample ' +
+                    'position.<br> Do you want to continue?!')
+                if reply == QtGui.QMessageBox.Abort:
+                    return
 
         nr = self.frame_counter()
         if nr == 1:
             self.set_status_lbl("Collecting" + "\n" + str(nr) + ' image', "#FF0000")
         else:
             self.set_status_lbl("Collecting" + "\n" + str(nr) + ' images', "#FF0000")
+        c_frame = 1
 
         # save current state to be able to restore after the measurement when the checkboxes are selected.
-        previous_filepath, previous_filename, previous_filenumber = self.get_filename_info()
-        previous_exposure_time = caget(epics_config['detector_control'] + ':AcquireTime')
+        previous_filepath, previous_filename, previous_filenumber = self.get_filename_info(self.detector)
+        previous_exposure_time = caget(epics_config[self.detector] + ':cam1:AcquireTime')
         previous_detector_pos_x = caget(epics_config['detector_position_x'])
         previous_detector_pos_z = caget(epics_config['detector_position_z'])
         previous_omega_pos = caget(epics_config['sample_position_omega'])
@@ -637,6 +682,8 @@ class MainController(object):
             for sample_point in self.model.sample_points:
 
                 if sample_point.perform_still_for_setup[exp_ind]:
+                    self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
+                    c_frame += 1
                     if self.widget.rename_files_cb.isChecked():
                         point_number = str(self.widget.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
@@ -645,28 +692,31 @@ class MainController(object):
 
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
-                        _, _, filenumber = self.get_filename_info()
+                        _, _, filenumber = self.get_filename_info(self.detector)
 
                     else:
-                        _, filename, filenumber = self.get_filename_info()
+                        _, filename, filenumber = self.get_filename_info(self.detector)
 
-                    caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
-                    caput(epics_config['detector_file'] + ':FileName', str(filename))
-                    caput(epics_config['detector_file'] + ':FileNumber', filenumber)
+                    caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
+                    caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
+                    caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
 
                     logger.info("Performing still image for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
                                         experiment.time_per_step
 
+                    current_omega = (caget(epics_config['sample_position_omega'], as_string=False))
+                    print current_omega
                     collect_single_data_thread = Thread(target=collect_single_data,
-                                                        kwargs={"detector_position_x": experiment.detector_pos_x,
+                                                        kwargs={"detector_choice": self.detector,
+                                                                "detector_position_x": experiment.detector_pos_x,
                                                                 "detector_position_z": experiment.detector_pos_z,
                                                                 "exposure_time": abs(exposure_time),
                                                                 "x": sample_point.x,
                                                                 "y": sample_point.y,
                                                                 "z": sample_point.z,
-                                                                "omega": -90.0
-                                                               }
+                                                                "omega": current_omega
+                                                                }
                                                         )
                     collect_single_data_thread.start()
 
@@ -678,10 +728,12 @@ class MainController(object):
                     break
 
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
-
+                    self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
+                    c_frame = c_frame + 1
                     # check if all motor positions are in a correct position
                     if self.check_conditions() is False:
                         self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
+                        self.reset_gui_state()
                         return
 
                     if self.widget.rename_files_cb.isChecked():
@@ -692,21 +744,22 @@ class MainController(object):
 
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
-                        _, _, filenumber = self.get_filename_info()
+                        _, _, filenumber = self.get_filename_info(self.detector)
 
                     else:
-                        _, filename, filenumber = self.get_filename_info()
+                        _, filename, filenumber = self.get_filename_info(self.detector)
 
-                    caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
-                    caput(epics_config['detector_file'] + ':FileName', str(filename))
-                    caput(epics_config['detector_file'] + ':FileNumber', filenumber)
+                    caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
+                    caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
+                    caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
 
                     logger.info("Performing wide scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
                                     experiment.time_per_step
 
                     collect_wide_data_thread = Thread(target=collect_wide_data,
-                                                      kwargs={"detector_position_x": experiment.detector_pos_x,
+                                                      kwargs={"detector_choice": self.detector,
+                                                              "detector_position_x": experiment.detector_pos_x,
                                                               "detector_position_z": experiment.detector_pos_z,
                                                               "omega_start": experiment.omega_start,
                                                               "omega_end": experiment.omega_end,
@@ -728,10 +781,12 @@ class MainController(object):
                     break
 
                 if sample_point.perform_step_scan_for_setup[exp_ind]:
-
+                    self.set_status_lbl("Collecting...", "#FF0000")
+                    c_frame += 1
                     # check if all motor positions are in a correct position
                     if self.check_conditions() is False:
                         self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
+                        self.reset_gui_state()
                         return
 
                     if self.widget.rename_files_cb.isChecked():
@@ -743,19 +798,20 @@ class MainController(object):
 
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
-                        _, _, filenumber = self.get_filename_info()
+                        _, _, filenumber = self.get_filename_info(self.detector)
 
                     else:
-                        _, filename, filenumber = self.get_filename_info()
+                        _, filename, filenumber = self.get_filename_info(self.detector)
 
-                    caput(epics_config['detector_file'] + ':FilePath', str(self.filepath))
-                    caput(epics_config['detector_file'] + ':FileName', str(filename))
-                    caput(epics_config['detector_file'] + ':FileNumber', filenumber)
+                    caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
+                    caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
+                    caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
 
                     logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
 
                     collect_step_data_thread = Thread(target=collect_step_data,
-                                                      kwargs={"detector_position_x": experiment.detector_pos_x,
+                                                      kwargs={"detector_choice": self.detector,
+                                                              "detector_position_x": experiment.detector_pos_x,
                                                               "detector_position_z": experiment.detector_pos_z,
                                                               "omega_start": experiment.omega_start,
                                                               "omega_end": experiment.omega_end,
@@ -776,9 +832,10 @@ class MainController(object):
                 if not self.check_if_aborted():
                     break
 
-                #print filename
-                
-        caput(epics_config['detector_control'] + ':AcquireTime', previous_exposure_time)
+        if self.widget.play_sound_cb.isChecked():
+             winsound.PlaySound('P:\dac_user\Python Scripts\SXRD_Collect\church.wav', winsound.SND_FILENAME)
+
+        caput(epics_config[self.detector] + ':cam1:AcquireTime', previous_exposure_time)
 
         # move to previous detector position:
         if self.widget.reset_detector_position_cb.isChecked():
@@ -790,29 +847,32 @@ class MainController(object):
             caput(epics_config['sample_position_omega'], previous_omega_pos)
             move_to_sample_pos(sample_x, sample_y, sample_z)
 
-        caput(epics_config['detector_control'] + ':ShutterMode', 1)  # enable epics PV shutter mode
+        caput(epics_config[self.detector] + ':cam1:ShutterMode', 1)  # enable epics PV shutter mode
 
         if self.widget.rename_files_cb.isChecked():
             self.increase_point_number()
 
         if self.widget.rename_after_cb.isChecked():
-            caput(epics_config['detector_file'] + ':FilePath', previous_filepath)
-            caput(epics_config['detector_file'] + ':FileName', previous_filename)
+            caput(epics_config[self.detector] + ':TIFF1:FilePath', previous_filepath)
+            caput(epics_config[self.detector] + ':TIFF1:FileName', previous_filename)
             if self.widget.rename_files_cb.isChecked():
-                caput(epics_config['detector_file'] + ':FileNumber', previous_filenumber)
+                caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber)
 
         #update frame number
 
         if self.widget.no_suffices_cb.isChecked() or ((not self.widget.rename_files_cb.isChecked()) and (not self.widget.no_suffices_cb.isChecked())):
-            _, _, filenumber = self.get_filename_info()
+            _, _, filenumber = self.get_filename_info(self.detector)
             self.widget.frame_number_txt.setText(str(filenumber))
 
-        #if MONITOR:
-            #omega_RBV.close()
-            #omega_VAL.close()
-            #shutter_log.close()
-
         # reset the state of the gui:
+        self.widget.collect_btn.setText('Collect')
+        self.widget.collect_btn.clicked.connect(self.collect_data)
+        self.widget.collect_btn.clicked.disconnect(self.abort_data_collection)
+        self.set_status_lbl("Finished", "#00FF00")
+        self.set_example_lbl()
+
+
+    def reset_gui_state(self):
         self.widget.collect_btn.setText('Collect')
         self.widget.collect_btn.clicked.connect(self.collect_data)
         self.widget.collect_btn.clicked.disconnect(self.abort_data_collection)
@@ -914,7 +974,7 @@ class MainController(object):
         return x, y, z
 
     @staticmethod
-    def get_current_setup():
+    def get_current_setup(detector):
         """
         Checks epics for the current setup setting.
         returns: detector position, omega, exposure_time
@@ -924,7 +984,7 @@ class MainController(object):
             detector_pos_x = float("{:g}".format(caget(epics_config['detector_position_x'])))
             detector_pos_z = float("{:g}".format(caget(epics_config['detector_position_z'])))
             omega = float("{:g}".format(caget(epics_config['sample_position_omega'])))
-            exposure_time = float("{:g}".format(caget(epics_config['detector_control'] + ':AcquireTime')))
+            exposure_time = float("{:g}".format(caget(epics_config[detector] + ':cam1:AcquireTime')))
         except epics.ca.ChannelAccessException:
             detector_pos_x = 0
             detector_pos_z = 49
@@ -933,10 +993,10 @@ class MainController(object):
         return detector_pos_x, detector_pos_z, omega, exposure_time
 
     @staticmethod
-    def get_filename_info():
-        path = caget(epics_config['detector_file'] + ':FilePath', as_string=True)
-        filename = caget(epics_config['detector_file'] + ':FileName', as_string=True)
-        file_number = caget(epics_config['detector_file'] + ':FileNumber')
+    def get_filename_info(detector):
+        path = caget(epics_config[detector] + ':TIFF1:FilePath', as_string=True)
+        filename = caget(epics_config[detector] + ':TIFF1:FileName', as_string=True)
+        file_number = caget(epics_config[detector] + ':TIFF1:FileNumber')
         if path is None:
             path = ''
             filename = 'test'
@@ -950,11 +1010,11 @@ class MainController(object):
             return int(str(self.widget.frame_number_txt.text()))
 
     def check_filepath_exists(self):
-        cur_epics_filepath = caget(epics_config['detector_file'] + ':FilePath', as_string=True)
-        caput(epics_config['detector_file'] + ':FilePath', self.filepath, wait=True)
-        exists = caget(epics_config['detector_file'] + ':FilePathExists_RBV')
+        cur_epics_filepath = caget(epics_config[self.detector] + ':TIFF1:FilePath', as_string=True)
+        caput(epics_config[self.detector] + ':TIFF1:FilePath', self.filepath, wait=True)
+        exists = caget(epics_config[self.detector] + ':TIFF1:FilePathExists_RBV')
 
-        caput(epics_config['detector_file'] + ':FilePath', cur_epics_filepath)
+        caput(epics_config[self.detector] + ':TIFF1:FilePath', cur_epics_filepath)
         return exists == 1
 
     def check_filename_exists(self, filename):
@@ -978,11 +1038,11 @@ class MainController(object):
             return False
         return True
 
-    def check_sample_point_distances(self):
+    def check_sample_point_distances(self, dist):
         pos_x, pos_y, pos_z = self.get_current_sample_position()
         largest_distance = self.model.get_largest_largest_collecting_sample_point_distance_to(pos_x, pos_y, pos_z)
 
-        return largest_distance < 0.2
+        return largest_distance <= dist
 
     @staticmethod
     def show_error_message_box(msg):
@@ -1045,6 +1105,7 @@ class ThreadRunner():
     def update_status(self):
         print "updating status"
         self.worker_finished = True
+
 
 class WorkerThread(QtCore.QThread):
     def __init__(self, func, args):

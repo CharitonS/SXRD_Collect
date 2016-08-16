@@ -92,7 +92,7 @@ class XPSTrajectory(object):
         self.FTP_connected = True
 
     def ftp_disconnect(self):
-        "close ftp connnection"
+        "close ftp connection"
         self.ftpconn.close()
         self.FTP_connected = False
 
