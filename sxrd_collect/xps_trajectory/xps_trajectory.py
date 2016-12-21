@@ -101,8 +101,8 @@ class XPSTrajectory(object):
         self.ftpconn.cwd(xps_config['TRAJ_FOLDER'])
         self.ftpconn.storbinary('STOR %s' % fname, StringIO(data))
         self.ftp_disconnect()
-        #print 'Uploaded trajectory ', fname
-        #print data
+        #print('Uploaded trajectory ', fname)
+        #print(data)
 
     def define_line_trajectories_general(self, name='default',
                                          start_values=None,

@@ -29,6 +29,8 @@ from epics import caget, caput, camonitor
 import os.path
 import epics
 import subprocess
+import shutil
+import re
 
 from PyQt4 import QtGui, QtCore
 
@@ -229,7 +231,7 @@ class MainController(object):
         self.set_example_lbl()
 
     def add_experiment_setup_btn_clicked(self):
-        detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup(self.detector)
+        detector_pos_x, detector_pos_z, omega, exposure_time = self.get_current_setup()
         default_name = 'E{}'.format(len(self.model.experiment_setups) + 1)
         self.model.add_experiment_setup(default_name, detector_pos_x, detector_pos_z,
                                         omega - 1, omega + 1, 1, exposure_time)
@@ -257,14 +259,14 @@ class MainController(object):
         self.set_example_lbl()
         self.set_total_frames()
 
-    def clear_experiment_setup_btn_clicked(self):
+    def clear_experiment_setup_btn_clicked(self, auto_yes=False):
         msgBox = QtGui.QMessageBox()
         msgBox.setText('Do you really want to delete all experiments?')
         msgBox.setWindowTitle('Confirmation')
         msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
         msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
         response = msgBox.exec_()
-        if response == QtGui.QMessageBox.Yes:
+        if response == QtGui.QMessageBox.Yes or auto_yes:
             self.widget.clear_experiment_setups()
             self.model.clear_experiment_setups()
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
@@ -605,9 +607,12 @@ class MainController(object):
         if self.widget.choose_detector_btn.isChecked():
             self.widget.choose_detector_btn.setText('Using Pilatus')
             self.detector = 'pilatus'
+            self.widget.choose_detector_btn.setStyleSheet('QPushButton {background-color: #000000; color: white;}')
         else:
             self.widget.choose_detector_btn.setText('Using MARCCD')
             self.detector = 'marccd'
+            self.widget.choose_detector_btn.setStyleSheet('QPushButton {background-color: light grey; color: black;}')
+        self.clear_experiment_setup_btn_clicked(True)
 
     def open_path_btn_clicked(self):
         path = FILEPATH + self.filepath[4:]
@@ -660,7 +665,10 @@ class MainController(object):
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info(self.detector)
         previous_exposure_time = caget(epics_config[self.detector] + ':cam1:AcquireTime')
         previous_detector_pos_x = caget(epics_config['detector_position_x'])
-        previous_detector_pos_z = caget(epics_config['detector_position_z'])
+        if self.detector == 'marccd':
+            previous_detector_pos_z = caget(epics_config['detector_position_z'])
+        elif self.detector == 'pilatus':
+            previous_detector_pos_z = caget(epics_config['pilatus_position_z'])
         previous_omega_pos = caget(epics_config['sample_position_omega'])
         sample_x, sample_y, sample_z = self.get_current_sample_position()
 
@@ -706,7 +714,6 @@ class MainController(object):
                                         experiment.time_per_step
 
                     current_omega = (caget(epics_config['sample_position_omega'], as_string=False))
-                    print current_omega
                     collect_single_data_thread = Thread(target=collect_single_data,
                                                         kwargs={"detector_choice": self.detector,
                                                                 "detector_position_x": experiment.detector_pos_x,
@@ -793,7 +800,7 @@ class MainController(object):
                         point_number = str(self.widget.point_txt.text())
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name + '_s'
-                        print filename
+                        print(filename)
                         filenumber = 1
 
                     elif self.widget.no_suffices_cb.isChecked():
@@ -828,10 +835,36 @@ class MainController(object):
                     while collect_step_data_thread.isAlive():
                         QtGui.QApplication.processEvents()
                         time.sleep(0.2)
+                    xps_file = str(self.filepath) + '/' + str(filename) + '_xps_log.csv'
+                    xps_file = xps_file.replace('/DAC', FILEPATH, 1)
+                    # try:
+                    gf = open('Gather.dat', 'r')
+                    xf = open(xps_file, 'w')
+                    found_first_line = False
+                    counter = 0
+                    for line in gf:
+                        if line[0] == "#":
+                            prev_line = line
+                        else:
+                            counter += 1
+                            if not found_first_line:
+                                found_first_line = True
+                                prev_line = prev_line.replace('#', '')
+                                prev_line = re.sub('\s+', ',', prev_line)
+                                header_line = 'File,' + prev_line
+                                xf.write(header_line + '\n')
+                            new_line = line.replace(' ', ',')
+                            new_line = str(filename) + '_' + str(counter).zfill(3) + ',' + new_line
+                            xf.write(new_line + '\n')
+                    xf.close()
+                    gf.close()
+
+                    # shutil.copy2('Gather.dat', xps_file)
+                    # except:
+                    # pass
 
                 if not self.check_if_aborted():
                     break
-
         if self.widget.play_sound_cb.isChecked():
              winsound.PlaySound('P:\dac_user\Python Scripts\SXRD_Collect\church.wav', winsound.SND_FILENAME)
 
@@ -840,7 +873,10 @@ class MainController(object):
         # move to previous detector position:
         if self.widget.reset_detector_position_cb.isChecked():
             caput(epics_config['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
-            caput(epics_config['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
+            if self.detector == 'marccd':
+                caput(epics_config['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
+            elif self.detector == 'pilatus':
+                caput(epics_config['pilatus_position_z'], previous_detector_pos_z, wait=True, timeout=300)
 
         # move to previous sample position
         if self.widget.reset_sample_position_cb.isChecked():
@@ -897,9 +933,14 @@ class MainController(object):
     def estimate_collection_time(self, epics_config):
         total_time = 0
         det_x_speed = caget(epics_config['detector_position_x'] + '.VELO')
-        det_z_speed = caget(epics_config['detector_position_z'] + '.VELO')
         det_x_pos = caget(epics_config['detector_position_x'])
-        det_z_pos = caget(epics_config['detector_position_z'])
+
+        if self.detector == 'marccd':
+            det_z_speed = caget(epics_config['detector_position_z'] + '.VELO')
+            det_z_pos = caget(epics_config['detector_position_z'])
+        elif self.detector == 'pilatus':
+            det_z_speed = caget(epics_config['pilatus_position_z'] + '.VELO')
+            det_z_pos = caget(epics_config['pilatus_position_z'])
 
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
             exp_collection = False
@@ -973,8 +1014,7 @@ class MainController(object):
             x = y = z = 0
         return x, y, z
 
-    @staticmethod
-    def get_current_setup(detector):
+    def get_current_setup(self):
         """
         Checks epics for the current setup setting.
         returns: detector position, omega, exposure_time
@@ -982,12 +1022,18 @@ class MainController(object):
         """
         try:
             detector_pos_x = float("{:g}".format(caget(epics_config['detector_position_x'])))
-            detector_pos_z = float("{:g}".format(caget(epics_config['detector_position_z'])))
+            if self.detector == 'marccd':
+                detector_pos_z = float("{:g}".format(caget(epics_config['detector_position_z'])))
+            elif self.detector == 'pilatus':
+                detector_pos_z = float("{:g}".format(caget(epics_config['pilatus_position_z'])))
             omega = float("{:g}".format(caget(epics_config['sample_position_omega'])))
-            exposure_time = float("{:g}".format(caget(epics_config[detector] + ':cam1:AcquireTime')))
+            exposure_time = float("{:g}".format(caget(epics_config[self.detector] + ':cam1:AcquireTime')))
         except epics.ca.ChannelAccessException:
             detector_pos_x = 0
-            detector_pos_z = 49
+            if self.detector == 'marccd':
+                detector_pos_z = 49
+            elif self.detector == 'pilatus':
+                detector_pos_z = 30
             omega = -90
             exposure_time = 0.5
         return detector_pos_x, detector_pos_z, omega, exposure_time
@@ -1079,7 +1125,7 @@ class InfoLoggingHandler(logging.Handler):
 
 
 def test_dummy_function(iterations):
-    print "the dummy function"
+    print("the dummy function")
     for n in range(iterations):
         time.sleep(0.5)
         print("{} iterations".format(n + 1))
@@ -1094,7 +1140,7 @@ class ThreadRunner():
         self.worker_thread.terminated.connect(self.update_status)
 
     def run(self):
-        print "running something"
+        print("running something")
         self.worker_finished = False
         self.worker_thread.start()
 
@@ -1103,7 +1149,7 @@ class ThreadRunner():
             time.sleep(0.1)
 
     def update_status(self):
-        print "updating status"
+        print("updating status")
         self.worker_finished = True
 
 

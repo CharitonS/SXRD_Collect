@@ -45,6 +45,10 @@ class Ui_SXRDCollectWidget(object):
         self.choose_detector_btn = QtGui.QPushButton('Using MARCCD')
         self.choose_detector_btn.setCheckable(True)
         self.choose_detector_btn.setChecked(False)
+        self.choose_detector_btn.setMinimumSize(QtCore.QSize(160, 60))
+        myfont = QtGui.QFont()
+        myfont.setPointSize(28)
+        self.choose_detector_btn.setFont(myfont)
         self.horizontalLayout_9.addWidget(self.choose_detector_btn)
 
         self.epics_config_btn = QtGui.QPushButton(SXRDCollectWidget)

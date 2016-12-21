@@ -36,7 +36,7 @@ for ind in xrange(187,219 ):
     x = np.arange(diff / 2.0, (len(hist[1]) - 1) * diff + diff / 2.0, diff)
 
     max_ind = np.argmax(hist[0][1:])
-    print hist[0][ind + 1]
+    print(hist[0][ind + 1])
     res, _ = curve_fit(gauss_function, x[1:], hist[0][1:], (max_ind, 2, hist[0][max_ind]))
     background_intensity.append(res[0])
     plt.plot(x[1:], hist[0][1:])

@@ -25,10 +25,11 @@ epics_config = {
     'sample_position_y': '13IDD:m83',
     'sample_position_z': '13IDD:m82',
     'sample_position_omega': '13IDD:m96',
-    'pilatus': 'CARS-PIL3',
-    'pilatus_file': 'CARS-PIL3:TIFF1',
-    'pilatus_control': 'CARS-PIL3:cam1',
+    'pilatus': '13PIL3',
+    'pilatus_file': '13PIL3:TIFF1',
+    'pilatus_control': '13PIL3:cam1',
+    'pilatus_position_z': '13IDD:m5',
     'table_shutter': '13IDD:Unidig1Bi11.VAL',
 }
 
-FILEPATH = 'T:/dac_user/2016/IDD_2016-2'
+FILEPATH = 'T:/dac_user/2016/IDD_2016-3'

@@ -36,7 +36,7 @@ class Window(QtGui.QWidget):
         self.button.setEnabled(True)
 
     def test_func(self):
-        print 'hahaha'
+        print('hahaha')
 
 
 class Worker(QtCore.QThread):
