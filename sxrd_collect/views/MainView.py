@@ -17,19 +17,19 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Clemens Prescher'
 
-from PyQt4 import QtGui, QtCore
+from qtpy import QtGui, QtCore, QtWidgets
 from functools import partial
 
 from .UiFiles.mainUI import Ui_SXRDCollectWidget
 
 
-class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
-    set_sample_btn_clicked = QtCore.pyqtSignal(int)
-    move_sample_btn_clicked = QtCore.pyqtSignal(int)
+class MainView(QtWidgets.QWidget, Ui_SXRDCollectWidget):
+    set_sample_btn_clicked = QtCore.Signal(int)
+    move_sample_btn_clicked = QtCore.Signal(int)
 
-    step_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
-    wide_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
-    still_cb_status_changed = QtCore.pyqtSignal(int, int, bool)
+    step_cb_status_changed = QtCore.Signal(int, int, bool)
+    wide_cb_status_changed = QtCore.Signal(int, int, bool)
+    still_cb_status_changed = QtCore.Signal(int, int, bool)
 
     def __init__(self, version):
         super(MainView, self).__init__()
@@ -62,22 +62,22 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         new_row_ind = int(self.setup_table.rowCount())
         self.setup_table.setRowCount(new_row_ind + 1)
 
-        name_item = QtGui.QTableWidgetItem(name)
+        name_item = QtWidgets.QTableWidgetItem(name)
         name_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        detector_x_item = QtGui.QTableWidgetItem(str(detector_pos_x))
+        detector_x_item = QtWidgets.QTableWidgetItem(str(detector_pos_x))
         detector_x_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        detector_y_item = QtGui.QTableWidgetItem(str(detector_pos_y))
+        detector_y_item = QtWidgets.QTableWidgetItem(str(detector_pos_y))
         detector_y_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        omega_start_item = QtGui.QTableWidgetItem(str(omega_start))
+        omega_start_item = QtWidgets.QTableWidgetItem(str(omega_start))
         omega_start_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        omega_end_item = QtGui.QTableWidgetItem(str(omega_end))
+        omega_end_item = QtWidgets.QTableWidgetItem(str(omega_end))
         omega_end_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        omega_step_item = QtGui.QTableWidgetItem(str(omega_step))
+        omega_step_item = QtWidgets.QTableWidgetItem(str(omega_step))
         omega_step_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        exposure_time_step_item = QtGui.QTableWidgetItem(str(exposure_time))
+        exposure_time_step_item = QtWidgets.QTableWidgetItem(str(exposure_time))
         exposure_time_step_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         total_exposure_time = (omega_end - omega_start) / omega_step * exposure_time
-        exposure_time_total_item = QtGui.QTableWidgetItem(str(total_exposure_time))
+        exposure_time_total_item = QtWidgets.QTableWidgetItem(str(total_exposure_time))
         exposure_time_total_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         self.setup_table.setItem(new_row_ind, 0, name_item)
@@ -89,7 +89,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.setup_table.setItem(new_row_ind, 6, exposure_time_step_item)
         self.setup_table.setItem(new_row_ind, 7, exposure_time_total_item)
 
-        self.setup_table.setVerticalHeaderItem(new_row_ind, QtGui.QTableWidgetItem(name))
+        self.setup_table.setVerticalHeaderItem(new_row_ind, QtWidgets.QTableWidgetItem(name))
         self.setup_table.resizeColumnsToContents()
 
         # update the sample_points_table_accordingly:
@@ -98,7 +98,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
             self.create_sample_point_checkboxes(sample_point_row, new_row_ind)
 
         self.sample_points_table.setHorizontalHeaderItem(6 + new_row_ind,
-                                                         QtGui.QTableWidgetItem(name))
+                                                         QtWidgets.QTableWidgetItem(name))
         self.sample_points_table.resizeColumnsToContents()
         self.setup_table.blockSignals(False)
 
@@ -119,7 +119,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         # rename row Headers:
         for row_ind in range(self.setup_table.rowCount()):
             self.setup_table.setVerticalHeaderItem(row_ind,
-                                                   QtGui.QTableWidgetItem('E{}'.format(row_ind + 1)))
+                                                   QtWidgets.QTableWidgetItem('E{}'.format(row_ind + 1)))
 
         self.setup_table.blockSignals(False)
 
@@ -133,7 +133,7 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
 
         for row_ind in range(self.setup_table.rowCount()):
             self.sample_points_table.setHorizontalHeaderItem(
-                 6 + row_ind, QtGui.QTableWidgetItem(self.setup_table.item(row_ind,0).text()))
+                 6 + row_ind, QtWidgets.QTableWidgetItem(self.setup_table.item(row_ind,0).text()))
 
         self.sample_points_table.blockSignals(False)
 
@@ -147,13 +147,13 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         new_row_ind = int(self.sample_points_table.rowCount())
         self.sample_points_table.setRowCount(new_row_ind + 1)
 
-        name_item = QtGui.QTableWidgetItem(str(name))
+        name_item = QtWidgets.QTableWidgetItem(str(name))
         name_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        x_pos_item = QtGui.QTableWidgetItem(str(x))
+        x_pos_item = QtWidgets.QTableWidgetItem(str(x))
         x_pos_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        y_pos_item = QtGui.QTableWidgetItem(str(y))
+        y_pos_item = QtWidgets.QTableWidgetItem(str(y))
         y_pos_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-        z_pos_item = QtGui.QTableWidgetItem(str(z))
+        z_pos_item = QtWidgets.QTableWidgetItem(str(z))
         z_pos_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         self.sample_points_table.setItem(new_row_ind, 0, name_item)
@@ -161,11 +161,11 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.setItem(new_row_ind, 2, y_pos_item)
         self.sample_points_table.setItem(new_row_ind, 3, z_pos_item)
 
-        set_btn = QtGui.QPushButton('Set')
+        set_btn = QtWidgets.QPushButton('Set')
         set_btn.clicked.connect(partial(self.set_sample_btn_click, new_row_ind))
         self.sample_points_table.setCellWidget(new_row_ind, 4, set_btn)
 
-        move_btn = QtGui.QPushButton('Move')
+        move_btn = QtWidgets.QPushButton('Move')
         move_btn.clicked.connect(partial(self.move_sample_btn_click, new_row_ind))
         self.sample_points_table.setCellWidget(new_row_ind, 5, move_btn)
 
@@ -175,11 +175,11 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.blockSignals(False)
 
     def create_sample_point_checkboxes(self, row_index, exp_index, step_state=False, wide_state=False, still_state=False):
-        exp_widget = QtGui.QWidget()
-        wide_cb = QtGui.QCheckBox('wide')
-        step_cb = QtGui.QCheckBox('step')
-        still_cb = QtGui.QCheckBox('still')
-        exp_layout = QtGui.QHBoxLayout()
+        exp_widget = QtWidgets.QWidget()
+        wide_cb = QtWidgets.QCheckBox('wide')
+        step_cb = QtWidgets.QCheckBox('step')
+        still_cb = QtWidgets.QCheckBox('still')
+        exp_layout = QtWidgets.QHBoxLayout()
         exp_layout.addWidget(still_cb)
         exp_layout.addWidget(wide_cb)
         exp_layout.addWidget(step_cb)
@@ -262,20 +262,21 @@ class MainView(QtGui.QWidget, Ui_SXRDCollectWidget):
     def still_cb_changed(self, row_index, exp_index, state):
         self.still_cb_status_changed.emit(row_index, exp_index, bool(state))
 
-class TextDoubleDelegate(QtGui.QStyledItemDelegate):
+
+class TextDoubleDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent):
         super(TextDoubleDelegate, self).__init__(parent)
 
     def createEditor(self, parent, _, model):
-        self.editor = QtGui.QLineEdit(parent)
+        self.editor = QtWidgets.QLineEdit(parent)
         self.editor.setFrame(False)
-        self.editor.setValidator(QtGui.QDoubleValidator())
+        self.editor.setValidator(QtWidgets.QDoubleValidator())
         self.editor.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         return self.editor
 
     def setEditorData(self, parent, index):
         value = index.model().data(index, QtCore.Qt.EditRole)
-        self.editor.setText("{:g}".format(float(str(value.toString()))))
+        self.editor.setText("{:g}".format(float(str(value))))
 
     def setModelData(self, parent, model, index):
         value = self.editor.text()
@@ -285,12 +286,12 @@ class TextDoubleDelegate(QtGui.QStyledItemDelegate):
         editor.setGeometry(option.rect)
 
 
-class FirstItemStringDelegate(QtGui.QStyledItemDelegate):
+class FirstItemStringDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, parent):
         super(FirstItemStringDelegate, self).__init__(parent)
 
     def createEditor(self, parent, _, model):
-        self.editor = QtGui.QLineEdit(parent)
+        self.editor = QtWidgets.QLineEdit(parent)
         self.editor.setFrame(False)
         if model.column() != 0:
             self.editor.setValidator(QtGui.QDoubleValidator())
@@ -299,7 +300,7 @@ class FirstItemStringDelegate(QtGui.QStyledItemDelegate):
 
     def setEditorData(self, parent, index):
         value = index.model().data(index, QtCore.Qt.EditRole)
-        self.editor.setText(str(value.toString()))
+        self.editor.setText(str(value))
 
     def setModelData(self, parent, model, index):
         value = self.editor.text()

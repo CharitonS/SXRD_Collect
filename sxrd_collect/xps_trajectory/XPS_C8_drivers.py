@@ -46,7 +46,7 @@ class XPS:
                 if XPS.__usedSockets[sid] == 0:
                     raise XPSException('invalid socket at function %s' % fcn.__name__)
             except IndexError:
-                raise XPSException('no socket specified for fucntion %s' % fcn.__name__)
+                raise XPSException('no socket specified for function %s' % fcn.__name__)
             return fcn(*args, **kw)
         wrapper.__doc__ = fcn.__doc__
         wrapper.__name__ = fcn.__name__
@@ -55,18 +55,25 @@ class XPS:
 
     # Send command and get return
     @withValidSocket
-    def __sendAndReceive (self, socketId, command):
+    def __sendAndReceive(self, socketId, command):
         try:
+            if type(command) is str:
+                command = str.encode(command)
             XPS.__sockets[socketId].send(command)
-            ret = XPS.__sockets[socketId].recv(1024)
-            while (ret.find(',EndOfAPI') == -1):
-                ret += XPS.__sockets[socketId].recv(1024)
+            ret = XPS.__sockets[socketId].recv(1024).decode()
+            while ret.find(',EndOfAPI') == -1:
+                ret += XPS.__sockets[socketId].recv(1024).decode()
         except socket.timeout:
+            print("socket timeout")
             return [-2, '']
-        except socket.error (errNb, errString):
-            print('Socket error : ' + errString)
+        except socket.error:
+            print('Socket error : ')
             return [-2, '']
 
+        # print("command=")
+        # print(command)
+        # print("ret=")
+        # print(ret)
         for i in range(len(ret)):
             if (ret[i] == ','):
                 return [int(ret[0:i]), ret[i+1:-9]]
@@ -78,7 +85,7 @@ class XPS:
         """
         if socketId is None:
             socketId = self.socketId
-        self.socketId = socketId        
+        self.socketId = socketId
         err, msg = self.__sendAndReceive(socketId, cmd)
         if err != 0 and check:
             raise XPSException(msg)

@@ -20,7 +20,11 @@ __author__ = 'Clemens Prescher'
 import time
 import numpy as np
 import ftplib
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO, BytesIO
+
 from .XPS_C8_drivers import XPS
 from config import xps_config
 
@@ -99,7 +103,7 @@ class XPSTrajectory(object):
     def upload_trajectory_file(self, fname, data):
         self.ftp_connect()
         self.ftpconn.cwd(xps_config['TRAJ_FOLDER'])
-        self.ftpconn.storbinary('STOR %s' % fname, StringIO(data))
+        self.ftpconn.storbinary('STOR %s' % fname, BytesIO(str.encode(data)))
         self.ftp_disconnect()
         #print('Uploaded trajectory ', fname)
         #print(data)
@@ -177,8 +181,9 @@ class XPSTrajectory(object):
         try:
             self.upload_trajectory_file(name + '.trj', trajectory_str)
             ret = True
-            logger.info('Trajectory File uploaded.')
+            # logger.info('Trajectory File uploaded.')
         except:
+            # logger.info('Failed to upload trajectory file')
             pass
         return trajectory_str
 

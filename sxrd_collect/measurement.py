@@ -19,7 +19,6 @@
 import time
 import logging
 from functools import partial
-import thread
 from epics import caput, caget, PV, camonitor, camonitor_clear
 from threading import Thread
 from xps_trajectory.XPS_C8_drivers import XPS
@@ -289,12 +288,11 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
             continue
         # caput(epics_config['pilatus'] + ':cam1:Acquire', 1, wait=True)
         pilatus_trajectory_thread.join()
-
+        del stage_xps
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     reset_detector_settings(previous_detector_settings)
     logger.info('Wide data collection finished.\n')
     # caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Wide scan finished', wait=True)
-    del stage_xps
     return
 
 

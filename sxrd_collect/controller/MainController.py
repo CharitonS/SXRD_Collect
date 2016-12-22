@@ -17,10 +17,9 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __author__ = 'Clemens Prescher'
 __version__ = 0.2
-#Modified by Maxim Bykov and Elena Bykova on 08 March 2016
+# Modified by Maxim Bykov and Elena Bykova on 08 March 2016
 
 import time
-import thread
 import logging
 import winsound
 
@@ -32,7 +31,7 @@ import subprocess
 import shutil
 import re
 
-from PyQt4 import QtGui, QtCore
+from qtpy import QtGui, QtCore, QtWidgets
 
 from config import epics_config, FILEPATH
 from views.MainView import MainView
@@ -179,7 +178,7 @@ class MainController(object):
         Initiates a folder browser dialog. Sets a new filepath.
         """
         path = FILEPATH + self.filepath[4:]
-        folder = str(QtGui.QFileDialog.getExistingDirectory(self.widget, 'Select Directory', path))
+        folder = str(QtWidgets.QFileDialog.getExistingDirectory(self.widget, 'Select Directory', path))
 
         if folder is not '':
             nr = len(FILEPATH)
@@ -206,7 +205,7 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = value == self.widget.status_txt.verticalScrollBar().maximum()
 
     def load_exp_setup(self):
-        filename = str(QtGui.QFileDialog.getOpenFileName(self.widget, caption="Load experiment setup file", filter='*.ini'))
+        filename = str(QtWidgets.QFileDialog.getOpenFileName(self.widget, caption="Load experiment setup file", filter='*.ini'))
         if filename is not '':
             with open(filename) as f:
                 for line in f:
@@ -218,7 +217,7 @@ class MainController(object):
         self.widget.setup_table.resizeColumnsToContents()
 
     def save_exp_setup(self):
-        filename = str(QtGui.QFileDialog.getSaveFileName(self.widget, caption="Save experiment setup file", filter='*.ini'))
+        filename = str(QtWidgets.QFileDialog.getSaveFileName(self.widget, caption="Save experiment setup file", filter='*.ini'))
         if filename is not '':
             with open(filename, 'w+') as f:
                 for experiment_setup in self.model.experiment_setups:
@@ -245,13 +244,13 @@ class MainController(object):
         cur_ind = cur_ind[::-1]
         if cur_ind is None or (len(cur_ind) == 0):
             return
-        msgBox = QtGui.QMessageBox()
+        msgBox = QtWidgets.QMessageBox()
         msgBox.setText('Do you really want to delete selected experiment(s)?')
         msgBox.setWindowTitle('Confirmation')
-        msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        msgBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
         response = msgBox.exec_()
-        if response == QtGui.QMessageBox.Yes:
+        if response == QtWidgets.QMessageBox.Yes:
             for ind in cur_ind:
                 self.widget.delete_experiment_setup(ind)
                 self.model.delete_experiment_setup(ind)
@@ -260,13 +259,13 @@ class MainController(object):
         self.set_total_frames()
 
     def clear_experiment_setup_btn_clicked(self, auto_yes=False):
-        msgBox = QtGui.QMessageBox()
+        msgBox = QtWidgets.QMessageBox()
         msgBox.setText('Do you really want to delete all experiments?')
         msgBox.setWindowTitle('Confirmation')
-        msgBox.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        msgBox.setDefaultButton(QtGui.QMessageBox.Yes)
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        msgBox.setDefaultButton(QtWidgets.QMessageBox.Yes)
         response = msgBox.exec_()
-        if response == QtGui.QMessageBox.Yes or auto_yes:
+        if response == QtWidgets.QMessageBox.Yes or auto_yes:
             self.widget.clear_experiment_setups()
             self.model.clear_experiment_setups()
             self.widget.recreate_sample_point_checkboxes(self.model.get_experiment_state())
@@ -311,7 +310,8 @@ class MainController(object):
 
         map = self.model.create_map(cur_ind, x_min, x_max, x_step, y_min, y_max, y_step)
 
-        for name, position in map.iteritems():
+        for name in map:
+            position = map[name]
             x, y, z = position
             self.widget.add_sample_point(name, x, y, z)
 
@@ -620,7 +620,7 @@ class MainController(object):
 
     def collect_bkg_data(self):
         self.set_status_lbl("Collecting", "#FF0000")
-        QtGui.QApplication.processEvents()
+        QtWidgets.QApplication.processEvents()
         collect_background(self.detector)
         self.set_status_lbl("Finished", "#00FF00")
 
@@ -643,7 +643,7 @@ class MainController(object):
             reply = self.show_continue_abort_message_box(
                 'Some measurement points are more than 200um away from the current sample ' +
                 'position.<br> Do you want to continue?!')
-            if reply == QtGui.QMessageBox.Abort:
+            if reply == QtWidgets.QMessageBox.Abort:
                 return
 
         if len(self.model.sample_points) == 1:
@@ -651,7 +651,7 @@ class MainController(object):
                 reply = self.show_continue_abort_message_box(
                     'The measurement point is away from the current sample ' +
                     'position.<br> Do you want to continue?!')
-                if reply == QtGui.QMessageBox.Abort:
+                if reply == QtWidgets.QMessageBox.Abort:
                     return
 
         nr = self.frame_counter()
@@ -678,7 +678,7 @@ class MainController(object):
         self.widget.collect_btn.clicked.disconnect(self.collect_data)
         self.widget.collect_btn.clicked.connect(self.abort_data_collection)
         self.widget.status_txt.clear()
-        QtGui.QApplication.processEvents()
+        QtWidgets.QApplication.processEvents()
 
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
             if not (self.check_omega_in_limits(experiment.omega_start) and
@@ -728,7 +728,7 @@ class MainController(object):
                     collect_single_data_thread.start()
 
                     while collect_single_data_thread.isAlive():
-                        QtGui.QApplication.processEvents()
+                        QtWidgets.QApplication.processEvents()
                         time.sleep(.2)
 
                 if not self.check_if_aborted():
@@ -779,7 +779,7 @@ class MainController(object):
                     collect_wide_data_thread.start()
 
                     while collect_wide_data_thread.isAlive():
-                        QtGui.QApplication.processEvents()
+                        QtWidgets.QApplication.processEvents()
                         time.sleep(.2)
 
                     time.sleep(.2)
@@ -833,7 +833,7 @@ class MainController(object):
                     collect_step_data_thread.start()
 
                     while collect_step_data_thread.isAlive():
-                        QtGui.QApplication.processEvents()
+                        QtWidgets.QApplication.processEvents()
                         time.sleep(0.2)
                     xps_file = str(self.filepath) + '/' + str(filename) + '_xps_log.csv'
                     xps_file = xps_file.replace('/DAC', FILEPATH, 1)
@@ -919,7 +919,7 @@ class MainController(object):
         self.abort_collection = True
 
     def check_if_aborted(self):
-        # QtGui.QApplication.processEvents()
+        # QtWidgets.QApplication.processEvents()
         return not self.abort_collection
 
     def set_status_lbl(self, msg, color, size=20):
@@ -984,24 +984,24 @@ class MainController(object):
 
     @staticmethod
     def create_name_existent_msg(name_type):
-        msg_box = QtGui.QMessageBox()
+        msg_box = QtWidgets.QMessageBox()
         msg_box.setWindowFlags(QtCore.Qt.Tool)
         msg_box.setText('{} name already exists.'.format(name_type))
-        msg_box.setIcon(QtGui.QMessageBox.Critical)
+        msg_box.setIcon(QtWidgets.QMessageBox.Critical)
         msg_box.setWindowTitle('Error')
-        msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
-        msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+        msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg_box.setDefaultButton(QtWidgets.QMessageBox.Ok)
         msg_box.exec_()
 
     @staticmethod
     def create_omega_error_msg(msg):
-        msg_box = QtGui.QMessageBox()
+        msg_box = QtWidgets.QMessageBox()
         msg_box.setWindowFlags(QtCore.Qt.Tool)
         msg_box.setText(msg)
-        msg_box.setIcon(QtGui.QMessageBox.Critical)
+        msg_box.setIcon(QtWidgets.QMessageBox.Critical)
         msg_box.setWindowTitle('Error')
-        msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
-        msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+        msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg_box.setDefaultButton(QtWidgets.QMessageBox.Ok)
         msg_box.exec_()
 
     @staticmethod
@@ -1092,24 +1092,24 @@ class MainController(object):
 
     @staticmethod
     def show_error_message_box(msg):
-        msg_box = QtGui.QMessageBox()
+        msg_box = QtWidgets.QMessageBox()
         msg_box.setWindowFlags(QtCore.Qt.Tool)
         msg_box.setText(msg)
-        msg_box.setIcon(QtGui.QMessageBox.Critical)
+        msg_box.setIcon(QtWidgets.QMessageBox.Critical)
         msg_box.setWindowTitle('Error')
-        msg_box.setStandardButtons(QtGui.QMessageBox.Ok)
-        msg_box.setDefaultButton(QtGui.QMessageBox.Ok)
+        msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg_box.setDefaultButton(QtWidgets.QMessageBox.Ok)
         msg_box.exec_()
 
     @staticmethod
     def show_continue_abort_message_box(msg):
-        msg_box = QtGui.QMessageBox()
+        msg_box = QtWidgets.QMessageBox()
         msg_box.setWindowFlags(QtCore.Qt.Tool)
         msg_box.setText("<p align='center' style='font-size:20px' >{}</p>".format(msg))
-        msg_box.setIcon(QtGui.QMessageBox.Critical)
+        msg_box.setIcon(QtWidgets.QMessageBox.Critical)
         msg_box.setWindowTitle('Continue?')
-        msg_box.setStandardButtons(QtGui.QMessageBox.Yes | QtGui.QMessageBox.Abort)
-        msg_box.setDefaultButton(QtGui.QMessageBox.Abort)
+        msg_box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Abort)
+        msg_box.setDefaultButton(QtWidgets.QMessageBox.Abort)
         msg_box.exec_()
         return msg_box.result()
 
@@ -1145,7 +1145,7 @@ class ThreadRunner():
         self.worker_thread.start()
 
         while not self.worker_finished:
-            QtGui.QApplication.processEvents()
+            QtWidgets.QApplication.processEvents()
             time.sleep(0.1)
 
     def update_status(self):

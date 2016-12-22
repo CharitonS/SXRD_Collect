@@ -19,11 +19,34 @@ __author__ = 'Clemens Prescher'
 
 import sys
 
-from PyQt4 import QtGui
+from qtpy import QtGui, QtWidgets
 
 from controller.MainController import MainController
 
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+import traceback
+
+
+def excepthook(exc_type, exc_value, traceback_obj):
+    """
+    Global function to catch unhandled exceptions. This function will result in an error dialog which displays the
+    error information.
+
+    :param exc_type: exception type
+    :param exc_value: exception value
+    :param traceback_obj: traceback object
+    :return:
+    """
+
+    traceback.print_exception(exc_type, exc_value, traceback_obj)
+
+sys.excepthook = excepthook
+
 if __name__ == '__main__':
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     controller = MainController()
     app.exec_()
