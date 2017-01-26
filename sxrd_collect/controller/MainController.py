@@ -697,17 +697,18 @@ class MainController(object):
                         filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
                                    experiment.name
                         filenumber = 1
+                        caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
+                        caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
+                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
 
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
                         _, _, filenumber = self.get_filename_info(self.detector)
-
+                        caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
+                        caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
+                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
                     else:
                         _, filename, filenumber = self.get_filename_info(self.detector)
-
-                    caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
-                    caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
-                    caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
 
                     logger.info("Performing still image for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                     exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
@@ -835,7 +836,7 @@ class MainController(object):
                     while collect_step_data_thread.isAlive():
                         QtWidgets.QApplication.processEvents()
                         time.sleep(0.2)
-                    xps_file = str(self.filepath) + '/' + str(filename) + '_xps_log.csv'
+                    xps_file = str(self.filepath) + '/' + str(filename) + '_' + str(filenumber).zfill(3) + '_xps_log.csv'
                     xps_file = xps_file.replace('/DAC', FILEPATH, 1)
                     # try:
                     gf = open('Gather.dat', 'r')
