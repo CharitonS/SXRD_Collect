@@ -32,4 +32,4 @@ epics_config = {
     'table_shutter': '13IDD:Unidig1Bi11.VAL',
 }
 
-FILEPATH = 'T:/dac_user/2016/IDD_2016-3'
+FILEPATH = 'T:/dac_user/2017/IDD_2017-1'
