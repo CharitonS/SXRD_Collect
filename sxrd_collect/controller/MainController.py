@@ -375,6 +375,7 @@ class MainController(object):
             elif col == 7:
                 step_time = self.model.experiment_setups[row].get_step_exposure_time(value)
                 step_exposure_time_item = self.widget.setup_table.item(row, 6)
+                step_time = float("{0:.2f}".format(step_time))
                 step_exposure_time_item.setText(str(step_time))
                 self.model.experiment_setups[row].time_per_step = step_time
 
@@ -386,7 +387,7 @@ class MainController(object):
 
     def update_total_exposure_time(self, row):
         total_exposure_time_item = self.widget.setup_table.item(row, 7)
-        total_exposure_time_item.setText(str(self.model.experiment_setups[row].get_total_exposure_time()))
+        total_exposure_time_item.setText("{:.2f}".format((self.model.experiment_setups[row].get_total_exposure_time())))
 
     def sample_points_table_cell_changed(self, row, col):
         label_item = self.widget.sample_points_table.item(row, col)
