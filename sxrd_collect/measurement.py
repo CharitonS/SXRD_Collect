@@ -140,10 +140,10 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
         elif detector_choice == 'marccd':
             for step in range(int(num_steps)):
                 t1 = time.time()
-                longstring = 'Running Omega-Trajectory from {} deg by {} deg {:.1f} s: frame {} of {}'
+                longstring = 'Running Omega-Trajectory from {:.2f} deg by {:.2f} deg {:.1f} s: frame {} of {}'
                 longstring = longstring.format(omega_start + step * omega_step, omega_step, exposure_time, step+1,
                                                int(num_steps))
-                shortstring = 'start:{} step:{} t:{:.1f}s'.format(omega_start + step * omega_step,
+                shortstring = 'start:{:.2f} step:{:.2f} t:{:.1f}s'.format(omega_start + step * omega_step,
                                                      omega_step,          exposure_time)
 
                 caput(epics_config['marccd'] + ':AcquireSequence.STRA', shortstring, wait=True)
@@ -412,7 +412,7 @@ def move_to_sample_pos(x, y, z, wait=True, callbacks=[]):
     motor_y.put(y, wait=True)
     motor_z.put(z, wait=True)
     time.sleep(0.5)
-    logger.info('Moving Sample to x: {}, y: {}, z: {} finished.\n'.format(x, y, z))
+    logger.info('Moving Sample to x: {:.2f}, y: {:.2f}, z: {:.2f} finished.\n'.format(x, y, z))
     caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Scan finished', wait=True)
     return
 
