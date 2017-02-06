@@ -205,7 +205,9 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = value == self.widget.status_txt.verticalScrollBar().maximum()
 
     def load_exp_setup(self):
-        filename = str(QtWidgets.QFileDialog.getOpenFileName(self.widget, caption="Load experiment setup file", filter='*.ini'))
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self.widget, caption="Load experiment setup file",
+                                                            filter='*.ini')
+        filename = str(filename)
         if filename is not '':
             with open(filename) as f:
                 for line in f:
@@ -217,7 +219,9 @@ class MainController(object):
         self.widget.setup_table.resizeColumnsToContents()
 
     def save_exp_setup(self):
-        filename = str(QtWidgets.QFileDialog.getSaveFileName(self.widget, caption="Save experiment setup file", filter='*.ini'))
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self.widget, caption="Save experiment setup file",
+                                                            filter='*.ini')
+        filename = str(filename)
         if filename is not '':
             with open(filename, 'w+') as f:
                 for experiment_setup in self.model.experiment_setups:
