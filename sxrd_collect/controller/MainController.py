@@ -42,6 +42,7 @@ from threading import Thread
 
 logger = logging.getLogger()
 
+
 class MainController(object):
     def __init__(self):
         self.widget = MainView(__version__)
@@ -361,6 +362,8 @@ class MainController(object):
                     self.update_total_exposure_time(row)
                     self.create_omega_error_msg('End omega value is incorrect')
             elif col == 5:
+                value = round(value, 1)
+                self.widget.setup_table.item(row, 5).setText(str(value))
                 self.model.experiment_setups[row].omega_step = value
                 self.update_total_exposure_time(row)
             elif col == 6:
@@ -378,6 +381,8 @@ class MainController(object):
                 step_time = float("{0:.2f}".format(step_time))
                 step_exposure_time_item.setText(str(step_time))
                 self.model.experiment_setups[row].time_per_step = step_time
+            # elif col == 8:
+            #     self.model.experiment_setups[row].steps_per_image = value
 
         self.widget.setup_table.blockSignals(False)
         self.widget.setup_table.resizeColumnsToContents()
@@ -613,10 +618,12 @@ class MainController(object):
             self.widget.choose_detector_btn.setText('Using Pilatus')
             self.detector = 'pilatus'
             self.widget.choose_detector_btn.setStyleSheet('QPushButton {background-color: #000000; color: white;}')
+            self.widget.override_pilatus_limits_cb.setVisible(True)
         else:
             self.widget.choose_detector_btn.setText('Using MARCCD')
             self.detector = 'marccd'
             self.widget.choose_detector_btn.setStyleSheet('QPushButton {background-color: light grey; color: black;}')
+            self.widget.override_pilatus_limits_cb.setVisible(False)
         self.clear_experiment_setup_btn_clicked(True)
 
     def open_path_btn_clicked(self):
@@ -705,13 +712,14 @@ class MainController(object):
                         caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
                         caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
                         caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
+                        time.sleep(0.1)
 
                     elif self.widget.no_suffices_cb.isChecked():
                         filename = self.basename
                         _, _, filenumber = self.get_filename_info(self.detector)
                         caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
                         caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
-                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
+                        # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
                     else:
                         _, filename, filenumber = self.get_filename_info(self.detector)
 
@@ -741,8 +749,15 @@ class MainController(object):
                     break
 
                 if sample_point.perform_wide_scan_for_setup[exp_ind]:
+                    if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
+                        self.show_error_message_box(
+                            'For Pilatus use step scan with full range as step instead of wide scan')
+                        self.reset_gui_state()
+                        return
+
                     self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
                     c_frame = c_frame + 1
+                    self.check_pilatus_trigger(self.detector)
                     # check if all motor positions are in a correct position
                     if self.check_conditions() is False:
                         self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
@@ -797,6 +812,7 @@ class MainController(object):
                     self.set_status_lbl("Collecting...", "#FF0000")
                     c_frame += 1
                     # check if all motor positions are in a correct position
+                    self.check_pilatus_trigger(self.detector)
                     if self.check_conditions() is False:
                         self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
                         self.reset_gui_state()
@@ -821,6 +837,16 @@ class MainController(object):
                     caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
 
                     logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
+                    omega_step = experiment.omega_step
+                    time_per_step = experiment.time_per_step
+                    if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
+                        experiment.steps_per_image = int(round(experiment.omega_step/0.1))
+                        if experiment.steps_per_image > 1:
+                            omega_step /= experiment.steps_per_image
+                            time_per_step /= experiment.steps_per_image
+                            caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
+                            caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
+                            caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
 
                     collect_step_data_thread = Thread(target=collect_step_data,
                                                       kwargs={"detector_choice": self.detector,
@@ -828,8 +854,8 @@ class MainController(object):
                                                               "detector_position_z": experiment.detector_pos_z,
                                                               "omega_start": experiment.omega_start,
                                                               "omega_end": experiment.omega_end,
-                                                              "omega_step": experiment.omega_step,
-                                                              "exposure_time": experiment.time_per_step,
+                                                              "omega_step": omega_step,
+                                                              "exposure_time": time_per_step,
                                                               "x": sample_point.x,
                                                               "y": sample_point.y,
                                                               "z": sample_point.z,
@@ -852,7 +878,6 @@ class MainController(object):
                         if line[0] == "#":
                             prev_line = line
                         else:
-                            counter += 1
                             if not found_first_line:
                                 found_first_line = True
                                 prev_line = prev_line.replace('#', '')
@@ -860,17 +885,22 @@ class MainController(object):
                                 header_line = 'File,' + prev_line
                                 xf.write(header_line + '\n')
                             new_line = line.replace(' ', ',')
-                            new_line = str(filename) + '_' + str(counter).zfill(3) + ',' + new_line
+                            new_line = str(filename) + '_' + \
+                                       str(int(filenumber + counter//experiment.steps_per_image)).zfill(3) + ',' + \
+                                       new_line
                             xf.write(new_line + '\n')
+                            counter += 1
                     xf.close()
                     gf.close()
-
+                    if self.detector == 'pilatus':
+                        caput('13PIL3:Proc1:EnableFilter', 0, wait=True)
                     # shutil.copy2('Gather.dat', xps_file)
                     # except:
                     # pass
 
                 if not self.check_if_aborted():
                     break
+        self.widget.force_rotate_cb.setChecked(False)
         if self.widget.play_sound_cb.isChecked():
              winsound.PlaySound('P:\dac_user\Python Scripts\SXRD_Collect\church.wav', winsound.SND_FILENAME)
 
@@ -913,7 +943,6 @@ class MainController(object):
         self.set_status_lbl("Finished", "#00FF00")
         self.set_example_lbl()
 
-
     def reset_gui_state(self):
         self.widget.collect_btn.setText('Collect')
         self.widget.collect_btn.clicked.connect(self.collect_data)
@@ -923,6 +952,7 @@ class MainController(object):
 
     def abort_data_collection(self):
         self.abort_collection = True
+        self.widget.force_rotate_cb.setChecked(False)
 
     def check_if_aborted(self):
         # QtWidgets.QApplication.processEvents()
@@ -1072,8 +1102,9 @@ class MainController(object):
     def check_filename_exists(self, filename):
         return os.path.isfile(filename + '.tif')
 
-    @staticmethod
-    def check_conditions():
+    def check_conditions(self):
+        if self.widget.force_rotate_cb.isChecked():
+            return True
         if int(caget('13IDD:m24.RBV')) > -105:
             return False
         elif int(caget('13IDD:m23.RBV')) > -105:
@@ -1081,6 +1112,12 @@ class MainController(object):
         elif int(caget('13IDD:m67.RBV')) > -65:
             return False
         return True
+
+    @staticmethod
+    def check_pilatus_trigger(detector):
+        if detector == 'pilatus':
+            if caget('13IDD:Unidig2Bo20'):
+                caput('13IDD:Unidig2Bo20', 0)
 
     @staticmethod
     def check_omega_in_limits(omega):

@@ -79,6 +79,9 @@ class MainView(QtWidgets.QWidget, Ui_SXRDCollectWidget):
         total_exposure_time = (omega_end - omega_start) / omega_step * exposure_time
         exposure_time_total_item = QtWidgets.QTableWidgetItem(str(total_exposure_time))
         exposure_time_total_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        # steps_per_image = 1
+        # steps_per_image_item = QtWidgets.QTableWidgetItem(str(steps_per_image))
+        # steps_per_image_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         self.setup_table.setItem(new_row_ind, 0, name_item)
         self.setup_table.setItem(new_row_ind, 1, detector_x_item)
@@ -88,6 +91,7 @@ class MainView(QtWidgets.QWidget, Ui_SXRDCollectWidget):
         self.setup_table.setItem(new_row_ind, 5, omega_step_item)
         self.setup_table.setItem(new_row_ind, 6, exposure_time_step_item)
         self.setup_table.setItem(new_row_ind, 7, exposure_time_total_item)
+        # self.setup_table.setItem(new_row_ind, 8, steps_per_image_item)
 
         self.setup_table.setVerticalHeaderItem(new_row_ind, QtWidgets.QTableWidgetItem(name))
         self.setup_table.resizeColumnsToContents()

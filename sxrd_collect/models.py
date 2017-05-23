@@ -27,9 +27,10 @@ class SxrdModel(object):
         self.sample_points = []
 
     def add_experiment_setup(self, name, detector_pos_x=0, detector_pos_y=49, omega_start=0, omega_end=0, omega_step=0,
-                             time_per_step=0):
+                             time_per_step=0, steps_per_image=1):
         self.experiment_setups.append(
-            ExperimentSetup(name, detector_pos_x, detector_pos_y, omega_start, omega_end, omega_step, time_per_step))
+            ExperimentSetup(name, detector_pos_x, detector_pos_y, omega_start, omega_end, omega_step, time_per_step,
+                            steps_per_image))
 
         for point in self.sample_points:
             point.register_setup(self.experiment_setups[-1])
@@ -126,7 +127,7 @@ class SxrdModel(object):
 
 class ExperimentSetup(object):
     def __init__(self, name, detector_pos_x=0, detector_pos_z=49, omega_start=0, omega_end=0, omega_step=0,
-                 time_per_step=0):
+                 time_per_step=0, steps_per_image=1):
         self.name = name
         self.detector_pos_x = detector_pos_x
         self.detector_pos_z = detector_pos_z
@@ -134,6 +135,7 @@ class ExperimentSetup(object):
         self.omega_end = omega_end
         self.omega_step = omega_step
         self.time_per_step = time_per_step
+        self.steps_per_image = steps_per_image
 
     def get_total_exposure_time(self):
         return (self.omega_end - self.omega_start) / self.omega_step * self.time_per_step
@@ -145,6 +147,7 @@ class ExperimentSetup(object):
         return "{}: {}, {}, {}, {}, {}, {}".format(self.name, self.detector_pos_x, self.detector_pos_z,
                                                    self.omega_start, self.omega_end, self.omega_step,
                                                    self.time_per_step)
+
     def save(self):
         return "{};{};{};{};{};{};{}".format(self.name, self.detector_pos_x, self.detector_pos_z,
                                                    self.omega_start, self.omega_end, self.omega_step,

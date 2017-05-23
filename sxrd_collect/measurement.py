@@ -279,8 +279,9 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
         caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
         caput(epics_config['pilatus'] + ':cam1:NumImages', 1, wait=True)
         caput(epics_config['pilatus'] + ':cam1:TriggerMode', 2, wait=True)  # 2 is ext. trigger
-        caput(epics_config['pilatus'] + ':cam1:Acquire', 1)
 
+        caput(epics_config['pilatus'] + ':cam1:Acquire', 1)
+        time.sleep(0.5)
         pilatus_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
         pilatus_trajectory_thread.start()
 
@@ -289,8 +290,10 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
         # caput(epics_config['pilatus'] + ':cam1:Acquire', 1, wait=True)
         pilatus_trajectory_thread.join()
         del stage_xps
+        time.sleep(0.5)
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     reset_detector_settings(previous_detector_settings)
+    time.sleep(0.5)
     logger.info('Wide data collection finished.\n')
     # caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Wide scan finished', wait=True)
     return
