@@ -7,6 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 from qtpy import QtCore, QtGui, QtWidgets
+from .utils import HoverButton
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -644,7 +645,7 @@ class Ui_SXRDCollectWidget(object):
         self.force_rotate_cb.setChecked(False)
         self.verticalLayout_4.addWidget(self.force_rotate_cb)
 
-        self.collect_btn = QtWidgets.QPushButton(SXRDCollectWidget)
+        self.collect_btn =HoverButton(SXRDCollectWidget)
         self.collect_btn.setMinimumSize(QtCore.QSize(130, 60))
         self.collect_btn.setObjectName(_fromUtf8("collect_btn"))
         self.verticalLayout_4.addWidget(self.collect_btn)

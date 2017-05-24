@@ -100,6 +100,7 @@ class MainController(object):
 
         self.widget.collect_bkg_btn.clicked.connect(self.collect_bkg_data)
         self.widget.collect_btn.clicked.connect(self.collect_data)
+        self.widget.collect_btn.mouseHover.connect(self.update_current_position)
 
         self.widget.load_setup_btn.clicked.connect(self.load_exp_setup)
         self.widget.save_setup_btn.clicked.connect(self.save_exp_setup)
@@ -204,6 +205,26 @@ class MainController(object):
 
     def update_status_txt_scrollbar_value(self, value):
         self.status_txt_scrollbar_is_at_max = value == self.widget.status_txt.verticalScrollBar().maximum()
+
+    def update_current_position(self):
+        self.widget.current_position_lbl.setText('  Current position:' +
+                                                 '\tx: ' + str(round(caget('13IDD:m81.RBV'), 3)) +
+                                                 '\t\ty: ' + str(round(caget('13IDD:m83.RBV'), 3)) +
+                                                 '\t\tz: ' + str(round(caget('13IDD:m82.RBV'), 3)))
+
+        pos_x, pos_y, pos_z = self.get_current_sample_position()
+        if len(self.model.sample_points):
+            sp_x = self.model.sample_points[0].x
+            sp_y = self.model.sample_points[0].y
+            sp_z = self.model.sample_points[0].z
+        else:
+            return
+
+        if abs(sp_x - pos_x) < 3E-4 and abs(sp_y - pos_y) < 3E-4 and abs(sp_z - pos_z) < 3E-4:
+            self.widget.current_position_lbl.setStyleSheet("font: 11px; color: black;")
+        else:
+            self.widget.current_position_lbl.setStyleSheet("font: bold 14px; color: red;")
+
 
     def load_exp_setup(self):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self.widget, caption="Load experiment setup file",
@@ -665,6 +686,15 @@ class MainController(object):
                     'position.<br> Do you want to continue?!')
                 if reply == QtWidgets.QMessageBox.Abort:
                     return
+
+        with open ('sxrd_log.txt', 'a') as outfile:
+            logstr = time.asctime() + ': '
+            if self.widget.override_pilatus_limits_cb.isChecked():
+                logstr += 'Overriding Pilatus limits. '
+            if self.widget.force_rotate_cb.isChecked():
+                logstr += 'Forcing rotation '
+            logstr += '\n'
+            outfile.write(logstr)
 
         nr = self.frame_counter()
         if nr == 1:
