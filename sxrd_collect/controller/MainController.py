@@ -61,6 +61,16 @@ class MainController(object):
         self.widget.setup_table.resizeColumnsToContents()
         self.example_str = ' '
 
+        self.hor_motor_name = epics_config['sample_position_x']
+        self.ver_motor_name = epics_config['sample_position_y']
+        self.focus_motor_name = epics_config['sample_position_z']
+
+        # Create timer
+        self.epics_update_timer = QtCore.QTimer(self.widget)
+
+        self.connect_timer()
+        self.epics_update_timer.start(1000)
+
     def connect_checkboxes(self):
         self.widget.no_suffices_cb.clicked.connect(lambda: self.update_cb('no_suffices'))
         self.widget.rename_after_cb.clicked.connect(lambda: self.update_cb('rename'))
@@ -145,6 +155,9 @@ class MainController(object):
 
         self.widget.status_txt.textChanged.connect(self.update_status_txt_scrollbar)
         self.widget.status_txt.verticalScrollBar().valueChanged.connect(self.update_status_txt_scrollbar_value)
+
+    def connect_timer(self):
+        self.epics_update_timer.timeout.connect(self.auto_update_current_motor_position)
 
     def populate_filename(self):
         self.prev_filepath, self.prev_filename, self.prev_file_number = self.get_filename_info(self.detector)
@@ -365,7 +378,7 @@ class MainController(object):
             elif col == 2:
                 self.model.experiment_setups[row].detector_pos_z = value
             elif col == 3:
-                if value >= -135.0 and value <= -45.0:
+                if value >= int(caget('13IDD:m96.LLM')) and value <= int(caget('13IDD:m96.HLM')):
                     self.model.experiment_setups[row].omega_start = value
                     self.update_total_exposure_time(row)
                 else:
@@ -374,7 +387,7 @@ class MainController(object):
                     self.update_total_exposure_time(row)
                     self.create_omega_error_msg('Starting omega value is incorrect')
             elif col == 4:
-                if value >= -135 and value <= -45:
+                if value >= int(caget('13IDD:m96.LLM')) and value <= int(caget('13IDD:m96.HLM')):
                     self.model.experiment_setups[row].omega_end = value
                     self.update_total_exposure_time(row)
                 else:
@@ -1185,6 +1198,23 @@ class MainController(object):
         msg_box.setDefaultButton(QtWidgets.QMessageBox.Abort)
         msg_box.exec_()
         return msg_box.result()
+
+    def auto_update_current_motor_position(self):
+        # hor = epics.caget(self.hor_motor_name + '.RBV', as_string=True)
+        # ver = epics.caget(self.ver_motor_name + '.RBV', as_string=True)
+        # focus = epics.caget(self.focus_motor_name + '.RBV', as_string=True)
+
+        # if ver is not None and hor is not None and focus is not None:
+        #     self.epics_update_timer.start(1000)
+        # else:
+        if self.epics_update_timer.isActive():
+            self.epics_update_timer.stop()
+        self.update_current_position()
+        self.epics_update_timer.start(1000)
+        # self.move_widget.hor_lbl.setText(str(hor))
+        # self.move_widget.ver_lbl.setText(str(ver))
+        # self.move_widget.focus_lbl.setText(str(focus))
+        # self.move_widget.omega_lbl.setText(str(omega))
 
 
 class InfoLoggingHandler(logging.Handler):
