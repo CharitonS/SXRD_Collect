@@ -21,6 +21,7 @@ import logging
 from functools import partial
 from epics import caput, caget, PV, camonitor, camonitor_clear
 from threading import Thread
+# from utils import caput
 from xps_trajectory.XPS_C8_drivers import XPS
 
 __author__ = 'Clemens Prescher'
@@ -114,7 +115,7 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
     if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
         if detector_choice == 'pilatus':
             caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time-0.001, wait=True)
-            caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
+            # caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
             caput(epics_config['pilatus'] + ':cam1:NumImages', num_steps, wait=True)
             caput(epics_config['pilatus'] + ':cam1:TriggerMode', 3, wait=True)  # 3 is Multi-Trigger, 2 is External
 
@@ -160,10 +161,13 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
     else:
         logger.info('Data collection was aborted!')
 
-    reset_detector_settings(previous_detector_settings)
+    reset_detector_settings(previous_detector_settings, detector_choice)
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     logger.info('Data collection finished.\n')
-    caput(epics_config[detector_choice] + ':AcquireSequence.STRA', 'Step scan finished', wait=True)
+    if detector_choice == 'pilatus':
+        caput(epics_config[detector_choice] + ':AcquireSequence.STRA', 'Step scan finished', wait=True)
+    else:
+        caput(epics_config[detector_choice] + ':AcquireSequence.STRA', 'Step scan finished', wait=True)
     del stage_xps
 
 
@@ -230,10 +234,13 @@ def prepare_detector_settings(detector_choice):
     return previous_detector_settings
 
 
-def reset_detector_settings(previous_detector_settings):
+def reset_detector_settings(previous_detector_settings, detector_choice):
     for key in previous_detector_settings:
         pv_name = key.split('_RBV')[0]
-        caput(pv_name, previous_detector_settings[key], wait=True)
+        if detector_choice == 'pilatus':
+            caput(pv_name, previous_detector_settings[key], wait=True)
+        else:
+            caput(pv_name, previous_detector_settings[key], wait=True)
 
 
 def collect_wide_data(detector_choice, detector_position_x, detector_position_z, omega_start, omega_end, exposure_time,
@@ -276,7 +283,7 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
                                                    scan_time=exposure_time,
                                                    pulse_time=0.1, accel_values=DEFAULT_ACCEL)
         caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time-0.001, wait=True)
-        caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
+        # caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
         caput(epics_config['pilatus'] + ':cam1:NumImages', 1, wait=True)
         caput(epics_config['pilatus'] + ':cam1:TriggerMode', 2, wait=True)  # 2 is ext. trigger
 
@@ -292,7 +299,7 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
         del stage_xps
         time.sleep(0.5)
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
-    reset_detector_settings(previous_detector_settings)
+    reset_detector_settings(previous_detector_settings, detector_choice)
     time.sleep(0.5)
     logger.info('Wide data collection finished.\n')
     # caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Wide scan finished', wait=True)
@@ -375,7 +382,7 @@ def collect_single_data(detector_choice, detector_position_x, detector_position_
 
     if detector_choice == 'pilatus':
         caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time-0.001, wait=True)
-        caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
+        # caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
         caput(epics_config[detector_choice] + ':cam1:NumImages', 1, wait=True)
         caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=True)
 
@@ -437,6 +444,7 @@ def move_to_detector_position(detector_position_x, detector_position_z, detector
         logger.info('Moving Pilatus Z to {}'.format(detector_position_z))
         caput(epics_config['pilatus_position_z'], detector_position_z, wait=True, timeout=300)
     logger.info('Moving Detector finished. \n')
+    time.sleep(0.5)
 
 
 def collect_data(exposure_time, detector_choice, wait=False):
@@ -447,3 +455,17 @@ def collect_data(exposure_time, detector_choice, wait=False):
     caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=wait, timeout=exposure_time + 20)
     if wait:
         logger.info('Finished data collection.\n')
+
+
+def caput_pil3(pv, value, wait=True):
+    t0 = time.time()
+    time.sleep(0.02)
+    caput(pv, value, wait=wait)
+
+    while time.time() - t0 < 20.0:
+        time.sleep(0.02)
+        msg = caget(epics_config['status_message'], as_string=True)
+        if 'OK' in msg or 'Waiting for acquire command' in msg:
+            return True
+        print('waiting')
+    return False

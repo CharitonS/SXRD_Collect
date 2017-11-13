@@ -265,7 +265,7 @@ class MainController(object):
 
     def reset_frame_nr(self):
         self.widget.frame_number_txt.setText('1')
-        caput(epics_config[self.detector] + ':TIFF1:FileNumber', 1)
+        caput(epics_config[self.detector] + ':TIFF1:FileNumber', 1, wait=True)
         self.set_example_lbl()
 
     def add_experiment_setup_btn_clicked(self):
@@ -556,7 +556,7 @@ class MainController(object):
 
     def basename_txt_changed(self):
         self.basename = str(self.widget.filename_txt.text())
-        caput(epics_config[self.detector] + ':TIFF1:FileName', self.basename)
+        caput(epics_config[self.detector] + ':TIFF1:FileName', self.basename, wait=True)
         self.set_example_lbl()
 
     def filepath_txt_changed(self):
@@ -566,12 +566,12 @@ class MainController(object):
 
         self.widget.filepath_txt.setText(self.filepath)
 
-        caput(epics_config[self.detector] + ':TIFF1:FilePath', self.filepath)
+        caput(epics_config[self.detector] + ':TIFF1:FilePath', self.filepath, wait=True)
         self.set_example_lbl()
 
     def frame_number_txt_changed(self):
         self.framenr = int(self.widget.frame_number_txt.text())
-        caput(epics_config[self.detector] + ':TIFF1:FileNumber', self.framenr)
+        caput(epics_config[self.detector] + ':TIFF1:FileNumber', self.framenr, wait=True)
         self.set_example_lbl()
 
     def set_total_frames(self):
@@ -735,219 +735,227 @@ class MainController(object):
         self.widget.status_txt.clear()
         QtWidgets.QApplication.processEvents()
 
-        for exp_ind, experiment in enumerate(self.model.experiment_setups):
-            if not (self.check_omega_in_limits(experiment.omega_start) and
-                    self.check_omega_in_limits(experiment.omega_end)):
-                self.show_error_message_box('Experiment starting and/or end angle are out of epics limits'
-                                            'Please adjust either of them!')
-                continue
+        repeat_counter = 0
+        while self.widget.repeat_cb.isChecked() or not repeat_counter:
+            repeat_counter += 1
+            if not self.check_if_aborted():
+                break
+            for exp_ind, experiment in enumerate(self.model.experiment_setups):
+                if not (self.check_omega_in_limits(experiment.omega_start) and
+                        self.check_omega_in_limits(experiment.omega_end)):
+                    self.show_error_message_box('Experiment starting and/or end angle are out of epics limits'
+                                                'Please adjust either of them!')
+                    continue
 
-            for sample_point in self.model.sample_points:
+                for sample_point in self.model.sample_points:
 
-                if sample_point.perform_still_for_setup[exp_ind]:
-                    self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
-                    c_frame += 1
-                    if self.widget.rename_files_cb.isChecked():
-                        point_number = str(self.widget.point_txt.text())
-                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name
-                        filenumber = 1
-                        caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
-                        caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
-                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
-                        time.sleep(0.1)
+                    if sample_point.perform_still_for_setup[exp_ind]:
+                        self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
+                        c_frame += 1
+                        if self.widget.rename_files_cb.isChecked():
+                            point_number = str(self.widget.point_txt.text())
+                            filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                       experiment.name
+                            filenumber = 1
+                            caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
+                            caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
+                            caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                            time.sleep(0.1)
 
-                    elif self.widget.no_suffices_cb.isChecked():
-                        filename = self.basename
-                        _, _, filenumber = self.get_filename_info(self.detector)
-                        caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
-                        caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
-                        # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
-                    else:
-                        _, filename, filenumber = self.get_filename_info(self.detector)
+                        elif self.widget.no_suffices_cb.isChecked():
+                            filename = self.basename
+                            _, _, filenumber = self.get_filename_info(self.detector)
+                            caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
+                            caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
+                            # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                        else:
+                            _, filename, filenumber = self.get_filename_info(self.detector)
 
-                    logger.info("Performing still image for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
-                    exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
+                        logger.info("Performing still image for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
+                        exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
+                                            experiment.time_per_step
+
+                        current_omega = (caget(epics_config['sample_position_omega'], as_string=False))
+                        collect_single_data_thread = Thread(target=collect_single_data,
+                                                            kwargs={"detector_choice": self.detector,
+                                                                    "detector_position_x": experiment.detector_pos_x,
+                                                                    "detector_position_z": experiment.detector_pos_z,
+                                                                    "exposure_time": abs(exposure_time),
+                                                                    "x": sample_point.x,
+                                                                    "y": sample_point.y,
+                                                                    "z": sample_point.z,
+                                                                    "omega": current_omega
+                                                                    }
+                                                            )
+                        collect_single_data_thread.start()
+
+                        while collect_single_data_thread.isAlive():
+                            QtWidgets.QApplication.processEvents()
+                            time.sleep(.2)
+
+                    if not self.check_if_aborted():
+                        break
+
+                    if sample_point.perform_wide_scan_for_setup[exp_ind]:
+                        if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
+                            self.show_error_message_box(
+                                'For Pilatus use step scan with full range as step instead of wide scan')
+                            self.reset_gui_state()
+                            return
+
+                        self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
+                        c_frame = c_frame + 1
+                        self.check_pilatus_trigger(self.detector)
+                        # check if all motor positions are in a correct position
+                        if self.check_conditions() is False:
+                            self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
+                            self.reset_gui_state()
+                            return
+
+                        if self.widget.rename_files_cb.isChecked():
+                            point_number = str(self.widget.point_txt.text())
+                            filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                       experiment.name + '_w'
+                            filenumber = 1
+
+                        elif self.widget.no_suffices_cb.isChecked():
+                            filename = self.basename
+                            _, _, filenumber = self.get_filename_info(self.detector)
+
+                        else:
+                            _, filename, filenumber = self.get_filename_info(self.detector)
+
+                        caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
+                        caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
+                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+
+                        logger.info("Performing wide scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
+                        exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
                                         experiment.time_per_step
 
-                    current_omega = (caget(epics_config['sample_position_omega'], as_string=False))
-                    collect_single_data_thread = Thread(target=collect_single_data,
-                                                        kwargs={"detector_choice": self.detector,
-                                                                "detector_position_x": experiment.detector_pos_x,
-                                                                "detector_position_z": experiment.detector_pos_z,
-                                                                "exposure_time": abs(exposure_time),
-                                                                "x": sample_point.x,
-                                                                "y": sample_point.y,
-                                                                "z": sample_point.z,
-                                                                "omega": current_omega
-                                                                }
-                                                        )
-                    collect_single_data_thread.start()
+                        collect_wide_data_thread = Thread(target=collect_wide_data,
+                                                          kwargs={"detector_choice": self.detector,
+                                                                  "detector_position_x": experiment.detector_pos_x,
+                                                                  "detector_position_z": experiment.detector_pos_z,
+                                                                  "omega_start": experiment.omega_start,
+                                                                  "omega_end": experiment.omega_end,
+                                                                  "exposure_time": abs(exposure_time),
+                                                                  "x": sample_point.x,
+                                                                  "y": sample_point.y,
+                                                                  "z": sample_point.z
+                                                                  }
+                                                          )
+                        collect_wide_data_thread.start()
 
-                    while collect_single_data_thread.isAlive():
-                        QtWidgets.QApplication.processEvents()
+                        while collect_wide_data_thread.isAlive():
+                            QtWidgets.QApplication.processEvents()
+                            time.sleep(.2)
+
                         time.sleep(.2)
 
-                if not self.check_if_aborted():
-                    break
+                    if not self.check_if_aborted():
+                        break
 
-                if sample_point.perform_wide_scan_for_setup[exp_ind]:
-                    if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
-                        self.show_error_message_box(
-                            'For Pilatus use step scan with full range as step instead of wide scan')
-                        self.reset_gui_state()
-                        return
+                    if sample_point.perform_step_scan_for_setup[exp_ind]:
+                        self.set_status_lbl("Collecting...", "#FF0000")
+                        c_frame += 1
+                        # check if all motor positions are in a correct position
+                        self.check_pilatus_trigger(self.detector)
+                        if self.check_conditions() is False:
+                            self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
+                            self.reset_gui_state()
+                            return
 
-                    self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
-                    c_frame = c_frame + 1
-                    self.check_pilatus_trigger(self.detector)
-                    # check if all motor positions are in a correct position
-                    if self.check_conditions() is False:
-                        self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
-                        self.reset_gui_state()
-                        return
+                        if self.widget.rename_files_cb.isChecked():
+                            point_number = str(self.widget.point_txt.text())
+                            filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
+                                       experiment.name + '_s'
+                            print(filename)
+                            filenumber = 1
 
-                    if self.widget.rename_files_cb.isChecked():
-                        point_number = str(self.widget.point_txt.text())
-                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name + '_w'
-                        filenumber = 1
+                        elif self.widget.no_suffices_cb.isChecked():
+                            filename = self.basename
+                            _, _, filenumber = self.get_filename_info(self.detector)
 
-                    elif self.widget.no_suffices_cb.isChecked():
-                        filename = self.basename
-                        _, _, filenumber = self.get_filename_info(self.detector)
-
-                    else:
-                        _, filename, filenumber = self.get_filename_info(self.detector)
-
-                    caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
-                    caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
-                    caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
-
-                    logger.info("Performing wide scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
-                    exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
-                                    experiment.time_per_step
-
-                    collect_wide_data_thread = Thread(target=collect_wide_data,
-                                                      kwargs={"detector_choice": self.detector,
-                                                              "detector_position_x": experiment.detector_pos_x,
-                                                              "detector_position_z": experiment.detector_pos_z,
-                                                              "omega_start": experiment.omega_start,
-                                                              "omega_end": experiment.omega_end,
-                                                              "exposure_time": abs(exposure_time),
-                                                              "x": sample_point.x,
-                                                              "y": sample_point.y,
-                                                              "z": sample_point.z
-                                                              }
-                                                      )
-                    collect_wide_data_thread.start()
-
-                    while collect_wide_data_thread.isAlive():
-                        QtWidgets.QApplication.processEvents()
-                        time.sleep(.2)
-
-                    time.sleep(.2)
-
-                if not self.check_if_aborted():
-                    break
-
-                if sample_point.perform_step_scan_for_setup[exp_ind]:
-                    self.set_status_lbl("Collecting...", "#FF0000")
-                    c_frame += 1
-                    # check if all motor positions are in a correct position
-                    self.check_pilatus_trigger(self.detector)
-                    if self.check_conditions() is False:
-                        self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
-                        self.reset_gui_state()
-                        return
-
-                    if self.widget.rename_files_cb.isChecked():
-                        point_number = str(self.widget.point_txt.text())
-                        filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name + '_s'
-                        print(filename)
-                        filenumber = 1
-
-                    elif self.widget.no_suffices_cb.isChecked():
-                        filename = self.basename
-                        _, _, filenumber = self.get_filename_info(self.detector)
-
-                    else:
-                        _, filename, filenumber = self.get_filename_info(self.detector)
-
-                    caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath))
-                    caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename))
-                    caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber)
-
-                    logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
-                    omega_step = experiment.omega_step
-                    time_per_step = experiment.time_per_step
-                    if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
-                        experiment.steps_per_image = int(round(experiment.omega_step/0.1))
-                        if experiment.steps_per_image > 1:
-                            omega_step /= experiment.steps_per_image
-                            time_per_step /= experiment.steps_per_image
-                            caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
-                            caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
-                            caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
-
-                    collect_step_data_thread = Thread(target=collect_step_data,
-                                                      kwargs={"detector_choice": self.detector,
-                                                              "detector_position_x": experiment.detector_pos_x,
-                                                              "detector_position_z": experiment.detector_pos_z,
-                                                              "omega_start": experiment.omega_start,
-                                                              "omega_end": experiment.omega_end,
-                                                              "omega_step": omega_step,
-                                                              "exposure_time": time_per_step,
-                                                              "x": sample_point.x,
-                                                              "y": sample_point.y,
-                                                              "z": sample_point.z,
-                                                              "callback_fcn": self.check_if_aborted,
-                                                              "collect_bkg_flag":
-                                                                  bool(self.widget.auto_bkg_cb.isChecked())})
-                    collect_step_data_thread.start()
-
-                    while collect_step_data_thread.isAlive():
-                        QtWidgets.QApplication.processEvents()
-                        time.sleep(0.2)
-                    xps_file = str(self.filepath) + '/' + str(filename) + '_' + str(filenumber).zfill(3) + '_xps_log.csv'
-                    xps_file = xps_file.replace('/DAC', FILEPATH, 1)
-                    # try:
-                    gf = open('Gather.dat', 'r')
-                    xf = open(xps_file, 'w')
-                    found_first_line = False
-                    counter = 0
-                    for line in gf:
-                        if line[0] == "#":
-                            prev_line = line
                         else:
-                            if not found_first_line:
-                                found_first_line = True
-                                prev_line = prev_line.replace('#', '')
-                                prev_line = re.sub('\s+', ',', prev_line)
-                                header_line = 'File,' + prev_line
-                                xf.write(header_line + '\n')
-                            new_line = line.replace(' ', ',')
-                            new_line = str(filename) + '_' + \
-                                       str(int(filenumber + counter//experiment.steps_per_image)).zfill(3) + ',' + \
-                                       new_line
-                            xf.write(new_line + '\n')
-                            counter += 1
-                    xf.close()
-                    gf.close()
-                    if self.detector == 'pilatus':
-                        caput('13PIL3:Proc1:EnableFilter', 0, wait=True)
-                    # shutil.copy2('Gather.dat', xps_file)
-                    # except:
-                    # pass
+                            _, filename, filenumber = self.get_filename_info(self.detector)
 
-                if not self.check_if_aborted():
-                    break
+                        caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
+                        caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
+                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+
+                        logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
+                        omega_step = experiment.omega_step
+                        time_per_step = experiment.time_per_step
+                        if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
+                            experiment.steps_per_image = int(round(experiment.omega_step/0.1))
+                            if experiment.steps_per_image > 1:
+                                omega_step /= experiment.steps_per_image
+                                time_per_step /= experiment.steps_per_image
+                                caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
+                                caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
+                                caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
+
+                        collect_step_data_thread = Thread(target=collect_step_data,
+                                                          kwargs={"detector_choice": self.detector,
+                                                                  "detector_position_x": experiment.detector_pos_x,
+                                                                  "detector_position_z": experiment.detector_pos_z,
+                                                                  "omega_start": experiment.omega_start,
+                                                                  "omega_end": experiment.omega_end,
+                                                                  "omega_step": omega_step,
+                                                                  "exposure_time": time_per_step,
+                                                                  "x": sample_point.x,
+                                                                  "y": sample_point.y,
+                                                                  "z": sample_point.z,
+                                                                  "callback_fcn": self.check_if_aborted,
+                                                                  "collect_bkg_flag":
+                                                                      bool(self.widget.auto_bkg_cb.isChecked())})
+                        collect_step_data_thread.start()
+
+                        while collect_step_data_thread.isAlive():
+                            QtWidgets.QApplication.processEvents()
+                            time.sleep(0.2)
+                        xps_file = str(self.filepath) + '/' + str(filename) + '_' + str(filenumber).zfill(3) + '_xps_log.csv'
+                        xps_file = xps_file.replace('/DAC', FILEPATH, 1)
+                        # try:
+                        gf = open('Gather.dat', 'r')
+                        xf = open(xps_file, 'w')
+                        found_first_line = False
+                        counter = 0
+                        for line in gf:
+                            if line[0] == "#":
+                                prev_line = line
+                            else:
+                                if not found_first_line:
+                                    found_first_line = True
+                                    prev_line = prev_line.replace('#', '')
+                                    prev_line = re.sub('\s+', ',', prev_line)
+                                    header_line = 'File,' + prev_line
+                                    xf.write(header_line + '\n')
+                                new_line = line.replace(' ', ',')
+                                new_line = str(filename) + '_' + \
+                                           str(int(filenumber + counter//experiment.steps_per_image)).zfill(3) + ',' + \
+                                           new_line
+                                xf.write(new_line + '\n')
+                                counter += 1
+                        xf.close()
+                        gf.close()
+                        if self.detector == 'pilatus':
+                            caput('13PIL3:Proc1:EnableFilter', 0, wait=True)
+                        # shutil.copy2('Gather.dat', xps_file)
+                        # except:
+                        # pass
+
+                    if not self.check_if_aborted():
+                        break
+            if self.widget.rename_files_cb.isChecked():
+                self.increase_point_number()
+
         self.widget.force_rotate_cb.setChecked(False)
         if self.widget.play_sound_cb.isChecked():
              winsound.PlaySound('P:\dac_user\Python Scripts\SXRD_Collect\church.wav', winsound.SND_FILENAME)
 
-        caput(epics_config[self.detector] + ':cam1:AcquireTime', previous_exposure_time)
+        caput(epics_config[self.detector] + ':cam1:AcquireTime', previous_exposure_time, wait=True)
 
         # move to previous detector position:
         if self.widget.reset_detector_position_cb.isChecked():
@@ -959,19 +967,18 @@ class MainController(object):
 
         # move to previous sample position
         if self.widget.reset_sample_position_cb.isChecked():
-            caput(epics_config['sample_position_omega'], previous_omega_pos)
+            caput(epics_config['sample_position_omega'], previous_omega_pos, wait=True)
             move_to_sample_pos(sample_x, sample_y, sample_z)
 
-        caput(epics_config[self.detector] + ':cam1:ShutterMode', 1)  # enable epics PV shutter mode
+        caput(epics_config[self.detector] + ':cam1:ShutterMode', 1, wait=True)  # enable epics PV shutter mode
 
-        if self.widget.rename_files_cb.isChecked():
-            self.increase_point_number()
+
 
         if self.widget.rename_after_cb.isChecked():
-            caput(epics_config[self.detector] + ':TIFF1:FilePath', previous_filepath)
-            caput(epics_config[self.detector] + ':TIFF1:FileName', previous_filename)
+            caput(epics_config[self.detector] + ':TIFF1:FilePath', previous_filepath, wait=True)
+            caput(epics_config[self.detector] + ':TIFF1:FileName', previous_filename, wait=True)
             if self.widget.rename_files_cb.isChecked():
-                caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber)
+                caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber, wait=True)
 
         #update frame number
 
@@ -1139,7 +1146,7 @@ class MainController(object):
         caput(epics_config[self.detector] + ':TIFF1:FilePath', self.filepath, wait=True)
         exists = caget(epics_config[self.detector] + ':TIFF1:FilePathExists_RBV')
 
-        caput(epics_config[self.detector] + ':TIFF1:FilePath', cur_epics_filepath)
+        caput(epics_config[self.detector] + ':TIFF1:FilePath', cur_epics_filepath, wait=True)
         return exists == 1
 
     def check_filename_exists(self, filename):
@@ -1215,6 +1222,16 @@ class MainController(object):
         # self.move_widget.ver_lbl.setText(str(ver))
         # self.move_widget.focus_lbl.setText(str(focus))
         # self.move_widget.omega_lbl.setText(str(omega))
+
+    def caput_pil3(pv, value, wait=True):
+        t0 = time.time()
+        caput(pv, value, wait=wait)
+
+        while time.time() - t0 < 20.0:
+            time.sleep(0.02)
+            if 'OK' in caget(epics_config['status_message'], as_string=True):
+                return True
+        return False
 
 
 class InfoLoggingHandler(logging.Handler):

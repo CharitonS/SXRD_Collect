@@ -30,6 +30,7 @@ epics_config = {
     'pilatus_control': '13PIL3:cam1',
     'pilatus_position_z': '13IDD:m5',
     'table_shutter': '13IDD:Unidig1Bi11.VAL',
+    'status_message': '13PIL3:cam1:StatusMessage_RBV',
 }
 
-FILEPATH = 'T:/dac_user/2017/IDD_2017-2'
+FILEPATH = 'T:/dac_user/2017/IDD_2017-3'

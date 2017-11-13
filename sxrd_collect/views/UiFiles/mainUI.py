@@ -645,6 +645,11 @@ class Ui_SXRDCollectWidget(object):
         self.force_rotate_cb.setChecked(False)
         self.verticalLayout_4.addWidget(self.force_rotate_cb)
 
+        self.repeat_cb = QtWidgets.QCheckBox(SXRDCollectWidget)
+        self.repeat_cb.setObjectName(_fromUtf8("repeat_cb"))
+        self.repeat_cb.setChecked(False)
+        self.verticalLayout_4.addWidget(self.repeat_cb)
+
         self.collect_btn =HoverButton(SXRDCollectWidget)
         self.collect_btn.setMinimumSize(QtCore.QSize(130, 60))
         self.collect_btn.setObjectName(_fromUtf8("collect_btn"))
@@ -771,5 +776,6 @@ class Ui_SXRDCollectWidget(object):
         self.collect_bkg_btn.setText(_translate("SXRDCollectWidget", "Collect Background", None))
         self.auto_bkg_cb.setText(_translate("SXRDCollectWidget", "automatic", None))
         self.force_rotate_cb.setText(_translate("SXRDCollectWidget", "Force rotation", None))
+        self.repeat_cb.setText(_translate("SXRDCollectWidget", "Repeat", None))
         self.override_pilatus_limits_cb.setText(_translate("SXRDCollectWidget", "Override Pilatus limits", None))
         self.collect_btn.setText(_translate("SXRDCollectWidget", "Collect", None))
