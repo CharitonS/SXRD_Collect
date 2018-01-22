@@ -797,11 +797,12 @@ class MainController(object):
                         break
 
                     if sample_point.perform_wide_scan_for_setup[exp_ind]:
-                        if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
-                            self.show_error_message_box(
-                                'For Pilatus use step scan with full range as step instead of wide scan')
-                            self.reset_gui_state()
-                            return
+                        # THIS WAS FOR PREVENTING WIDE SCANS OF THE PILATUS
+                        # if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
+                        #     self.show_error_message_box(
+                        #         'For Pilatus use step scan with full range as step instead of wide scan')
+                        #     self.reset_gui_state()
+                        #     return
 
                         self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
                         c_frame = c_frame + 1
@@ -887,14 +888,15 @@ class MainController(object):
                         logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         omega_step = experiment.omega_step
                         time_per_step = experiment.time_per_step
-                        if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
-                            experiment.steps_per_image = int(round(experiment.omega_step/0.1))
-                            if experiment.steps_per_image > 1:
-                                omega_step /= experiment.steps_per_image
-                                time_per_step /= experiment.steps_per_image
-                                caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
-                                caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
-                                caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
+                        # THIS WAS FOR MAKING SURE PILATUS ONLY USED 0.1 DEG STEPS
+                        # if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
+                        #     experiment.steps_per_image = int(round(experiment.omega_step/0.1))
+                        #     if experiment.steps_per_image > 1:
+                        #         omega_step /= experiment.steps_per_image
+                        #         time_per_step /= experiment.steps_per_image
+                        #         caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
+                        #         caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
+                        #         caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
 
                         collect_step_data_thread = Thread(target=collect_step_data,
                                                           kwargs={"detector_choice": self.detector,

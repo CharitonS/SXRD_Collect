@@ -119,6 +119,11 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
             caput(epics_config['pilatus'] + ':cam1:NumImages', num_steps, wait=True)
             caput(epics_config['pilatus'] + ':cam1:TriggerMode', 3, wait=True)  # 3 is Multi-Trigger, 2 is External
 
+            if detector_choice == 'pilatus':
+                message = str(int(num_steps)) + ' steps from ' + '{0:.1f}'.format(omega_start) + ' to ' + \
+                          '{0:.1f}'.format(omega_end) + ', ' + '{0:.2f}'.format(exposure_time) + ' (s)'
+                caput(epics_config[detector_choice] + ':AcquireSequence.STRA', message, wait=True)
+
             pilatus_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
             t1 = time.time()
             caput(epics_config['pilatus'] + ':cam1:Acquire', 1)
@@ -165,7 +170,10 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     logger.info('Data collection finished.\n')
     if detector_choice == 'pilatus':
-        caput(epics_config[detector_choice] + ':AcquireSequence.STRA', 'Step scan finished', wait=True)
+        pass
+        # message = str(int(num_steps)) + ' steps from ' + '{0:.1f}'.format(omega_start) + ' to ' + \
+        #           '{0:.1f}'.format(omega_end) + ', ' + '{0:.1f}'.format(exposure_time) + ' (s)'
+        # caput(epics_config[detector_choice] + ':AcquireSequence.STRA', message, wait=True)
     else:
         caput(epics_config[detector_choice] + ':AcquireSequence.STRA', 'Step scan finished', wait=True)
     del stage_xps
