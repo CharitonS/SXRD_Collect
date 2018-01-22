@@ -777,5 +777,5 @@ class Ui_SXRDCollectWidget(object):
         self.auto_bkg_cb.setText(_translate("SXRDCollectWidget", "automatic", None))
         self.force_rotate_cb.setText(_translate("SXRDCollectWidget", "Force rotation", None))
         self.repeat_cb.setText(_translate("SXRDCollectWidget", "Repeat", None))
-        self.override_pilatus_limits_cb.setText(_translate("SXRDCollectWidget", "Override Pilatus limits", None))
+        self.override_pilatus_limits_cb.setText(_translate("SXRDCollectWidget", "Force 0.1 deg steps", None))
         self.collect_btn.setText(_translate("SXRDCollectWidget", "Collect", None))

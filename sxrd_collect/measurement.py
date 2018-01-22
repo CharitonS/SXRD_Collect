@@ -51,7 +51,7 @@ def get_sample_position():
 
 
 def collect_step_data(detector_choice, detector_position_x, detector_position_z, omega_start, omega_end, omega_step,
-                      exposure_time, x, y, z, callback_fcn=None, collect_bkg_flag=False):
+                      actual_omega_step, exposure_time, x, y, z, callback_fcn=None, collect_bkg_flag=False):
     """
     Performs a single crystal step collection at the sample position x,y,z using the trajectory scan of the
     XPS motor controller. This
@@ -70,6 +70,8 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
     :param omega_step:
         Omega step for each single frame/ Whereby the omega motor PV  is defined in epics_config as
         "sample_position_omega".
+    :param actual_omega_step:
+        THe actual omega step since for Pilatus in step scan the step is set to 0.1 in some cases
     :param exposure_time:
         Exposure time per frame in seconds.
     :param x:
@@ -94,6 +96,7 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
 
     # perform measurements:
     num_steps = (omega_end - omega_start) / omega_step
+    actual_num_steps = (omega_end - omega_start) / actual_omega_step
 
     stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
     if detector_choice == 'marccd':
@@ -120,9 +123,11 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
             caput(epics_config['pilatus'] + ':cam1:TriggerMode', 3, wait=True)  # 3 is Multi-Trigger, 2 is External
 
             if detector_choice == 'pilatus':
-                message = str(int(num_steps)) + ' steps from ' + '{0:.1f}'.format(omega_start) + ' to ' + \
-                          '{0:.1f}'.format(omega_end) + ', ' + '{0:.2f}'.format(exposure_time) + ' (s)'
-                caput(epics_config[detector_choice] + ':AcquireSequence.STRA', message, wait=True)
+                actual_exposure_time = exposure_time*num_steps/actual_num_steps
+                message = str(int(actual_num_steps)) + ' steps from ' + '{0:.1f}'.format(omega_start) + ' to ' + \
+                          '{0:.1f}'.format(omega_end) + ', ' + '{0:.2f}'.format(actual_exposure_time) + 's'
+                print(message)
+                caput(epics_config[detector_choice] + ':AcquireSequence.STRA', str(message), wait=True)
 
             pilatus_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
             t1 = time.time()

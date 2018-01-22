@@ -888,15 +888,15 @@ class MainController(object):
                         logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         omega_step = experiment.omega_step
                         time_per_step = experiment.time_per_step
-                        # THIS WAS FOR MAKING SURE PILATUS ONLY USED 0.1 DEG STEPS
-                        # if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
-                        #     experiment.steps_per_image = int(round(experiment.omega_step/0.1))
-                        #     if experiment.steps_per_image > 1:
-                        #         omega_step /= experiment.steps_per_image
-                        #         time_per_step /= experiment.steps_per_image
-                        #         caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
-                        #         caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
-                        #         caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
+                        # THIS IS FOR MAKING SURE PILATUS ONLY USED 0.1 DEG STEPS
+                        if self.detector == 'pilatus' and self.widget.override_pilatus_limits_cb.isChecked():
+                            experiment.steps_per_image = int(round(experiment.omega_step/0.1))
+                            if experiment.steps_per_image > 1:
+                                omega_step /= experiment.steps_per_image
+                                time_per_step /= experiment.steps_per_image
+                                caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
+                                caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
+                                caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
 
                         collect_step_data_thread = Thread(target=collect_step_data,
                                                           kwargs={"detector_choice": self.detector,
@@ -905,6 +905,7 @@ class MainController(object):
                                                                   "omega_start": experiment.omega_start,
                                                                   "omega_end": experiment.omega_end,
                                                                   "omega_step": omega_step,
+                                                                  "actual_omega_step": experiment.omega_step,
                                                                   "exposure_time": time_per_step,
                                                                   "x": sample_point.x,
                                                                   "y": sample_point.y,
