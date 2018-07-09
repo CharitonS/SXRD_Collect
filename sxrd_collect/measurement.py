@@ -397,7 +397,7 @@ def collect_single_data(detector_choice, detector_position_x, detector_position_
         caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time-0.001, wait=True)
         # caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
         caput(epics_config[detector_choice] + ':cam1:NumImages', 1, wait=True)
-        caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=True)
+        caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=True, timeout=300)
 
     if detector_choice == 'marccd':
         caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)

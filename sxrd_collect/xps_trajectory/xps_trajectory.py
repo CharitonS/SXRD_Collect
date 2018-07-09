@@ -222,6 +222,7 @@ class XPSTrajectory(object):
         self.xps.GatheringReset(self.ssid)
         self.xps.GatheringConfigurationSet(self.ssid, self.gather_outputs)
 
+        print("step_number", step_number)
         ret = self.xps.MultipleAxesPVTPulseOutputSet(self.ssid, self.group_name,
                                                      2, step_number + 1, dtime)
         ret = self.xps.MultipleAxesPVTVerification(self.ssid, self.group_name, traj_file)
