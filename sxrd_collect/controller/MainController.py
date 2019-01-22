@@ -415,6 +415,7 @@ class MainController(object):
                 step_time = float("{0:.2f}".format(step_time))
                 step_exposure_time_item.setText(str(step_time))
                 self.model.experiment_setups[row].time_per_step = step_time
+
             # elif col == 8:
             #     self.model.experiment_setups[row].steps_per_image = value
 
@@ -426,7 +427,14 @@ class MainController(object):
 
     def update_total_exposure_time(self, row):
         total_exposure_time_item = self.widget.setup_table.item(row, 7)
-        total_exposure_time_item.setText("{:.2f}".format((self.model.experiment_setups[row].get_total_exposure_time())))
+        omega_range = abs(float(self.widget.setup_table.item(row, 3).text()) -
+                          float(self.widget.setup_table.item(row, 4).text()))
+        total_exp_time = self.model.experiment_setups[row].get_total_exposure_time()
+        velocity = omega_range/total_exp_time
+        if velocity >= 5:
+            self.create_omega_error_msg('Omega velocity is too fast')
+        else:
+            total_exposure_time_item.setText("{:.2f}".format(total_exp_time))
 
     def sample_points_table_cell_changed(self, row, col):
         label_item = self.widget.sample_points_table.item(row, col)
