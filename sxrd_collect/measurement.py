@@ -286,6 +286,7 @@ def prepare_sis_settings(step_size, motor_resolution):
     caput(ext_prescale_pv, step_size/motor_resolution, wait=True)
     caput(channels_used_pv, 8192, wait=True)
     caput(channel_advance_pv, 1, wait=True)  # 1 is external
+    caput(epics_config['SIS'] + ':EraseStart', 1, wait=False)
 
     return previous_sis_settings
 
