@@ -47,7 +47,7 @@ class MainController(object):
     def __init__(self):
         self.widget = MainView(__version__)
         self.widget.show()
-        self.detector = 'marccd'
+        self.detector = 'perkin_elmer'
         self.model = SxrdModel()
         self.connect_buttons()
         self.connect_tables()
@@ -91,7 +91,7 @@ class MainController(object):
 
     def connect_buttons(self):
         self.widget.epics_config_btn.clicked.connect(self.configure_epics_clicked)
-        self.widget.choose_detector_btn.clicked.connect(self.choose_detector_clicked)
+        # self.widget.choose_detector_btn.clicked.connect(self.choose_detector_clicked)
 
         self.widget.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
         self.widget.delete_setup_btn.clicked.connect(self.delete_experiment_setup_btn_clicked)
@@ -221,9 +221,9 @@ class MainController(object):
 
     def update_current_position(self):
         self.widget.current_position_lbl.setText('  Current position:' +
-                                                 '\tx: ' + str(round(caget('13IDD:m81.RBV'), 3)) +
-                                                 '\t\ty: ' + str(round(caget('13IDD:m83.RBV'), 3)) +
-                                                 '\t\tz: ' + str(round(caget('13IDD:m82.RBV'), 3)))
+                                                 '\tx: ' + str(round(caget(epics_config['sample_position_x']), 3)) +
+                                                 '\t\ty: ' + str(round(caget(epics_config['sample_position_y']), 3)) +
+                                                 '\t\tz: ' + str(round(caget(epics_config['sample_position_z']), 3)))
 
         pos_x, pos_y, pos_z = self.get_current_sample_position()
         if len(self.model.sample_points):
@@ -237,7 +237,6 @@ class MainController(object):
             self.widget.current_position_lbl.setStyleSheet("font: 11px; color: black;")
         else:
             self.widget.current_position_lbl.setStyleSheet("font: bold 14px; color: red;")
-
 
     def load_exp_setup(self):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self.widget, caption="Load experiment setup file",
@@ -378,7 +377,8 @@ class MainController(object):
             elif col == 2:
                 self.model.experiment_setups[row].detector_pos_z = value
             elif col == 3:
-                if value >= int(caget('13IDD:m96.LLM')) and value <= int(caget('13IDD:m96.HLM')):
+                if value >= int(caget(epics_config['sample_position_omega'] + '.LLM')) and \
+                                value <= int(caget(epics_config['sample_position_omega'] + '.HLM')):
                     self.model.experiment_setups[row].omega_start = value
                     self.update_total_exposure_time(row)
                 else:
@@ -387,7 +387,8 @@ class MainController(object):
                     self.update_total_exposure_time(row)
                     self.create_omega_error_msg('Starting omega value is incorrect')
             elif col == 4:
-                if value >= int(caget('13IDD:m96.LLM')) and value <= int(caget('13IDD:m96.HLM')):
+                if value >= int(caget(epics_config['sample_position_omega'] + '.LLM')) and \
+                                value <= int(caget(epics_config['sample_position_omega'] + '.HLM')):
                     self.model.experiment_setups[row].omega_end = value
                     self.update_total_exposure_time(row)
                 else:
@@ -657,19 +658,20 @@ class MainController(object):
 
     def choose_detector_clicked(self):
         if self.widget.choose_detector_btn.isChecked():
-            self.widget.choose_detector_btn.setText('Using Pilatus')
-            self.detector = 'pilatus'
+            self.widget.choose_detector_btn.setText('Using perkin_elmer')
+            self.detector = 'perkin_elmer'
             self.widget.choose_detector_btn.setStyleSheet('QPushButton {background-color: #000000; color: white;}')
-            self.widget.override_pilatus_limits_cb.setVisible(True)
+            self.widget.override_perkin_elmer_limits_cb.setVisible(True)
         else:
             self.widget.choose_detector_btn.setText('Using MARCCD')
             self.detector = 'marccd'
             self.widget.choose_detector_btn.setStyleSheet('QPushButton {background-color: light grey; color: black;}')
-            self.widget.override_pilatus_limits_cb.setVisible(False)
+            self.widget.override_perkin_elmer_limits_cb.setVisible(False)
         self.clear_experiment_setup_btn_clicked(True)
 
     def open_path_btn_clicked(self):
-        path = FILEPATH + self.filepath[4:]
+        # path = FILEPATH + self.filepath[4:]
+        path = self.filepath
         os.startfile(path)
 
     def collect_bkg_data(self):
@@ -710,8 +712,8 @@ class MainController(object):
 
         with open ('sxrd_log.txt', 'a') as outfile:
             logstr = time.asctime() + ': '
-            if self.widget.override_pilatus_limits_cb.isChecked():
-                logstr += 'Overriding Pilatus limits. '
+            if self.widget.override_perkin_elmer_limits_cb.isChecked():
+                logstr += 'Overriding perkin_elmer limits. '
             if self.widget.force_rotate_cb.isChecked():
                 logstr += 'Forcing rotation '
             logstr += '\n'
@@ -727,11 +729,11 @@ class MainController(object):
         # save current state to be able to restore after the measurement when the checkboxes are selected.
         previous_filepath, previous_filename, previous_filenumber = self.get_filename_info(self.detector)
         previous_exposure_time = caget(epics_config[self.detector] + ':cam1:AcquireTime')
-        previous_detector_pos_x = caget(epics_config['detector_position_x'])
+        # previous_detector_pos_x = caget(epics_config['detector_position_x'])
         if self.detector == 'marccd':
             previous_detector_pos_z = caget(epics_config['detector_position_z'])
-        elif self.detector == 'pilatus':
-            previous_detector_pos_z = caget(epics_config['pilatus_position_z'])
+        elif self.detector == 'perkin_elmer':
+            previous_detector_pos_z = caget(epics_config['perkin_elmer_position_z'])
         previous_omega_pos = caget(epics_config['sample_position_omega'])
         sample_x, sample_y, sample_z = self.get_current_sample_position()
 
@@ -805,16 +807,10 @@ class MainController(object):
                         break
 
                     if sample_point.perform_wide_scan_for_setup[exp_ind]:
-                        # THIS WAS FOR PREVENTING WIDE SCANS OF THE PILATUS
-                        # if self.detector == 'pilatus' and not self.widget.override_pilatus_limits_cb.isChecked():
-                        #     self.show_error_message_box(
-                        #         'For Pilatus use step scan with full range as step instead of wide scan')
-                        #     self.reset_gui_state()
-                        #     return
 
                         self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
                         c_frame = c_frame + 1
-                        self.check_pilatus_trigger(self.detector)
+                        self.check_perkin_elmer_trigger(self.detector)
                         # check if all motor positions are in a correct position
                         if self.check_conditions() is False:
                             self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
@@ -869,7 +865,7 @@ class MainController(object):
                         self.set_status_lbl("Collecting...", "#FF0000")
                         c_frame += 1
                         # check if all motor positions are in a correct position
-                        self.check_pilatus_trigger(self.detector)
+                        self.check_perkin_elmer_trigger(self.detector)
                         if self.check_conditions() is False:
                             self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
                             self.reset_gui_state()
@@ -896,15 +892,15 @@ class MainController(object):
                         logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         omega_step = experiment.omega_step
                         time_per_step = experiment.time_per_step
-                        # THIS IS FOR MAKING SURE PILATUS ONLY USED 0.1 DEG STEPS
-                        if self.detector == 'pilatus' and self.widget.override_pilatus_limits_cb.isChecked():
-                            experiment.steps_per_image = int(round(experiment.omega_step/0.1))
-                            if experiment.steps_per_image > 1:
-                                omega_step /= experiment.steps_per_image
-                                time_per_step /= experiment.steps_per_image
-                                caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
-                                caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
-                                caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
+                        # THIS IS FOR MAKING SURE Pilatus ONLY USED 0.1 DEG STEPS
+                        # if self.detector == 'perkin_elmer' and self.widget.override_perkin_elmer_limits_cb.isChecked():
+                        #     experiment.steps_per_image = int(round(experiment.omega_step/0.1))
+                        #     if experiment.steps_per_image > 1:
+                        #         omega_step /= experiment.steps_per_image
+                        #         time_per_step /= experiment.steps_per_image
+                        #         caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
+                        #         caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
+                        #         caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
 
                         collect_step_data_thread = Thread(target=collect_step_data,
                                                           kwargs={"detector_choice": self.detector,
@@ -951,8 +947,8 @@ class MainController(object):
                                 counter += 1
                         xf.close()
                         gf.close()
-                        if self.detector == 'pilatus':
-                            caput('13PIL3:Proc1:EnableFilter', 0, wait=True)
+                        # if self.detector == 'perkin_elmer':
+                        #     caput('13PIL3:Proc1:EnableFilter', 0, wait=True)
                         # shutil.copy2('Gather.dat', xps_file)
                         # except:
                         # pass
@@ -970,11 +966,11 @@ class MainController(object):
 
         # move to previous detector position:
         if self.widget.reset_detector_position_cb.isChecked():
-            caput(epics_config['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
+            # caput(epics_config['detector_position_x'], previous_detector_pos_x, wait=True, timeout=300)
             if self.detector == 'marccd':
                 caput(epics_config['detector_position_z'], previous_detector_pos_z, wait=True, timeout=300)
-            elif self.detector == 'pilatus':
-                caput(epics_config['pilatus_position_z'], previous_detector_pos_z, wait=True, timeout=300)
+            elif self.detector == 'perkin_elmer':
+                caput(epics_config['perkin_elmer_position_z'], previous_detector_pos_z, wait=True, timeout=300)
 
         # move to previous sample position
         if self.widget.reset_sample_position_cb.isChecked():
@@ -983,15 +979,13 @@ class MainController(object):
 
         caput(epics_config[self.detector] + ':cam1:ShutterMode', 1, wait=True)  # enable epics PV shutter mode
 
-
-
         if self.widget.rename_after_cb.isChecked():
             caput(epics_config[self.detector] + ':TIFF1:FilePath', previous_filepath, wait=True)
             caput(epics_config[self.detector] + ':TIFF1:FileName', previous_filename, wait=True)
             if self.widget.rename_files_cb.isChecked():
                 caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber, wait=True)
 
-        #update frame number
+        # update frame number
 
         if self.widget.no_suffices_cb.isChecked() or ((not self.widget.rename_files_cb.isChecked()) and (not self.widget.no_suffices_cb.isChecked())):
             _, _, filenumber = self.get_filename_info(self.detector)
@@ -1029,15 +1023,15 @@ class MainController(object):
 
     def estimate_collection_time(self, epics_config):
         total_time = 0
-        det_x_speed = caget(epics_config['detector_position_x'] + '.VELO')
-        det_x_pos = caget(epics_config['detector_position_x'])
+        # det_x_speed = caget(epics_config['detector_position_x'] + '.VELO')
+        # det_x_pos = caget(epics_config['detector_position_x'])
 
         if self.detector == 'marccd':
             det_z_speed = caget(epics_config['detector_position_z'] + '.VELO')
             det_z_pos = caget(epics_config['detector_position_z'])
-        elif self.detector == 'pilatus':
-            det_z_speed = caget(epics_config['pilatus_position_z'] + '.VELO')
-            det_z_pos = caget(epics_config['pilatus_position_z'])
+        elif self.detector == 'perkin_elmer':
+            det_z_speed = caget(epics_config['perkin_elmer_position_z'] + '.VELO')
+            det_z_pos = caget(epics_config['perkin_elmer_position_z'])
 
         for exp_ind, experiment in enumerate(self.model.experiment_setups):
             exp_collection = False
@@ -1059,10 +1053,10 @@ class MainController(object):
                     total_time += exposure_time
                     exp_collection = True
                 if exp_collection:
-                    det_x_move_time = abs(experiment.detector_pos_x - det_x_pos) / float(det_x_speed)
+                    # det_x_move_time = abs(experiment.detector_pos_x - det_x_pos) / float(det_x_speed)
                     det_y_move_time = abs(experiment.detector_pos_z - det_z_pos) / float(det_z_speed)
                     total_time += det_x_move_time + det_y_move_time
-                    det_x_pos = experiment.detector_pos_x
+                    # det_x_pos = experiment.detector_pos_x
                     det_z_pos = experiment.detector_pos_z
         return total_time
 
@@ -1118,18 +1112,18 @@ class MainController(object):
         :return: float, float, float
         """
         try:
-            detector_pos_x = float("{:g}".format(caget(epics_config['detector_position_x'])))
+            # detector_pos_x = float("{:g}".format(caget(epics_config['detector_position_x'])))
             if self.detector == 'marccd':
                 detector_pos_z = float("{:g}".format(caget(epics_config['detector_position_z'])))
-            elif self.detector == 'pilatus':
-                detector_pos_z = float("{:g}".format(caget(epics_config['pilatus_position_z'])))
+            elif self.detector == 'perkin_elmer':
+                detector_pos_z = float("{:g}".format(caget(epics_config['perkin_elmer_position_z'])))
             omega = float("{:g}".format(caget(epics_config['sample_position_omega'])))
             exposure_time = float("{:g}".format(caget(epics_config[self.detector] + ':cam1:AcquireTime')))
         except epics.ca.ChannelAccessException:
             detector_pos_x = 0
             if self.detector == 'marccd':
                 detector_pos_z = 49
-            elif self.detector == 'pilatus':
+            elif self.detector == 'perkin_elmer':
                 detector_pos_z = 30
             omega = -90
             exposure_time = 0.5
@@ -1166,25 +1160,26 @@ class MainController(object):
     def check_conditions(self):
         if self.widget.force_rotate_cb.isChecked():
             return True
-        if int(caget('13IDD:m24.RBV')) > -105:
-            return False
-        elif int(caget('13IDD:m23.RBV')) > -105:
-            return False
-        elif int(caget('13IDD:m67.RBV')) > -65:
-            return False
+        # if int(caget('13IDD:m24.RBV')) > -105:
+        #     return False
+        # elif int(caget('13IDD:m23.RBV')) > -105:
+        #     return False
+        # elif int(caget('13IDD:m67.RBV')) > -65:
+        #     return False
         return True
 
     @staticmethod
-    def check_pilatus_trigger(detector):
-        if detector == 'pilatus':
-            if caget('13IDD:Unidig2Bo20'):
-                caput('13IDD:Unidig2Bo20', 0)
+    def check_perkin_elmer_trigger(detector):
+        pass
+        # if detector == 'perkin_elmer':
+        #     if caget('13IDD:Unidig2Bo20'):
+        #         caput('13IDD:Unidig2Bo20', 0)
 
     @staticmethod
     def check_omega_in_limits(omega):
-        if int(caget('13IDD:m96.HLM')) < omega:
+        if int(caget(epics_config['sample_position_omega'] + '.HLM')) < omega:
             return False
-        if int(caget('13IDD:m96.LLM')) > omega:
+        if int(caget(epics_config['sample_position_omega'] + '.LLM')) > omega:
             return False
         return True
 

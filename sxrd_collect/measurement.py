@@ -31,16 +31,16 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-from xps_trajectory.xps_trajectory import XPSTrajectory
+# from xps_trajectory.xps_trajectory import XPSTrajectory
 
-from config import xps_config, epics_config
+from config import epics_config  # , xps_config
 
-HOST = xps_config['HOST']
-GROUP_NAME = xps_config['GROUP NAME']
-POSITIONERS = xps_config['POSITIONERS']
-DEFAULT_ACCEL = xps_config['DEFAULT ACCEL']
-
-GATHER_OUTPUTS = xps_config['GATHER OUTPUTS']
+# HOST = xps_config['HOST']
+# GROUP_NAME = xps_config['GROUP NAME']
+# POSITIONERS = xps_config['POSITIONERS']
+# DEFAULT_ACCEL = xps_config['DEFAULT ACCEL']
+#
+# GATHER_OUTPUTS = xps_config['GATHER OUTPUTS']
 
 
 def get_sample_position():
@@ -56,7 +56,7 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
     Performs a single crystal step collection at the sample position x,y,z using the trajectory scan of the
     XPS motor controller. This
     :param detector_choice:
-        Which detector to use (pilatus or marccd).
+        Which detector to use (perkin_elmer or marccd).
     :param detector_position_x:
         Detector x position. Whereby the X motor PV is defined in epics_config as "detector_position_x".
     :param detector_position_z:
@@ -71,7 +71,7 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
         Omega step for each single frame/ Whereby the omega motor PV  is defined in epics_config as
         "sample_position_omega".
     :param actual_omega_step:
-        THe actual omega step since for Pilatus in step scan the step is set to 0.1 in some cases
+        THe actual omega step since for perkin_elmer in step scan the step is set to 0.1 in some cases
     :param exposure_time:
         Exposure time per frame in seconds.
     :param x:
@@ -97,43 +97,50 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
     # perform measurements:
     num_steps = (omega_end - omega_start) / omega_step
     actual_num_steps = (omega_end - omega_start) / actual_omega_step
+    omega_range = omega_end - omega_start
 
-    stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
-    if detector_choice == 'marccd':
-        stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
-                                                   pulse_time=0.1, accel_values=DEFAULT_ACCEL)
-    elif detector_choice == 'pilatus':
-        omega_range = omega_end - omega_start
+    if detector_choice == 'perkin_elmer':
+        previous_omega_settings = prepare_omega_settings(omega_range, exposure_time*num_steps)
+        motor_resolution = abs(caget(epics_config['sample_position_omega'] + '.MRES'))
+        previous_sis_settings = prepare_sis_settings(omega_step, motor_resolution)
+
+    # stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
+    # if detector_choice == 'marccd':
+    #     stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_step]], scan_time=exposure_time,
+    #                                                pulse_time=0.1, accel_values=DEFAULT_ACCEL)
+    if detector_choice == 'perkin_elmer':
         print(omega_range)
-        stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_range]],
-                                                   scan_time=exposure_time*num_steps,
-                                                   pulse_time=exposure_time, accel_values=DEFAULT_ACCEL)
+        # stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_range]],
+        #                                            scan_time=exposure_time*num_steps,
+        #                                            pulse_time=exposure_time, accel_values=DEFAULT_ACCEL)
 
-    if collect_bkg_flag:
-        if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
-            collect_background(detector_choice)
-        else:
-            logger.info('Data collection was aborted!')
+    # if collect_bkg_flag:
+    #     if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
+    #         collect_background(detector_choice)
+    #     else:
+    #         logger.info('Data collection was aborted!')
 
     if callback_fcn is None or (callback_fcn is not None and callback_fcn()):
-        if detector_choice == 'pilatus':
-            caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time-0.001, wait=True)
+        if detector_choice == 'perkin_elmer':
+            caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
+            perkin_elmer_collect_offset_frames()
             # caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
-            caput(epics_config['pilatus'] + ':cam1:NumImages', num_steps, wait=True)
-            caput(epics_config['pilatus'] + ':cam1:TriggerMode', 3, wait=True)  # 3 is Multi-Trigger, 2 is External
+            caput(epics_config['perkin_elmer'] + ':cam1:ImageMode', 1, wait=True)  # 1 is multiple
+            caput(epics_config['perkin_elmer'] + ':cam1:NumImages', num_steps, wait=True)
+            caput(epics_config['perkin_elmer'] + ':cam1:TriggerMode', 1, wait=True)  # 1 is External
 
-            if detector_choice == 'pilatus':
-                actual_exposure_time = exposure_time*num_steps/actual_num_steps
-                message = str(int(actual_num_steps)) + ' steps from ' + '{0:.1f}'.format(omega_start) + ' to ' + \
-                          '{0:.1f}'.format(omega_end) + ', ' + '{0:.2f}'.format(actual_exposure_time) + 's'
-                print(message)
-                caput(epics_config[detector_choice] + ':AcquireSequence.STRA', str(message), wait=True)
+            actual_exposure_time = exposure_time*num_steps/actual_num_steps
+            message = str(int(actual_num_steps)) + ' steps from ' + '{0:.1f}'.format(omega_start) + ' to ' + \
+                      '{0:.1f}'.format(omega_end) + ', ' + '{0:.2f}'.format(actual_exposure_time) + 's'
+            print(message)
+            caput(epics_config[detector_choice] + ':AcquireSequence.STRA', str(message), wait=True)
 
-            pilatus_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
+            # perkin_elmer_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
             t1 = time.time()
-            caput(epics_config['pilatus'] + ':cam1:Acquire', 1)
-            pilatus_trajectory_thread.start()
-            while caget(epics_config['pilatus'] + ':cam1:Acquire'):
+            caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1)
+            caput(epics_config['sample_position_omega'], omega_end, wait=False)
+            # perkin_elmer_trajectory_thread.start()
+            while caget(epics_config['perkin_elmer'] + ':cam1:Acquire'):
                 continue
 
             """
@@ -141,12 +148,12 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
             while caget(epics_config['table_shutter']):
                 continue
             t2 = time.time()
-            caput(epics_config['pilatus'] + ':cam1:Acquire', 1, wait=True)
+            caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1, wait=True)
             t3 = time.time()
             print("Opened table shutter after " + str(t2-t1))
             print("collected data within " + str(t3-t2))
             """
-            pilatus_trajectory_thread.join()
+            # perkin_elmer_trajectory_thread.join()
 
         elif detector_choice == 'marccd':
             for step in range(int(num_steps)):
@@ -172,9 +179,12 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
         logger.info('Data collection was aborted!')
 
     reset_detector_settings(previous_detector_settings, detector_choice)
+    if detector_choice == 'perkin_elmer':
+        reset_omega_settings(previous_omega_settings)
+        reset_sis_settings(previous_sis_settings)
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     logger.info('Data collection finished.\n')
-    if detector_choice == 'pilatus':
+    if detector_choice == 'perkin_elmer':
         pass
         # message = str(int(num_steps)) + ' steps from ' + '{0:.1f}'.format(omega_start) + ' to ' + \
         #           '{0:.1f}'.format(omega_end) + ', ' + '{0:.1f}'.format(exposure_time) + ' (s)'
@@ -223,7 +233,7 @@ def prepare_detector(detector_choice):
     previous_shutter_mode = caget(epics_config[detector_choice] + ':cam1:ShutterMode')
     if detector_choice == 'marccd':
         caput(epics_config[detector_choice] + ':cam1:ShutterMode', 0, wait=True)  # 0 is None
-    elif detector_choice == 'pilatus':
+    elif detector_choice == 'perkin_elmer':
         caput(epics_config[detector_choice] + ':cam1:ShutterMode', 1, wait=True)  # 1 is EPICS PV
     return previous_shutter_mode
 
@@ -240,20 +250,65 @@ def prepare_detector_settings(detector_choice):
     previous_detector_settings[previous_num_images] = caget(previous_num_images)
     if detector_choice == 'marccd':
         caput(epics_config[detector_choice] + ':cam1:ShutterMode', 0, wait=True)  # 0 is None
-    elif detector_choice == 'pilatus':
+    elif detector_choice == 'perkin_elmer':
         caput(epics_config[detector_choice] + ':cam1:ShutterMode', 1, wait=True)  # 1 is EPICS PV
-        previous_trigger_mode = epics_config[detector_choice] + ':cam1:TriggerMode'
+        previous_trigger_mode = epics_config[detector_choice] + ':cam1:TriggerMode_RBV'
         previous_detector_settings[previous_trigger_mode] = caget(previous_trigger_mode)
+        previous_image_mode = epics_config[detector_choice] + ':cam1:ImageMode_RBV'
+        previous_detector_settings[previous_image_mode] = caget(previous_image_mode)
     return previous_detector_settings
+
+
+def prepare_omega_settings(omega_range, total_time):
+    previous_omega_settings = {}
+    omega_speed_pv = epics_config['sample_position_omega'] + '.VELO'
+    previous_omega_settings[omega_speed_pv] = caget(omega_speed_pv)
+    omega_acceleration_pv = epics_config['sample_position_omega'] + '.ACCL'
+    previous_omega_settings[omega_acceleration_pv] = caget(omega_acceleration_pv)
+
+    caput(omega_acceleration_pv, 0.1, wait=True)
+    caput(omega_speed_pv, omega_range/total_time, wait=True)
+
+    return previous_omega_settings
+
+def prepare_sis_settings(step_size, motor_resolution):
+    previous_sis_settings = {}
+
+    ext_prescale_pv = epics_config['SIS'] + ':Prescale'
+    previous_sis_settings[ext_prescale_pv] = caget(ext_prescale_pv)
+    channels_used_pv = epics_config['SIS'] + ':NuseAll'
+    previous_sis_settings[channels_used_pv] = caget(channels_used_pv)
+    channel_advance_pv = epics_config['SIS'] + ':ChannelAdvance'
+    previous_sis_settings[channel_advance_pv] = caget(channel_advance_pv)
+
+    # TODO: maybe add more settings for polarity, and width
+
+    caput(ext_prescale_pv, step_size/motor_resolution, wait=True)
+    caput(channels_used_pv, 8192, wait=True)
+    caput(channel_advance_pv, 1, wait=True)  # 1 is external
+
+    return previous_sis_settings
 
 
 def reset_detector_settings(previous_detector_settings, detector_choice):
     for key in previous_detector_settings:
         pv_name = key.split('_RBV')[0]
-        if detector_choice == 'pilatus':
+        if detector_choice == 'perkin_elmer':
             caput(pv_name, previous_detector_settings[key], wait=True)
         else:
             caput(pv_name, previous_detector_settings[key], wait=True)
+
+
+def reset_omega_settings(previous_omega_settings):
+    for key in previous_omega_settings:
+        pv_name = key.split('_RBV')[0]
+        caput(pv_name, previous_omega_settings[key], wait=True)
+
+
+def reset_sis_settings(previous_sis_settings):
+    for key in previous_sis_settings:
+        pv_name = key.split('_RBV')[0]
+        caput(pv_name, previous_sis_settings[key], wait=True)
 
 
 def collect_wide_data(detector_choice, detector_position_x, detector_position_z, omega_start, omega_end, exposure_time,
@@ -289,26 +344,25 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
 
         while not detector_checker.is_finished():
             time.sleep(0.1)
-    elif detector_choice == 'pilatus':
+    elif detector_choice == 'perkin_elmer':
         stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
 
         stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_range]],
                                                    scan_time=exposure_time,
                                                    pulse_time=0.1, accel_values=DEFAULT_ACCEL)
-        caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time-0.001, wait=True)
-        # caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
-        caput(epics_config['pilatus'] + ':cam1:NumImages', 1, wait=True)
-        caput(epics_config['pilatus'] + ':cam1:TriggerMode', 2, wait=True)  # 2 is ext. trigger
+        caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
+        caput(epics_config['perkin_elmer'] + ':cam1:NumImages', 1, wait=True)
+        caput(epics_config['perkin_elmer'] + ':cam1:TriggerMode', 2, wait=True)  # 2 is ext. trigger
 
-        caput(epics_config['pilatus'] + ':cam1:Acquire', 1)
+        caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1)
         time.sleep(0.5)
-        pilatus_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
-        pilatus_trajectory_thread.start()
+        perkin_elmer_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
+        perkin_elmer_trajectory_thread.start()
 
-        while caget(epics_config['pilatus'] + ':cam1:Acquire'):
+        while caget(epics_config['perkin_elmer'] + ':cam1:Acquire'):
             continue
-        # caput(epics_config['pilatus'] + ':cam1:Acquire', 1, wait=True)
-        pilatus_trajectory_thread.join()
+        # caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1, wait=True)
+        perkin_elmer_trajectory_thread.join()
         del stage_xps
         time.sleep(0.5)
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
@@ -342,7 +396,7 @@ class DetectorChecker(object):
                 return True
             else:
                 return False
-        elif self.detector_choice == 'pilatus':
+        elif self.detector_choice == 'perkin_elmer':
             if not caget(epics_config[self.detector_choice] + ':cam1:Acquire'):
                 return True
             else:
@@ -393,11 +447,12 @@ def collect_single_data(detector_choice, detector_position_x, detector_position_
 
     # more new commands
 
-    if detector_choice == 'pilatus':
-        caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time-0.001, wait=True)
+    if detector_choice == 'perkin_elmer':
+        caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
         # caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time, wait=True)
         caput(epics_config[detector_choice] + ':cam1:NumImages', 1, wait=True)
-        caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=True, timeout=300)
+        perkin_elmer_collect_offset_frames()
+        caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=True, timeout=300+exposure_time)
 
     if detector_choice == 'marccd':
         caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
@@ -448,22 +503,22 @@ def move_to_omega_position(omega, wait=True):
 
 
 def move_to_detector_position(detector_position_x, detector_position_z, detector_choice):
-    logger.info('Moving Detector X to {}'.format(detector_position_x))
-    caput(epics_config['detector_position_x'], detector_position_x, wait=True, timeout=300)
+    # logger.info('Moving Detector X to {}'.format(detector_position_x))
+    # caput(epics_config['detector_position_x'], detector_position_x, wait=True, timeout=300)
     if detector_choice == 'marccd':
         logger.info('Moving MARCCD Z to {}'.format(detector_position_z))
         caput(epics_config['detector_position_z'], detector_position_z, wait=True, timeout=300)
-    elif detector_choice == 'pilatus':
-        logger.info('Moving Pilatus Z to {}'.format(detector_position_z))
-        caput(epics_config['pilatus_position_z'], detector_position_z, wait=True, timeout=300)
+    elif detector_choice == 'perkin_elmer':
+        logger.info('Moving perkin_elmer Z to {}'.format(detector_position_z))
+        caput(epics_config['perkin_elmer_position_z'], detector_position_z, wait=True, timeout=300)
     logger.info('Moving Detector finished. \n')
     time.sleep(0.5)
 
 
 def collect_data(exposure_time, detector_choice, wait=False):
     caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
-    if detector_choice == 'pilatus':
-        caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time+0.001, wait=True)
+    # if detector_choice == 'perkin_elmer':
+    #     caput(epics_config[detector_choice] + ':cam1:AcquirePeriod', exposure_time+0.001, wait=True)
     logger.info('Starting data collection.')
     caput(epics_config[detector_choice] + ':cam1:Acquire', 1, wait=wait, timeout=exposure_time + 20)
     if wait:
@@ -482,3 +537,11 @@ def caput_pil3(pv, value, wait=True):
             return True
         print('waiting')
     return False
+
+
+def perkin_elmer_collect_offset_frames():
+    caput(epics_config['perkin_elmer_tiff_autosave'], 0, wait=True)
+    caput(epics_config['perkin_elmer_offset_frames'], 10, wait=True)
+    caput(epics_config['perkin_elmer_offset_constant'], 50, wait=True)
+    caput(epics_config['perkin_elmer_acquire_offset_correction'], 1, wait=True)
+    caput(epics_config['perkin_elmer_tiff_autosave'], 1, wait=True)
