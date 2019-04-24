@@ -844,7 +844,7 @@ class MainController(object):
                                                                   "detector_position_z": experiment.detector_pos_z,
                                                                   "omega_start": experiment.omega_start,
                                                                   "omega_end": experiment.omega_end,
-                                                                  "exposure_time": abs(exposure_time),
+                                                                  "real_exposure_time": abs(exposure_time),
                                                                   "x": sample_point.x,
                                                                   "y": sample_point.y,
                                                                   "z": sample_point.z
@@ -922,31 +922,31 @@ class MainController(object):
                         while collect_step_data_thread.isAlive():
                             QtWidgets.QApplication.processEvents()
                             time.sleep(0.2)
-                        xps_file = str(self.filepath) + '/' + str(filename) + '_' + str(filenumber).zfill(3) + '_xps_log.csv'
-                        xps_file = xps_file.replace('/DAC', FILEPATH, 1)
+                        # xps_file = str(self.filepath) + '/' + str(filename) + '_' + str(filenumber).zfill(3) + '_xps_log.csv'
+                        # xps_file = xps_file.replace('/DAC', FILEPATH, 1)
                         # try:
-                        gf = open('Gather.dat', 'r')
-                        xf = open(xps_file, 'w')
-                        found_first_line = False
-                        counter = 0
-                        for line in gf:
-                            if line[0] == "#":
-                                prev_line = line
-                            else:
-                                if not found_first_line:
-                                    found_first_line = True
-                                    prev_line = prev_line.replace('#', '')
-                                    prev_line = re.sub('\s+', ',', prev_line)
-                                    header_line = 'File,' + prev_line
-                                    xf.write(header_line + '\n')
-                                new_line = line.replace(' ', ',')
-                                new_line = str(filename) + '_' + \
-                                           str(int(filenumber + counter//experiment.steps_per_image)).zfill(3) + ',' + \
-                                           new_line
-                                xf.write(new_line + '\n')
-                                counter += 1
-                        xf.close()
-                        gf.close()
+                        # gf = open('Gather.dat', 'r')
+                        # xf = open(xps_file, 'w')
+                        # found_first_line = False
+                        # counter = 0
+                        # for line in gf:
+                        #     if line[0] == "#":
+                        #         prev_line = line
+                        #     else:
+                        #         if not found_first_line:
+                        #             found_first_line = True
+                        #             prev_line = prev_line.replace('#', '')
+                        #             prev_line = re.sub('\s+', ',', prev_line)
+                        #             header_line = 'File,' + prev_line
+                        #             xf.write(header_line + '\n')
+                        #         new_line = line.replace(' ', ',')
+                        #         new_line = str(filename) + '_' + \
+                        #                    str(int(filenumber + counter//experiment.steps_per_image)).zfill(3) + ',' + \
+                        #                    new_line
+                        #         xf.write(new_line + '\n')
+                        #         counter += 1
+                        # xf.close()
+                        # gf.close()
                         # if self.detector == 'perkin_elmer':
                         #     caput('13PIL3:Proc1:EnableFilter', 0, wait=True)
                         # shutil.copy2('Gather.dat', xps_file)
@@ -1055,7 +1055,7 @@ class MainController(object):
                 if exp_collection:
                     # det_x_move_time = abs(experiment.detector_pos_x - det_x_pos) / float(det_x_speed)
                     det_y_move_time = abs(experiment.detector_pos_z - det_z_pos) / float(det_z_speed)
-                    total_time += det_x_move_time + det_y_move_time
+                    total_time += det_y_move_time
                     # det_x_pos = experiment.detector_pos_x
                     det_z_pos = experiment.detector_pos_z
         return total_time
@@ -1112,7 +1112,10 @@ class MainController(object):
         :return: float, float, float
         """
         try:
-            # detector_pos_x = float("{:g}".format(caget(epics_config['detector_position_x'])))
+            try:
+                detector_pos_x = float("{:g}".format(caget(epics_config['detector_position_x'])))
+            except AttributeError:
+                detector_pos_x = 0
             if self.detector == 'marccd':
                 detector_pos_z = float("{:g}".format(caget(epics_config['detector_position_z'])))
             elif self.detector == 'perkin_elmer':

@@ -180,8 +180,8 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
 
     reset_detector_settings(previous_detector_settings, detector_choice)
     if detector_choice == 'perkin_elmer':
-        reset_omega_settings(previous_omega_settings)
-        reset_sis_settings(previous_sis_settings)
+        reset_settings(previous_omega_settings)
+        reset_settings(previous_sis_settings)
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     logger.info('Data collection finished.\n')
     if detector_choice == 'perkin_elmer':
@@ -191,7 +191,7 @@ def collect_step_data(detector_choice, detector_position_x, detector_position_z,
         # caput(epics_config[detector_choice] + ':AcquireSequence.STRA', message, wait=True)
     else:
         caput(epics_config[detector_choice] + ':AcquireSequence.STRA', 'Step scan finished', wait=True)
-    del stage_xps
+    # del stage_xps
 
 
 def collect_step(exposure_time, stage_xps, detector_choice):
@@ -271,6 +271,7 @@ def prepare_omega_settings(omega_range, total_time):
 
     return previous_omega_settings
 
+
 def prepare_sis_settings(step_size, motor_resolution):
     previous_sis_settings = {}
 
@@ -291,6 +292,31 @@ def prepare_sis_settings(step_size, motor_resolution):
     return previous_sis_settings
 
 
+def prepare_proc_settings(num_steps):
+    previous_proc_settings = {}
+    proc_pv = epics_config['perkin_elmer'] + ':Proc1'
+    proc_reset_pv = proc_pv + ':ResetFilter'
+    proc_enable_pv = proc_pv + ':EnableCallbacks'
+    previous_proc_settings[proc_enable_pv] = caget(proc_enable_pv)
+    proc_enable_filter_pv = proc_pv + ':EnableFilter'
+    previous_proc_settings[proc_enable_filter_pv] = caget(proc_enable_filter_pv)
+    proc_num_filter_pv = proc_pv + ':NumFilter'
+    previous_proc_settings[proc_num_filter_pv] = caget(proc_num_filter_pv)
+    proc_filter_type_pv = proc_pv + ':FilterType'
+    previous_proc_settings[proc_filter_type_pv] = caget(proc_filter_type_pv)
+    tiff_array_port_pv = epics_config['perkin_elmer'] + ':TIFF1:NDArrayPort'
+    previous_proc_settings[tiff_array_port_pv] = caget(tiff_array_port_pv)
+
+    caput(proc_reset_pv, 1, wait=True)
+    caput(proc_enable_pv, 1, wait=True)
+    caput(proc_enable_filter_pv, 1, wait=True)
+    caput(proc_num_filter_pv, num_steps, wait=True)
+    caput(proc_filter_type_pv, 2, wait=True)  # 2 is Sum
+    caput(tiff_array_port_pv, 'PROC1', wait=True)
+
+    return previous_proc_settings
+
+
 def reset_detector_settings(previous_detector_settings, detector_choice):
     for key in previous_detector_settings:
         pv_name = key.split('_RBV')[0]
@@ -300,20 +326,14 @@ def reset_detector_settings(previous_detector_settings, detector_choice):
             caput(pv_name, previous_detector_settings[key], wait=True)
 
 
-def reset_omega_settings(previous_omega_settings):
-    for key in previous_omega_settings:
+def reset_settings(previous_settings):
+    for key in previous_settings:
         pv_name = key.split('_RBV')[0]
-        caput(pv_name, previous_omega_settings[key], wait=True)
+        caput(pv_name, previous_settings[key], wait=True)
 
 
-def reset_sis_settings(previous_sis_settings):
-    for key in previous_sis_settings:
-        pv_name = key.split('_RBV')[0]
-        caput(pv_name, previous_sis_settings[key], wait=True)
-
-
-def collect_wide_data(detector_choice, detector_position_x, detector_position_z, omega_start, omega_end, exposure_time,
-                      x, y, z):
+def collect_wide_data(detector_choice, detector_position_x, detector_position_z, omega_start, omega_end,
+                      real_exposure_time, x, y, z):
     # performs the actual wide measurement
 
     # prepare the stage:
@@ -331,14 +351,14 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
     omega_range = omega_end - omega_start
 
     wstring = 'start:{} range:{} t:{:.1f}s'.format(omega_start,
-                                                   omega_range,          exposure_time)
+                                                   omega_range,          real_exposure_time)
 
     caput(epics_config[detector_choice] + ':AcquireSequence.STRA', wstring, wait=True)
     print(omega_range)
     if detector_choice == 'marccd':
-        collect_data(exposure_time + 50, detector_choice)
+        collect_data(real_exposure_time + 50, detector_choice)
         # start trajectory scan
-        run_omega_trajectory(omega_range, exposure_time)
+        run_omega_trajectory(omega_range, real_exposure_time)
         # stop detector and wait for the detector readout
         time.sleep(0.1)
         caput(epics_config[detector_choice] + ':cam1:Acquire', 0)
@@ -346,28 +366,54 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
         while not detector_checker.is_finished():
             time.sleep(0.1)
     elif detector_choice == 'perkin_elmer':
-        stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
+        # stage_xps = XPSTrajectory(host=HOST, group=GROUP_NAME, positioners=POSITIONERS)
 
-        stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_range]],
-                                                   scan_time=exposure_time,
-                                                   pulse_time=0.1, accel_values=DEFAULT_ACCEL)
+        # stage_xps.define_line_trajectories_general(stop_values=[[0, 0, 0, omega_range]],
+        #                                            scan_time=exposure_time,
+        #                                            pulse_time=0.1, accel_values=DEFAULT_ACCEL)
+
+        if real_exposure_time > 5.0:
+            exposure_time = 5.0
+            num_steps = round(real_exposure_time/exposure_time)
+            omega_step = omega_range/num_steps
+        else:
+            exposure_time = real_exposure_time
+            num_steps = 1
+            omega_step = omega_range
+
+        print("exposure time", exposure_time, " steps", num_steps, " omega_step: ", omega_step)
+
+        previous_proc_settings = prepare_proc_settings(num_steps)
+        previous_omega_settings = prepare_omega_settings(omega_range, exposure_time*num_steps)
+        motor_resolution = abs(caget(epics_config['sample_position_omega'] + '.MRES'))
+        previous_sis_settings = prepare_sis_settings(omega_step, motor_resolution)
+
         caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
-        caput(epics_config['perkin_elmer'] + ':cam1:NumImages', 1, wait=True)
-        caput(epics_config['perkin_elmer'] + ':cam1:TriggerMode', 2, wait=True)  # 2 is ext. trigger
+        perkin_elmer_collect_offset_frames()
+        caput(epics_config['perkin_elmer'] + ':cam1:ImageMode', 1, wait=True)  # 1 is multiple
+        caput(epics_config['perkin_elmer'] + ':cam1:NumImages', num_steps, wait=True)
+        caput(epics_config['perkin_elmer'] + ':cam1:TriggerMode', 1, wait=True)  # 1 is ext. trigger
 
-        caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1)
+        caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1, wait=False)
+        caput(epics_config['sample_position_omega'], omega_end, wait=False)
         time.sleep(0.5)
-        perkin_elmer_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
-        perkin_elmer_trajectory_thread.start()
+        # perkin_elmer_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
+        # perkin_elmer_trajectory_thread.start()
 
         while caget(epics_config['perkin_elmer'] + ':cam1:Acquire'):
             continue
+        print("Acquire Complete!")
         # caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1, wait=True)
-        perkin_elmer_trajectory_thread.join()
-        del stage_xps
+        # perkin_elmer_trajectory_thread.join()
+        # del stage_xps
         time.sleep(0.5)
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     reset_detector_settings(previous_detector_settings, detector_choice)
+    if detector_choice == 'perkin_elmer':
+        reset_settings(previous_omega_settings)
+        reset_settings(previous_sis_settings)
+        reset_settings(previous_proc_settings)
+
     time.sleep(0.5)
     logger.info('Wide data collection finished.\n')
     # caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Wide scan finished', wait=True)
@@ -492,7 +538,7 @@ def move_to_sample_pos(x, y, z, wait=True, callbacks=[]):
     motor_z.put(z, wait=True)
     time.sleep(0.5)
     logger.info('Moving Sample to x: {:.2f}, y: {:.2f}, z: {:.2f} finished.\n'.format(x, y, z))
-    caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Scan finished', wait=True)
+    # caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Scan finished', wait=True)
     return
 
 
