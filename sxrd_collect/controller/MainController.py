@@ -415,6 +415,7 @@ class MainController(object):
                 step_time = float("{0:.2f}".format(step_time))
                 step_exposure_time_item.setText(str(step_time))
                 self.model.experiment_setups[row].time_per_step = step_time
+                self.update_total_exposure_time(row)
 
             # elif col == 8:
             #     self.model.experiment_setups[row].steps_per_image = value
