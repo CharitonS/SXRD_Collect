@@ -60,6 +60,7 @@ class MainController(object):
         self.status_txt_scrollbar_is_at_max = True
         self.widget.setup_table.resizeColumnsToContents()
         self.example_str = ' '
+        self.crysalis_config = CrysalisConfig()
 
         self.hor_motor_name = epics_config['sample_position_x']
         self.ver_motor_name = epics_config['sample_position_y']
@@ -91,6 +92,7 @@ class MainController(object):
 
     def connect_buttons(self):
         self.widget.epics_config_btn.clicked.connect(self.configure_epics_clicked)
+        self.widget.crysalis_config_btn.clicked.connect(self.crysalis_config_btn_clicked)
         self.widget.choose_detector_btn.clicked.connect(self.choose_detector_clicked)
 
         self.widget.add_setup_btn.clicked.connect(self.add_experiment_setup_btn_clicked)
@@ -656,17 +658,22 @@ class MainController(object):
     def configure_epics_clicked(self):
         pass
 
+    def crysalis_config_btn_clicked(self):
+        self.crysalis_config.setVisible(True)
+
     def choose_detector_clicked(self):
         if self.widget.choose_detector_btn.isChecked():
             self.widget.choose_detector_btn.setText('Using Pilatus')
             self.detector = 'pilatus'
             self.widget.choose_detector_btn.setStyleSheet('QPushButton {background-color: #000000; color: white;}')
             self.widget.override_pilatus_limits_cb.setVisible(True)
+            self.widget.crysalis_config_btn.setVisible(True)
         else:
             self.widget.choose_detector_btn.setText('Using MARCCD')
             self.detector = 'marccd'
             self.widget.choose_detector_btn.setStyleSheet('QPushButton {background-color: light grey; color: black;}')
             self.widget.override_pilatus_limits_cb.setVisible(False)
+            self.widget.crysalis_config_btn.setVisible(False)
         self.clear_experiment_setup_btn_clicked(True)
 
     def open_path_btn_clicked(self):
@@ -1293,3 +1300,41 @@ class WorkerThread(QtCore.QThread):
 
     def run(self):
         self.func(*self.args)
+
+
+class CrysalisConfig(QtWidgets.QWidget):
+    def __init__(self):
+        super(CrysalisConfig, self).__init__()
+        self.setVisible(False)
+        self.create_widgets()
+        self.create_layout()
+        self.create_connections()
+
+    def create_widgets(self):
+        self.create_crysalis_files_cb = QtWidgets.QCheckBox('Create CrysAlis files for single-crystal data collections')
+        self.create_par_file_from_exp_params_cb = QtWidgets.QCheckBox(
+            'Create .par file from the experimental parameters (not recommended)')
+        self.read_par_file_cb = QtWidgets.QCheckBox('Read .par file from the calibration crystal')
+        self.par_file_le = QtWidgets.QLineEdit()
+        self.load_par_file_btn = QtWidgets.QPushButton('Load .par')
+
+    def create_layout(self):
+        self.v_box = QtWidgets.QVBoxLayout()
+        self.par_h_box = QtWidgets.QHBoxLayout()
+        self.v_box.addWidget(self.create_crysalis_files_cb)
+        self.v_box.addWidget(self.create_par_file_from_exp_params_cb)
+        self.v_box.addWidget(self.read_par_file_cb)
+        self.par_h_box.addWidget(self.par_file_le)
+        self.par_h_box.addWidget(self.load_par_file_btn)
+        self.v_box.addLayout(self.par_h_box)
+        self.setLayout(self.v_box)
+
+    def create_connections(self):
+        self.load_par_file_btn.clicked.connect(self.load_par_file_btn_clicked)
+
+    def load_par_file_btn_clicked(self):
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption="Load .par file",
+                                                            filter='*.par')
+        filename = str(filename)
+        if filename is not '':
+            self.par_file_le.setText(filename)

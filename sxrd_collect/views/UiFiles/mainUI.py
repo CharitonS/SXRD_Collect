@@ -52,9 +52,16 @@ class Ui_SXRDCollectWidget(object):
         self.choose_detector_btn.setFont(myfont)
         self.horizontalLayout_9.addWidget(self.choose_detector_btn)
 
+        self.crysalis_config_btn = QtWidgets.QPushButton(SXRDCollectWidget)
+        self.crysalis_config_btn.setMinimumSize(QtCore.QSize(160, 60))
+        self.crysalis_config_btn.setObjectName(_fromUtf8("crysalis_config_btn"))
+        self.horizontalLayout_9.addWidget(self.crysalis_config_btn)
+        self.crysalis_config_btn.setVisible(False)
+
         self.epics_config_btn = QtWidgets.QPushButton(SXRDCollectWidget)
         self.epics_config_btn.setMinimumSize(QtCore.QSize(160, 60))
         self.epics_config_btn.setObjectName(_fromUtf8("epics_config_btn"))
+        self.epics_config_btn.setVisible(False)
         self.horizontalLayout_9.addWidget(self.epics_config_btn)
         self.verticalLayout.addLayout(self.horizontalLayout_9)
         self.line_8 = QtWidgets.QFrame(SXRDCollectWidget)
@@ -663,6 +670,7 @@ class Ui_SXRDCollectWidget(object):
     def retranslateUi(self, SXRDCollectWidget):
         SXRDCollectWidget.setWindowTitle(_translate("SXRDCollectWidget", "Form", None))
         self.title_lbl.setText(_translate("SXRDCollectWidget", "Single Crystal X-ray Diffraction", None))
+        self.crysalis_config_btn.setText(_translate("SXRDCollectWidget", "Crysalis \n Configuration", None))
         self.epics_config_btn.setText(_translate("SXRDCollectWidget", "EPICS \n Configuration", None))
         self.experiment_lbl.setText(_translate("SXRDCollectWidget", "Experiment Setup", None))
         self.load_setup_btn.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p>Load experiment setup(s) from *.ini file</p></body></html>", None))
