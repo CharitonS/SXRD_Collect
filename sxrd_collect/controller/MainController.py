@@ -877,6 +877,7 @@ class MainController(object):
                         self.set_status_lbl("Collecting...", "#FF0000")
                         c_frame += 1
                         # check if all motor positions are in a correct position
+                        previous_pilatus_settings = {}
                         self.check_pilatus_trigger(self.detector)
                         if self.check_conditions() is False:
                             self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
@@ -904,15 +905,28 @@ class MainController(object):
                         logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         omega_step = experiment.omega_step
                         time_per_step = experiment.time_per_step
-                        # THIS IS FOR MAKING SURE PILATUS ONLY USED 0.1 DEG STEPS
-                        if self.detector == 'pilatus' and self.widget.override_pilatus_limits_cb.isChecked():
-                            experiment.steps_per_image = int(round(experiment.omega_step/0.1))
-                            if experiment.steps_per_image > 1:
-                                omega_step /= experiment.steps_per_image
-                                time_per_step /= experiment.steps_per_image
-                                caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
-                                caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
-                                caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
+                        # # THIS WAS FOR MAKING SURE PILATUS ONLY USED 0.1 DEG STEPS
+                        # if self.detector == 'pilatus' and self.widget.override_pilatus_limits_cb.isChecked():
+                        #     experiment.steps_per_image = int(round(experiment.omega_step/0.1))
+                        #     if experiment.steps_per_image > 1:
+                        #         omega_step /= experiment.steps_per_image
+                        #         time_per_step /= experiment.steps_per_image
+                        #         caput('13PIL3:Proc1:NumFilter', experiment.steps_per_image, wait=True)
+                        #         caput('13PIL3:Proc1:EnableFilter', 1, wait=True)
+                        #         caput('13PIL3:Proc1:ResetFilter', 1, wait=True)
+
+                        if self.detector == 'pilatus':
+                            # TODO: Determine the order for checking these 3
+                            if self.crysalis_config.create_crysalis_files_cb.isChecked():
+                                previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection()
+                                # TODO: Tell the software how to create crysalis files
+                                pass
+                            if self.crysalis_config.create_par_file_from_exp_params_cb.isChecked():
+                                # TODO: Tell the software how to create par files
+                                pass
+                            if self.crysalis_config.read_par_file_cb.isChecked():
+                                # TODO: Tell the software how to read par files and what to do with them
+                                pass
 
                         collect_step_data_thread = Thread(target=collect_step_data,
                                                           kwargs={"detector_choice": self.detector,
@@ -959,8 +973,10 @@ class MainController(object):
                                 counter += 1
                         xf.close()
                         gf.close()
-                        if self.detector == 'pilatus':
-                            caput('13PIL3:Proc1:EnableFilter', 0, wait=True)
+                        if previous_pilatus_settings:
+                            self.reset_settings(previous_pilatus_settings)
+                        # if self.detector == 'pilatus':
+                        #     caput('13PIL3:Proc1:EnableFilter', 0, wait=True)
                         # shutil.copy2('Gather.dat', xps_file)
                         # except:
                         # pass
@@ -1181,6 +1197,33 @@ class MainController(object):
         elif int(caget('13IDD:m67.RBV')) > -65:
             return False
         return True
+
+    def prepare_pilatus_for_crysalis_collection(self):
+        # TODO: maybe create a subfolder in current folder. and then cbf files and the rest will be there, while tif will be in main folder.
+        # TODO: decide whether to disable the TIFF plugin completely, to have it save normally, or to have them added together using the PROC1, so you can easily see the wide image immediately.
+
+        previous_pilatus_settings = {}
+        output_file_type_pv = epics_config['pilatus_control'] + ''  # TODO: add here
+        previous_pilatus_settings[output_file_type_pv] = caget(output_file_type_pv)
+        output_file_name_pv = epics_config['pilatus_control'] + ''  # TODO: add here
+        previous_pilatus_settings[output_file_name_pv] = caget(output_file_name_pv)
+        output_file_path_pv = epics_config['pilatus_control'] + ''  # TODO: add here
+        previous_pilatus_settings[output_file_path_pv] = caget(output_file_path_pv)
+        output_file_num_pv = epics_config['pilatus_control'] + ''  # TODO: add here
+        previous_pilatus_settings[output_file_num_pv] = caget(output_file_num_pv)
+        caput(output_file_path_pv, 'CBF', wait=True) # TODO: check how to actually do this
+        file_name = '' # TODO check what file name should be
+        caput(output_file_name_pv, file_name, wait=True)
+        file_path = ''  # TODO check what file path should be
+        caput(output_file_path_pv, file_path, wait=True)
+        caput(output_file_num_pv, 1, wait=True)  # TODO check if first number should be 1 or 0
+
+        return previous_pilatus_settings
+
+    def reset_settings(self, previous_settings):
+        for key in previous_settings:
+            pv_name = key.split('_RBV')[0]
+            caput(pv_name, previous_settings[key], wait=True)
 
     @staticmethod
     def check_pilatus_trigger(detector):
