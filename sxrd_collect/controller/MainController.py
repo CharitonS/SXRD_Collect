@@ -918,7 +918,8 @@ class MainController(object):
                         if self.detector == 'pilatus':
                             # TODO: Determine the order for checking these 3
                             if self.crysalis_config.create_crysalis_files_cb.isChecked():
-                                previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection()
+                                previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection(self.filepath,
+                                                                                                         filename)
                                 # TODO: Tell the software how to create crysalis files
                                 pass
                             if self.crysalis_config.create_par_file_from_exp_params_cb.isChecked():
@@ -1198,25 +1199,26 @@ class MainController(object):
             return False
         return True
 
-    def prepare_pilatus_for_crysalis_collection(self):
+    def prepare_pilatus_for_crysalis_collection(self, file_path, file_name):
         # TODO: maybe create a subfolder in current folder. and then cbf files and the rest will be there, while tif will be in main folder.
         # TODO: decide whether to disable the TIFF plugin completely, to have it save normally, or to have them added together using the PROC1, so you can easily see the wide image immediately.
 
         previous_pilatus_settings = {}
-        output_file_type_pv = epics_config['pilatus_control'] + ''  # TODO: add here
+        output_file_type_pv = epics_config['pilatus_control'] + ':FileFormat_RBV'
         previous_pilatus_settings[output_file_type_pv] = caget(output_file_type_pv)
-        output_file_name_pv = epics_config['pilatus_control'] + ''  # TODO: add here
+        output_file_name_pv = epics_config['pilatus_control'] + ':FileName_RBV'
         previous_pilatus_settings[output_file_name_pv] = caget(output_file_name_pv)
-        output_file_path_pv = epics_config['pilatus_control'] + ''  # TODO: add here
+        output_file_path_pv = epics_config['pilatus_control'] + ':FilePath_RBV'
         previous_pilatus_settings[output_file_path_pv] = caget(output_file_path_pv)
-        output_file_num_pv = epics_config['pilatus_control'] + ''  # TODO: add here
+        output_file_num_pv = epics_config['pilatus_control'] + ':FileNumber_RBV'
         previous_pilatus_settings[output_file_num_pv] = caget(output_file_num_pv)
-        caput(output_file_path_pv, 'CBF', wait=True) # TODO: check how to actually do this
-        file_name = '' # TODO check what file name should be
-        caput(output_file_name_pv, file_name, wait=True)
+
+        caput(output_file_type_pv.split('_RBV')[0], 1, wait=True)  # 1 is cbf 0 is TIF
+        file_name = ''  # TODO check what file name should be
+        caput(output_file_name_pv.split('_RBV')[0], file_name, wait=True)
         file_path = ''  # TODO check what file path should be
-        caput(output_file_path_pv, file_path, wait=True)
-        caput(output_file_num_pv, 1, wait=True)  # TODO check if first number should be 1 or 0
+        caput(output_file_path_pv.split('_RBV')[0], file_path, wait=True)
+        caput(output_file_num_pv.split('_RBV')[0], 1, wait=True)
 
         return previous_pilatus_settings
 
