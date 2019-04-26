@@ -33,7 +33,7 @@ import re
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-from config import epics_config, FILEPATH
+from config import epics_config, FILEPATH, PILATUS_FILE_PATH
 from views.MainView import MainView
 from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
@@ -52,7 +52,7 @@ class MainController(object):
         self.connect_buttons()
         self.connect_tables()
         self.connect_txt()
-        self.populate_filename()
+        # self.populate_filename()
         self.connect_checkboxes()
         self.abort_collection = False
         self.logging_handler = InfoLoggingHandler(self.update_status_txt)
@@ -918,8 +918,10 @@ class MainController(object):
                         if self.detector == 'pilatus':
                             # TODO: Determine the order for checking these 3
                             if self.crysalis_config.create_crysalis_files_cb.isChecked():
-                                previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection(self.filepath,
-                                                                                                         filename)
+                                num_steps = (experiment.omega_end - experiment.omega_start) / omega_step
+                                previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection(
+                                    self.filepath, filename, self.crysalis_config.add_frames_in_tif_cb.isChecked(),
+                                    num_steps)
                                 # TODO: Tell the software how to create crysalis files
                                 pass
                             if self.crysalis_config.create_par_file_from_exp_params_cb.isChecked():
@@ -1199,10 +1201,7 @@ class MainController(object):
             return False
         return True
 
-    def prepare_pilatus_for_crysalis_collection(self, file_path, file_name):
-        # TODO: maybe create a subfolder in current folder. and then cbf files and the rest will be there, while tif will be in main folder.
-        # TODO: decide whether to disable the TIFF plugin completely, to have it save normally, or to have them added together using the PROC1, so you can easily see the wide image immediately.
-
+    def prepare_pilatus_for_crysalis_collection(self, file_path, file_name, add_frames, num_steps):
         previous_pilatus_settings = {}
         output_file_type_pv = epics_config['pilatus_control'] + ':FileFormat_RBV'
         previous_pilatus_settings[output_file_type_pv] = caget(output_file_type_pv)
@@ -1214,11 +1213,32 @@ class MainController(object):
         previous_pilatus_settings[output_file_num_pv] = caget(output_file_num_pv)
 
         caput(output_file_type_pv.split('_RBV')[0], 1, wait=True)  # 1 is cbf 0 is TIF
-        file_name = ''  # TODO check what file name should be
         caput(output_file_name_pv.split('_RBV')[0], file_name, wait=True)
-        file_path = ''  # TODO check what file path should be
+        file_path = file_path.replace('/DAC', PILATUS_FILE_PATH) + '/' + file_name
         caput(output_file_path_pv.split('_RBV')[0], file_path, wait=True)
         caput(output_file_num_pv.split('_RBV')[0], 1, wait=True)
+
+        if add_frames:
+            num_filter_pv = epics_config['pilatus_proc'] + ':NumFilter_RBV'
+            previous_pilatus_settings[num_filter_pv] = caget(num_filter_pv)
+            enable_filter_pv = epics_config['pilatus_proc'] + ':EnableFilter_RBV'
+            previous_pilatus_settings[enable_filter_pv] = caget(enable_filter_pv)
+            # filter_type_pv = epics_config['pilatus_proc'] + ':Filter_Type'
+            # previous_pilatus_settings[filter_type_pv] = caget(filter_type_pv)
+            # auto_reset_filter_pv = epics_config['pilatus_proc'] + ':AutoResetFilter'
+            # previous_pilatus_settings[auto_reset_filter_pv] = caget(auto_reset_filter_pv)
+            filter_enable_callbacks_pv = epics_config['pilatus_proc'] + ':EnableCallbacks_RBV'
+            previous_pilatus_settings[filter_enable_callbacks_pv] = caget(filter_enable_callbacks_pv)
+            tiff_array_port_pv = epics_config['pilatus_file'] + ':NDArrayPort_RBV'
+            previous_pilatus_settings[tiff_array_port_pv] = caget(tiff_array_port_pv)
+
+            caput(epics_config['pilatus_proc'] + ':ResetFilter', 1, wait=True)
+            caput(num_filter_pv.split('_RBV')[0], num_steps, wait=True)
+            caput(enable_filter_pv.split('_RBV')[0], 1, wait=True)  # 1 is Enable
+            # caput(filter_type_pv, 2, wait=True)  # 2 is Sum
+            # caput(auto_reset_filter_pv, 1, wait=True)  # 1 is Yes
+            caput(filter_enable_callbacks_pv.split('_RBV')[0], 1, wait=True)  # 1 is Enable
+            caput(tiff_array_port_pv.split('_RBV')[0], 'PROC1', wait=True)
 
         return previous_pilatus_settings
 
@@ -1362,6 +1382,7 @@ class CrysalisConfig(QtWidgets.QWidget):
         self.read_par_file_cb = QtWidgets.QCheckBox('Read .par file from the calibration crystal')
         self.par_file_le = QtWidgets.QLineEdit()
         self.load_par_file_btn = QtWidgets.QPushButton('Load .par')
+        self.add_frames_in_tif_cb = QtWidgets.QCheckBox('Add all frames in TIF')
 
     def create_layout(self):
         self.v_box = QtWidgets.QVBoxLayout()
@@ -1372,6 +1393,7 @@ class CrysalisConfig(QtWidgets.QWidget):
         self.par_h_box.addWidget(self.par_file_le)
         self.par_h_box.addWidget(self.load_par_file_btn)
         self.v_box.addLayout(self.par_h_box)
+        self.v_box.addWidget(self.add_frames_in_tif_cb)
         self.setLayout(self.v_box)
 
     def create_connections(self):

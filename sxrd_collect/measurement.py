@@ -436,7 +436,7 @@ def move_to_sample_pos(x, y, z, wait=True, callbacks=[]):
     motor_z.put(z, wait=True)
     time.sleep(0.5)
     logger.info('Moving Sample to x: {:.2f}, y: {:.2f}, z: {:.2f} finished.\n'.format(x, y, z))
-    caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Scan finished', wait=True)
+    # caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Scan finished', wait=True)
     return
 
 
