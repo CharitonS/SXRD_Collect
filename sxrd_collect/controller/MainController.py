@@ -1203,8 +1203,10 @@ class MainController(object):
 
     def prepare_pilatus_for_crysalis_collection(self, file_path, file_name, add_frames, num_steps):
         previous_pilatus_settings = {}
-        output_file_type_pv = epics_config['pilatus_control'] + ':FileFormat_RBV'
-        previous_pilatus_settings[output_file_type_pv] = caget(output_file_type_pv)
+        # output_file_type_pv = epics_config['pilatus_control'] + ':FileFormat_RBV'
+        # previous_pilatus_settings[output_file_type_pv] = caget(output_file_type_pv)
+        output_file_name_format_pv = epics_config['pilatus_control'] + ':FileTemplate_RBV'
+        previous_pilatus_settings[output_file_name_format_pv] = caget(output_file_name_format_pv)
         output_file_name_pv = epics_config['pilatus_control'] + ':FileName_RBV'
         previous_pilatus_settings[output_file_name_pv] = caget(output_file_name_pv)
         output_file_path_pv = epics_config['pilatus_control'] + ':FilePath_RBV'
@@ -1212,7 +1214,7 @@ class MainController(object):
         output_file_num_pv = epics_config['pilatus_control'] + ':FileNumber_RBV'
         previous_pilatus_settings[output_file_num_pv] = caget(output_file_num_pv)
 
-        caput(output_file_type_pv.split('_RBV')[0], 1, wait=True)  # 1 is cbf 0 is TIF
+        caput(output_file_name_format_pv.split('_RBV')[0], '%s%s_%4.4d_00001.cbf', wait=True)
         caput(output_file_name_pv.split('_RBV')[0], file_name, wait=True)
         file_path = file_path.replace('/DAC', PILATUS_FILE_PATH) + '/' + file_name
         caput(output_file_path_pv.split('_RBV')[0], file_path, wait=True)

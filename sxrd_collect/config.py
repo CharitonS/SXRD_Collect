@@ -15,7 +15,7 @@ xps_config = {
     'DEFAULT ACCEL': [2, 2, 2, 2],
 }
 
-pilatus = '13PIL3'
+pilatus = '13PIL3'  # TODO Change here between Pilatus 1M (13PIL3) and Pilatus 300kw (13PIL300K)
 
 epics_config = {
     'detector_position_x': '13IDD:m8',
