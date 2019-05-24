@@ -76,6 +76,10 @@ class MainController(object):
         self.widget.no_suffices_cb.clicked.connect(lambda: self.update_cb('no_suffices'))
         self.widget.rename_after_cb.clicked.connect(lambda: self.update_cb('rename'))
         self.widget.rename_files_cb.clicked.connect(lambda: self.update_cb('rename'))
+        self.widget.rename_files_sp_cb.clicked.connect(self.set_example_lbl)
+        self.widget.rename_files_pp_cb.clicked.connect(self.set_example_lbl)
+        self.widget.rename_files_en_cb.clicked.connect(self.set_example_lbl)
+        self.widget.rename_files_suf_cb.clicked.connect(self.set_example_lbl)
         self.widget.check_all_still_cb.clicked.connect(self.check_all_still)
         self.widget.check_all_wide_cb.clicked.connect(self.check_all_wide)
         self.widget.check_all_step_cb.clicked.connect(self.check_all_step)
@@ -609,19 +613,17 @@ class MainController(object):
                 for exp_ind, experiment in enumerate(self.model.experiment_setups):
                     for sample_point in self.model.sample_points:
                         point_number = str(self.widget.point_txt.text())
+
                         if sample_point.perform_still_for_setup[exp_ind]:
-                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name + '_001'
+                            example_str = self.build_file_name(sample_point.name, experiment.name, '001')
                             no_exp = False
                             break
                         elif sample_point.perform_wide_scan_for_setup[exp_ind]:
-                            example_str = self.filepath + '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name + '_w_001'
+                            example_str = self.build_file_name(sample_point.name, experiment.name, 'w_001')
                             no_exp = False
                             break
                         elif sample_point.perform_step_scan_for_setup[exp_ind]:
-                            example_str = self.filepath+ '/' + self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                   experiment.name + '_s_001'
+                            example_str = self.build_file_name(sample_point.name, experiment.name, 's_001')
                             no_exp = False
                             break
                 if no_exp:
@@ -769,9 +771,7 @@ class MainController(object):
                         self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
                         c_frame += 1
                         if self.widget.rename_files_cb.isChecked():
-                            point_number = str(self.widget.point_txt.text())
-                            filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                       experiment.name
+                            filename = self.build_file_name(sample_point.name, experiment.name)
                             filenumber = 1
                             caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                             caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
@@ -830,9 +830,7 @@ class MainController(object):
                             return
 
                         if self.widget.rename_files_cb.isChecked():
-                            point_number = str(self.widget.point_txt.text())
-                            filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                       experiment.name + '_w'
+                            filename = self.build_file_name(sample_point.name, experiment.name, 'w')
                             filenumber = 1
 
                         elif self.widget.no_suffices_cb.isChecked():
@@ -885,9 +883,7 @@ class MainController(object):
                             return
 
                         if self.widget.rename_files_cb.isChecked():
-                            point_number = str(self.widget.point_txt.text())
-                            filename = self.basename + '_' + sample_point.name + '_P' + point_number + '_' + \
-                                       experiment.name + '_s'
+                            filename = self.build_file_name(sample_point.name, experiment.name, 's')
                             print(filename)
                             filenumber = 1
 
@@ -1010,8 +1006,6 @@ class MainController(object):
 
         caput(epics_config[self.detector] + ':cam1:ShutterMode', 1, wait=True)  # enable epics PV shutter mode
 
-
-
         if self.widget.rename_after_cb.isChecked():
             caput(epics_config[self.detector] + ':TIFF1:FilePath', previous_filepath, wait=True)
             caput(epics_config[self.detector] + ':TIFF1:FileName', previous_filename, wait=True)
@@ -1049,6 +1043,20 @@ class MainController(object):
     def set_status_lbl(self, msg, color, size=20):
         self.widget.status_lbl.setStyleSheet("font-size: {}px; color: {};".format(size, color))
         self.widget.status_lbl.setText(msg)
+
+    def build_file_name(self, sample_point_name, experiment_name, suffix=''):
+        point_number = str(self.widget.point_txt.text())
+        filename = self.basename
+        if self.widget.rename_files_sp_cb.isChecked():
+            filename += '_' + sample_point_name
+        if self.widget.rename_files_pp_cb.isChecked():
+            filename += '_P' + point_number
+        if self.widget.rename_files_en_cb.isChecked():
+            filename += '_' + experiment_name
+        if self.widget.rename_files_suf_cb.isChecked() and suffix:
+            filename += '_' + suffix
+
+        return filename
 
     def increase_point_number(self):
         cur_point_number = int(str(self.widget.point_txt.text()))

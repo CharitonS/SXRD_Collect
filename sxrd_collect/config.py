@@ -36,6 +36,10 @@ epics_config = {
     'status_message': pilatus + ':cam1:StatusMessage_RBV',
 }
 
-cycle_relative_path = '/2019/IDD_2019-1'
+cycle_relative_path = '/2019/IDD_2019-2'
 FILEPATH = 'T:/dac_user' + cycle_relative_path
-PILATUS_FILE_PATH = '/cars5/Data/dac_user' + cycle_relative_path
+# for pilatus 300kW there is no ramdisk so it writes directly to cars:
+if pilatus == '13PIL3':
+    PILATUS_FILE_PATH = '/ramdisk/dac_user' + cycle_relative_path
+elif pilatus == '13PIL300K':
+    PILATUS_FILE_PATH = '/cars5/Data/dac_user' + cycle_relative_path
