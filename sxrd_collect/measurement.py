@@ -588,7 +588,7 @@ def caput_pil3(pv, value, wait=True):
 
 def perkin_elmer_collect_offset_frames():
     caput(epics_config['perkin_elmer_tiff_autosave'], 0, wait=True)
-    caput(epics_config['perkin_elmer_offset_frames'], 10, wait=True)
-    caput(epics_config['perkin_elmer_offset_constant'], 50, wait=True)
+    caput(epics_config['perkin_elmer_offset_frames'], 2, wait=True)
+    caput(epics_config['perkin_elmer_offset_constant'], 0, wait=True)
     caput(epics_config['perkin_elmer_acquire_offset_correction'], 1, wait=True)
     caput(epics_config['perkin_elmer_tiff_autosave'], 1, wait=True)
