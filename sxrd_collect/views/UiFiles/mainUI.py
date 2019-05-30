@@ -23,6 +23,7 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtWidgets.QApplication.translate(context, text, disambig)
 
+
 class Ui_SXRDCollectWidget(object):
     def setupUi(self, SXRDCollectWidget):
         SXRDCollectWidget.setObjectName(_fromUtf8("SXRDCollectWidget"))
@@ -204,6 +205,34 @@ class Ui_SXRDCollectWidget(object):
         self.rename_files_cb.setChecked(True)
         self.rename_files_cb.setObjectName(_fromUtf8("rename_files_cb"))
         self.verticalLayout_2.addWidget(self.rename_files_cb)
+
+        self.renames_files_hlayout = QtWidgets.QHBoxLayout()
+        self.rename_files_sp_cb = QtWidgets.QCheckBox(self.widget)
+        self.rename_files_sp_cb.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.rename_files_sp_cb.setChecked(True)
+        self.rename_files_sp_cb.setObjectName(_fromUtf8("rename_files_sp_cb"))
+        self.renames_files_hlayout.addWidget(self.rename_files_sp_cb)
+
+        self.rename_files_pp_cb = QtWidgets.QCheckBox(self.widget)
+        self.rename_files_pp_cb.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.rename_files_pp_cb.setChecked(True)
+        self.rename_files_pp_cb.setObjectName(_fromUtf8("rename_files_pp_cb"))
+        self.renames_files_hlayout.addWidget(self.rename_files_pp_cb)
+
+        self.rename_files_en_cb = QtWidgets.QCheckBox(self.widget)
+        self.rename_files_en_cb.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.rename_files_en_cb.setChecked(True)
+        self.rename_files_en_cb.setObjectName(_fromUtf8("rename_files_en_cb"))
+        self.renames_files_hlayout.addWidget(self.rename_files_en_cb)
+
+        self.rename_files_suf_cb = QtWidgets.QCheckBox(self.widget)
+        self.rename_files_suf_cb.setLayoutDirection(QtCore.Qt.LeftToRight)
+        self.rename_files_suf_cb.setChecked(True)
+        self.rename_files_suf_cb.setObjectName(_fromUtf8("rename_files_suf_cb"))
+        self.renames_files_hlayout.addWidget(self.rename_files_suf_cb)
+
+        self.verticalLayout_2.addLayout(self.renames_files_hlayout)
+
         self.rename_after_cb = QtWidgets.QCheckBox(self.widget)
         self.rename_after_cb.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.rename_after_cb.setChecked(True)
@@ -693,6 +722,17 @@ class Ui_SXRDCollectWidget(object):
         self.example_filename_lbl.setText(_translate("SXRDCollectWidget", "<html><head/><body><p align=\"right\">example_lbl</p></body></html>", None))
         self.rename_files_cb.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p>Will name files in the following way:</p><p><span style=\" color:#0000ff;\">basename_S1_P1_E1_s_FrameNr</span></p><p>S1 - sample name</p><p>P1 - point number</p><p>E1 - experimental setup name</p><p>s - step scan (w - for wide scan, empty for still image)</p><p>FrameNr - Frame number (will always start with 001)</p></body></html>", None))
         self.rename_files_cb.setText(_translate("SXRDCollectWidget", "Rename Files", None))
+        self.rename_files_sp_cb.setToolTip(_translate("SXRDCollectWidget", "Adds the name from the sample point table", None))
+        self.rename_files_sp_cb.setText('S1')
+        self.rename_files_pp_cb.setToolTip(
+            _translate("SXRDCollectWidget", "Adds the number from the 'Point' field above", None))
+        self.rename_files_pp_cb.setText('P1')
+        self.rename_files_en_cb.setToolTip(
+            _translate("SXRDCollectWidget", "Adds the Experiment name from the experiment setup table", None))
+        self.rename_files_en_cb.setText('E1')
+        self.rename_files_suf_cb.setToolTip(
+            _translate("SXRDCollectWidget", "Adds suffix _w for wide, and _s for step", None))
+        self.rename_files_suf_cb.setText('Suffix')
         self.rename_after_cb.setText(_translate("SXRDCollectWidget", "Reset name after Measurement", None))
         self.reset_sample_position_cb.setText(_translate("SXRDCollectWidget", "Reset Sample Position", None))
         self.reset_detector_position_cb.setText(_translate("SXRDCollectWidget", "Reset Detector Position", None))
