@@ -238,6 +238,12 @@ class Ui_SXRDCollectWidget(object):
         self.rename_files_suf_cb.setObjectName(_fromUtf8("rename_files_suf_cb"))
         self.renames_files_hlayout.addWidget(self.rename_files_suf_cb)
 
+        # self.rename_files_fn_cb = QtWidgets.QCheckBox(self.widget)
+        # self.rename_files_fn_cb.setLayoutDirection(QtCore.Qt.LeftToRight)
+        # self.rename_files_fn_cb.setChecked(True)
+        # self.rename_files_fn_cb.setObjectName(_fromUtf8("rename_files_fn_cb"))
+        # self.renames_files_hlayout.addWidget(self.rename_files_fn_cb)
+
         self.verticalLayout_2.addLayout(self.renames_files_hlayout)
 
         self.rename_after_cb = QtWidgets.QCheckBox(self.widget)
@@ -741,6 +747,9 @@ class Ui_SXRDCollectWidget(object):
         self.rename_files_suf_cb.setToolTip(
             _translate("SXRDCollectWidget", "Adds suffix _w for wide, and _s for step", None))
         self.rename_files_suf_cb.setText('Suffix')
+        # self.rename_files_fn_cb.setToolTip(
+        #     _translate("SXRDCollectWidget", "Adds frame number (and advances it)", None))
+        # self.rename_files_fn_cb.setText('Frame #')
         self.rename_after_cb.setText(_translate("SXRDCollectWidget", "Reset name after Measurement", None))
         self.reset_sample_position_cb.setText(_translate("SXRDCollectWidget", "Reset Sample Position", None))
         self.reset_detector_position_cb.setText(_translate("SXRDCollectWidget", "Reset Detector Position", None))

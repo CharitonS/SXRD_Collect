@@ -34,6 +34,13 @@ epics_config = {
     'pilatus_position_z': '13IDD:m5',
     'table_shutter': '13IDD:Unidig1Bi11.VAL',
     'status_message': pilatus + ':cam1:StatusMessage_RBV',
+    'pilatus_info_wavelength': pilatus + ':cam1:Wavelength',
+    'pilatus_info_detector_distance': pilatus + ':cam1:DetDist',
+    'pilatus_info_beam_x': pilatus + ':cam1:BeamX',
+    'pilatus_info_beam_y': pilatus + ':cam1:BeamY',
+    'pilatus_info_omega': pilatus + ':cam1:Omega',
+    'pilatus_info_omega_increment': pilatus + ':cam1:OmegaIncr',
+    '13IDA_wavelength': '13IDA:mono_pid1_incalc.N',
 }
 
 cycle_relative_path = '/2019/IDD_2019-2'

@@ -80,6 +80,7 @@ class MainController(object):
         self.widget.rename_files_pp_cb.clicked.connect(self.set_example_lbl)
         self.widget.rename_files_en_cb.clicked.connect(self.set_example_lbl)
         self.widget.rename_files_suf_cb.clicked.connect(self.set_example_lbl)
+        # self.widget.rename_files_fn_cb.clicked.connect(self.set_example_lbl)
         self.widget.check_all_still_cb.clicked.connect(self.check_all_still)
         self.widget.check_all_wide_cb.clicked.connect(self.check_all_wide)
         self.widget.check_all_step_cb.clicked.connect(self.check_all_step)
@@ -772,10 +773,13 @@ class MainController(object):
                         c_frame += 1
                         if self.widget.rename_files_cb.isChecked():
                             filename = self.build_file_name(sample_point.name, experiment.name)
-                            filenumber = 1
+                            # if self.widget.rename_files_fn_cb.isChecked():
+                            #     filenumber = self.widget.frame_number_txt.text()
+                            # else:
+                            #     filenumber = 1
                             caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                             caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                            caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                            # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
                             time.sleep(0.1)
 
                         elif self.widget.no_suffices_cb.isChecked():
@@ -842,7 +846,7 @@ class MainController(object):
 
                         caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                         caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                        # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
 
                         logger.info("Performing wide scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
@@ -896,7 +900,7 @@ class MainController(object):
 
                         caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                         caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                        # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
 
                         logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         omega_step = experiment.omega_step
@@ -917,7 +921,7 @@ class MainController(object):
                                 num_steps = (experiment.omega_end - experiment.omega_start) / omega_step
                                 previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection(
                                     self.filepath, filename, self.crysalis_config.add_frames_in_tif_cb.isChecked(),
-                                    num_steps)
+                                    num_steps, experiment.omega_start, omega_step)
                                 # TODO: Tell the software how to create crysalis files
                                 pass
                             if self.crysalis_config.create_par_file_from_exp_params_cb.isChecked():
@@ -1009,8 +1013,8 @@ class MainController(object):
         if self.widget.rename_after_cb.isChecked():
             caput(epics_config[self.detector] + ':TIFF1:FilePath', previous_filepath, wait=True)
             caput(epics_config[self.detector] + ':TIFF1:FileName', previous_filename, wait=True)
-            if self.widget.rename_files_cb.isChecked():
-                caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber, wait=True)
+            # if self.widget.rename_files_cb.isChecked():
+            #     caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber, wait=True)
 
         #update frame number
 
@@ -1055,6 +1059,8 @@ class MainController(object):
             filename += '_' + experiment_name
         if self.widget.rename_files_suf_cb.isChecked() and suffix:
             filename += '_' + suffix
+        # if self.widget.rename_files_fn_cb.isChecked():
+        #     filename += '_' + self.widget.frame_number_txt.text()
 
         return filename
 
@@ -1209,7 +1215,8 @@ class MainController(object):
             return False
         return True
 
-    def prepare_pilatus_for_crysalis_collection(self, file_path, file_name, add_frames, num_steps):
+    def prepare_pilatus_for_crysalis_collection(self, file_path, file_name, add_frames, num_steps, omega_start,
+                                                omega_step):
         previous_pilatus_settings = {}
         # output_file_type_pv = epics_config['pilatus_control'] + ':FileFormat_RBV'
         # previous_pilatus_settings[output_file_type_pv] = caget(output_file_type_pv)
@@ -1227,6 +1234,10 @@ class MainController(object):
         file_path = file_path.replace('/DAC', PILATUS_FILE_PATH) + '/' + file_name
         caput(output_file_path_pv.split('_RBV')[0], file_path, wait=True)
         caput(output_file_num_pv.split('_RBV')[0], 1, wait=True)
+        caput(epics_config['pilatus_info_wavelength'], caget(epics_config['13IDA_wavelength']), wait=True)
+        caput(epics_config['pilatus_info_omega'], omega_start + 90)
+        caput(epics_config['pilatus_info_omega_increment'], omega_step)
+        # TODO: Add settings for beam x, y, and detector distance. check if oscillation axis needs to be changed.
 
         if add_frames:
             num_filter_pv = epics_config['pilatus_proc'] + ':NumFilter_RBV'
