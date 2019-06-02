@@ -43,6 +43,12 @@ epics_config = {
     '13IDA_wavelength': '13IDA:mono_pid1_incalc.N',
 }
 
+crysalis_config = {
+        'set_file': 'P:\\dac_user\\beamline\\crysalis_1m\\pilatus_1m.set',
+        'ccd_file': 'P:\\dac_user\\beamline\\crysalis_1m\\pilatus_1m.ccd',
+        'par_file': 'P:\\dac_user\\beamline\\crysalis_1m\\pilatus_1m.par'
+}
+
 cycle_relative_path = '/2019/IDD_2019-2'
 FILEPATH = 'T:/dac_user' + cycle_relative_path
 # for pilatus 300kW there is no ramdisk so it writes directly to cars:

@@ -30,15 +30,18 @@ import epics
 import subprocess
 import shutil
 import re
+import collections
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-from config import epics_config, FILEPATH, PILATUS_FILE_PATH
+from config import epics_config, FILEPATH, PILATUS_FILE_PATH, crysalis_config
 from views.MainView import MainView
 from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
 from measurement import collect_single_data
 from threading import Thread
+
+from crysalis_creator import make_directory, transform_cbf_to_esperanto, copy_set_ccd, createCrysalis, create_par_file
 
 logger = logging.getLogger()
 
@@ -922,14 +925,49 @@ class MainController(object):
                                 previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection(
                                     self.filepath, filename, self.crysalis_config.add_frames_in_tif_cb.isChecked(),
                                     num_steps, experiment.omega_start, omega_step)
-                                # TODO: Tell the software how to create crysalis files
-                                pass
-                            if self.crysalis_config.create_par_file_from_exp_params_cb.isChecked():
-                                # TODO: Tell the software how to create par files
-                                pass
-                            if self.crysalis_config.read_par_file_cb.isChecked():
-                                # TODO: Tell the software how to read par files and what to do with them
-                                pass
+
+                                # TODO: Get wavelength from epics
+                                # TODO: Check how self.filepath and filename look like. This is a critical part here.
+
+                                make_directory(FILEPATH + self.filepath[4:], str(filename))
+                                copy_set_ccd(FILEPATH + self.filepath[4:], str(filename), crysalis_config)
+
+                                scans = collections.OrderedDict()
+                                scans[0] = [{
+                                             'count': num_steps,
+                                             'omega': 0,
+                                             'omega_start': experiment.omega_start + 90,
+                                             'omega_end': experiment.omega_end + 90,
+                                             'pixel_size': 0.172,
+                                             'omega_runs': None,
+                                             'theta': 0,
+                                             'kappa': 0,
+                                             'phi': 0,
+                                             'domega': omega_step,
+                                             'dtheta': 0,
+                                             'dkappa': 0,
+                                             'dphi': 0,
+                                             'center_x': 525,
+                                             'center_y': 514,
+                                             'alpha': 50,
+                                             'dist': 206.32,
+                                             'l1': 0.2952,
+                                             'l2': 0.2952,
+                                             'l12': 0.2952,
+                                             'b': 0.2952,
+                                             'mono': 0.99,
+                                             'monotype': 'SYNCHROTRON',
+                                             'chip': [1044,1044],
+                                             'Exposure_time': 1,
+                                            }]
+                                createCrysalis(scans, str(filename), FILEPATH + self.filepath[4:])
+
+                                par_filepath = self.crysalis_config.par_file_le.text()
+                                if os.path.isfile(par_filepath):
+                                    create_par_file(FILEPATH + self.filepath[4:], str(filename), par_filepath)
+                                else:
+                                    par_filepath = crysalis_config['par_file']
+                                    create_par_file(FILEPATH + self.filepath[4:], str(filename), par_filepath)
 
                         collect_step_data_thread = Thread(target=collect_step_data,
                                                           kwargs={"detector_choice": self.detector,
@@ -951,6 +989,11 @@ class MainController(object):
                         while collect_step_data_thread.isAlive():
                             QtWidgets.QApplication.processEvents()
                             time.sleep(0.2)
+
+                        if self.detector == 'pilatus':
+                            if self.crysalis_config.create_crysalis_files_cb.isChecked():
+                                transform_cbf_to_esperanto(FILEPATH + self.filepath[4:], str(filename), scans[0][0])
+
                         xps_file = str(self.filepath) + '/' + str(filename) + '_' + str(filenumber).zfill(3) + '_xps_log.csv'
                         xps_file = xps_file.replace('/DAC', FILEPATH, 1)
                         # try:
@@ -1398,9 +1441,9 @@ class CrysalisConfig(QtWidgets.QWidget):
 
     def create_widgets(self):
         self.create_crysalis_files_cb = QtWidgets.QCheckBox('Create CrysAlis files for single-crystal data collections')
-        self.create_par_file_from_exp_params_cb = QtWidgets.QCheckBox(
-            'Create .par file from the experimental parameters (not recommended)')
-        self.read_par_file_cb = QtWidgets.QCheckBox('Read .par file from the calibration crystal')
+       #self.create_par_file_from_exp_params_cb = QtWidgets.QCheckBox(
+       #     'Create .par file from the experimental parameters (not recommended)')
+       #self.read_par_file_cb = QtWidgets.QCheckBox('Read .par file from the calibration crystal')
         self.par_file_le = QtWidgets.QLineEdit()
         self.load_par_file_btn = QtWidgets.QPushButton('Load .par')
         self.add_frames_in_tif_cb = QtWidgets.QCheckBox('Add all frames in TIF')
@@ -1409,8 +1452,8 @@ class CrysalisConfig(QtWidgets.QWidget):
         self.v_box = QtWidgets.QVBoxLayout()
         self.par_h_box = QtWidgets.QHBoxLayout()
         self.v_box.addWidget(self.create_crysalis_files_cb)
-        self.v_box.addWidget(self.create_par_file_from_exp_params_cb)
-        self.v_box.addWidget(self.read_par_file_cb)
+        #self.v_box.addWidget(self.create_par_file_from_exp_params_cb)
+        #self.v_box.addWidget(self.read_par_file_cb)
         self.par_h_box.addWidget(self.par_file_le)
         self.par_h_box.addWidget(self.load_par_file_btn)
         self.v_box.addLayout(self.par_h_box)
