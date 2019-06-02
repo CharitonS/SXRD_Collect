@@ -921,7 +921,7 @@ class MainController(object):
                         if self.detector == 'pilatus':
                             # TODO: Determine the order for checking these 3
                             if self.crysalis_config.create_crysalis_files_cb.isChecked():
-                                num_steps = (experiment.omega_end - experiment.omega_start) / omega_step
+                                num_steps = int((experiment.omega_end - experiment.omega_start) / omega_step)
                                 previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection(
                                     self.filepath, filename, self.crysalis_config.add_frames_in_tif_cb.isChecked(),
                                     num_steps, experiment.omega_start, omega_step)
@@ -964,10 +964,10 @@ class MainController(object):
 
                                 par_filepath = self.crysalis_config.par_file_le.text()
                                 if os.path.isfile(par_filepath):
-                                    create_par_file(FILEPATH + self.filepath[4:], str(filename), par_filepath)
+                                    create_par_file(cbf_file_path, str(filename), par_filepath)
                                 else:
                                     par_filepath = crysalis_config['par_file']
-                                    create_par_file(FILEPATH + self.filepath[4:], str(filename), par_filepath)
+                                    create_par_file(cbf_file_path, str(filename), par_filepath)
 
                         collect_step_data_thread = Thread(target=collect_step_data,
                                                           kwargs={"detector_choice": self.detector,
@@ -1272,7 +1272,7 @@ class MainController(object):
         output_file_num_pv = epics_config['pilatus_control'] + ':FileNumber_RBV'
         previous_pilatus_settings[output_file_num_pv] = caget(output_file_num_pv)
 
-        caput(output_file_name_format_pv.split('_RBV')[0], '%s%s_%4.4d_00001.cbf', wait=True)
+        caput(output_file_name_format_pv.split('_RBV')[0], '%s%s_00001.cbf', wait=True)
         caput(output_file_name_pv.split('_RBV')[0], file_name, wait=True)
         file_path = file_path.replace('/DAC', PILATUS_FILE_PATH) + '/' + file_name
         caput(output_file_path_pv.split('_RBV')[0], file_path, wait=True)

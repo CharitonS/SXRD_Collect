@@ -91,6 +91,6 @@ def create_par_file(filepath, basename, par_file):
         with open(par_file, 'r') as old_file:
             for line in old_file:
                 if line.startswith("FILE CHIP"):
-                    new_file.write("FILE CHIP" + basename + '.ccd')
+                    new_file.write("FILE CHIP " + basename + '.ccd ' + '\n')
                 else:
                     new_file.write(line)
