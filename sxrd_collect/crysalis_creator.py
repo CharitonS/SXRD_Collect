@@ -6,7 +6,7 @@ from cryio import cbfimage, crysalis, esperanto
 
 def make_directory(filepath, basename):
 
-    new_directory = filepath + '\\' + basename + '_crys'
+    new_directory = os.path.normpath(os.path.join(filepath, basename + '_crys'))
     if os.path.isdir(new_directory):
         shutil.rmtree(new_directory)
     os.makedirs(new_directory)
@@ -33,12 +33,12 @@ def padarray(array):
 
 def transform_cbf_to_esperanto(filepath, basename, esperanto_scan_info):
 
-    new_directory = filepath + '\\' + basename + '_crys'
+    new_directory = os.path.normpath(os.path.join(filepath, basename + '_crys'))
 
     for i in range(esperanto_scan_info['count']):
 
-        cbf_file = filepath + '\\'+basename + '_{0:05d}'.format(i + 1) + '.cbf'
-        esp_file = new_directory +'\\' +  basename + '_1_'  + str(i + 1) + '.esperanto'
+        cbf_file = os.path.normpath(os.path.join(filepath, basename + '_{0:05d}'.format(i + 1) + '.cbf'))
+        esp_file = os.path.normpath(os.path.join(new_directory, basename + '_1_'  + str(i + 1) + '.esperanto'))
 
         image = cbfimage.CbfImage(cbf_file)
 
@@ -53,14 +53,14 @@ def transform_cbf_to_esperanto(filepath, basename, esperanto_scan_info):
 
 
 def copy_set_ccd(filepath, basename, config):
-    new_directory = filepath + '\\' + basename + '_crys'
+    new_directory = os.path.normpath(os.path.join(filepath, basename + '_crys'))
     shutil.copy(config['set_file'], os.path.join(new_directory, basename+'.set'))
     shutil.copy(config['ccd_file'], os.path.join(new_directory, basename+'.ccd'))
 
 
 def createCrysalis(scans, basename, filepath):
 
-    new_directory = filepath + '\\' + basename + '_crys'
+    new_directory = os.path.normpath(os.path.join(filepath, basename + '_crys'))
 
     runHeader = crysalis.RunHeader(basename.encode(), new_directory.encode(), 1)
     runname = os.path.join(new_directory, basename)
@@ -84,8 +84,8 @@ def createCrysalis(scans, basename, filepath):
 
 def create_par_file(filepath, basename, par_file):
 
-    new_directory = filepath + '\\' + basename + '_crys'
-    new_par = os.path.join(new_directory,basename+'.par')
+    new_directory = os.path.normpath(os.path.join(filepath, basename + '_crys'))
+    new_par = os.path.join(new_directory, basename+'.par')
 
     with open(new_par, 'w') as new_file:
         with open(par_file, 'r') as old_file:

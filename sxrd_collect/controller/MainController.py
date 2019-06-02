@@ -925,12 +925,12 @@ class MainController(object):
                                 previous_pilatus_settings = self.prepare_pilatus_for_crysalis_collection(
                                     self.filepath, filename, self.crysalis_config.add_frames_in_tif_cb.isChecked(),
                                     num_steps, experiment.omega_start, omega_step)
-
+                                cbf_file_path = FILEPATH + self.filepath[4:] + '/' + filename
                                 # TODO: Get wavelength from epics
                                 # TODO: Check how self.filepath and filename look like. This is a critical part here.
 
-                                make_directory(FILEPATH + self.filepath[4:], str(filename))
-                                copy_set_ccd(FILEPATH + self.filepath[4:], str(filename), crysalis_config)
+                                make_directory(cbf_file_path, str(filename))
+                                copy_set_ccd(cbf_file_path, str(filename), crysalis_config)
 
                                 scans = collections.OrderedDict()
                                 scans[0] = [{
@@ -960,7 +960,7 @@ class MainController(object):
                                              'chip': [1044,1044],
                                              'Exposure_time': 1,
                                             }]
-                                createCrysalis(scans, str(filename), FILEPATH + self.filepath[4:])
+                                createCrysalis(scans, str(filename), cbf_file_path)
 
                                 par_filepath = self.crysalis_config.par_file_le.text()
                                 if os.path.isfile(par_filepath):
@@ -992,7 +992,7 @@ class MainController(object):
 
                         if self.detector == 'pilatus':
                             if self.crysalis_config.create_crysalis_files_cb.isChecked():
-                                transform_cbf_to_esperanto(FILEPATH + self.filepath[4:], str(filename), scans[0][0])
+                                transform_cbf_to_esperanto(cbf_file_path, str(filename), scans[0][0])
 
                         xps_file = str(self.filepath) + '/' + str(filename) + '_' + str(filenumber).zfill(3) + '_xps_log.csv'
                         xps_file = xps_file.replace('/DAC', FILEPATH, 1)
