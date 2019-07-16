@@ -1438,15 +1438,22 @@ class CrysalisConfig(QtWidgets.QWidget):
         self.create_widgets()
         self.create_layout()
         self.create_connections()
+        self.setWindowTitle('CrysAlisCreator')
 
     def create_widgets(self):
         self.create_crysalis_files_cb = QtWidgets.QCheckBox('Create CrysAlis files for single-crystal data collections')
-       #self.create_par_file_from_exp_params_cb = QtWidgets.QCheckBox(
-       #     'Create .par file from the experimental parameters (not recommended)')
-       #self.read_par_file_cb = QtWidgets.QCheckBox('Read .par file from the calibration crystal')
+        # self.create_par_file_from_exp_params_cb = QtWidgets.QCheckBox(
+        #      'Create .par file from the experimental parameters (not recommended)')
+        # self.read_par_file_cb = QtWidgets.QCheckBox('Read .par file from the calibration crystal')
         self.par_file_le = QtWidgets.QLineEdit()
         self.load_par_file_btn = QtWidgets.QPushButton('Load .par')
         self.add_frames_in_tif_cb = QtWidgets.QCheckBox('Add all frames in TIF')
+        self.instruction_lbl = QtWidgets.QLabel()
+        self.instruction_lbl.setText('If CrysAlisCreator is enabled, it will automatically create all CrysAlis files \n'
+                                     'After the single-crystal calibration is done, the relevant .par file must be always provided \n'
+                                     'If no .par file is provided, the proram will use the old par file (42 keV, detector distance of ~206 mm) \n'
+                                     '\n'
+                                     'If you noticed any bugs, please contact Maxim Bykov (maks.byk@gmail.com) \n')
 
     def create_layout(self):
         self.v_box = QtWidgets.QVBoxLayout()
@@ -1458,6 +1465,7 @@ class CrysalisConfig(QtWidgets.QWidget):
         self.par_h_box.addWidget(self.load_par_file_btn)
         self.v_box.addLayout(self.par_h_box)
         self.v_box.addWidget(self.add_frames_in_tif_cb)
+        self.v_box.addWidget(self.instruction_lbl)
         self.setLayout(self.v_box)
 
     def create_connections(self):
