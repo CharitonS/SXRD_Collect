@@ -165,7 +165,7 @@ class MainView(QtWidgets.QWidget, Ui_SXRDCollectWidget):
         self.sample_points_table.setItem(new_row_ind, 2, y_pos_item)
         self.sample_points_table.setItem(new_row_ind, 3, z_pos_item)
 
-        set_btn = QtWidgets.QPushButton('Set')
+        set_btn = QtWidgets.QPushButton('Get')
         set_btn.clicked.connect(partial(self.set_sample_btn_click, new_row_ind))
         self.sample_points_table.setCellWidget(new_row_ind, 4, set_btn)
 

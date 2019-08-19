@@ -700,6 +700,21 @@ class MainController(object):
                                         'Please enter a valid path for saving the collected images!')
             return
 
+        all_filenames = self.build_all_file_names()
+
+        if self.check_for_duplicate_file_names(all_filenames):
+            self.show_error_message_box('There are duplicate file names being created \n' +
+                                        'Please check your settings')
+            return
+
+        for file_name in all_filenames:
+            file_path = FILEPATH + self.filepath[4:]
+            file_name_to_check = os.path.join(file_path, file_name)
+            if self.check_filename_exists(file_name_to_check):
+                self.show_error_message_box('Some filenames already exist' + '\n'
+                                                                         'Please check your settings!')
+                return
+
         if self.check_filename_exists(FILEPATH + self.example_str[4:]):
             self.show_error_message_box('The filename already exists' + '\n'
                                         'Please used different filename!')
@@ -762,6 +777,7 @@ class MainController(object):
             repeat_counter += 1
             if not self.check_if_aborted():
                 break
+
             for exp_ind, experiment in enumerate(self.model.experiment_setups):
                 if not (self.check_omega_in_limits(experiment.omega_start) and
                         self.check_omega_in_limits(experiment.omega_end)):
@@ -771,18 +787,27 @@ class MainController(object):
 
                 for sample_point in self.model.sample_points:
 
+                    if not caget('13IDA:eps_mbbi25') or not caget('13IDA:eps_mbbi26'):
+                        logger.info('Beam lost or one of the shutters is closed!')
+                        while not caget('13IDA:eps_mbbi25') or not caget('13IDA:eps_mbbi26'):
+                            time.sleep(1.0)
+
+                        if not self.check_if_aborted():
+                            break
+                        logger.info('Beam is back!')
+
                     if sample_point.perform_still_for_setup[exp_ind]:
                         self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
                         c_frame += 1
                         if self.widget.rename_files_cb.isChecked():
                             filename = self.build_file_name(sample_point.name, experiment.name)
                             # if self.widget.rename_files_fn_cb.isChecked():
-                            #     filenumber = self.widget.frame_number_txt.text()
+                            filenumber = self.widget.frame_number_txt.text()
                             # else:
                             #     filenumber = 1
                             caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                             caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                            # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                            caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
                             time.sleep(0.1)
 
                         elif self.widget.no_suffices_cb.isChecked():
@@ -790,7 +815,7 @@ class MainController(object):
                             _, _, filenumber = self.get_filename_info(self.detector)
                             caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                             caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                            # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                            caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
                         else:
                             _, filename, filenumber = self.get_filename_info(self.detector)
 
@@ -849,7 +874,7 @@ class MainController(object):
 
                         caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                         caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                        # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
 
                         logger.info("Performing wide scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
@@ -873,7 +898,7 @@ class MainController(object):
                             QtWidgets.QApplication.processEvents()
                             time.sleep(.2)
 
-                        time.sleep(.2)
+                        time.sleep(.1)
 
                     if not self.check_if_aborted():
                         break
@@ -903,7 +928,7 @@ class MainController(object):
 
                         caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                         caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                        # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
 
                         logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         omega_step = experiment.omega_step
@@ -1056,8 +1081,8 @@ class MainController(object):
         if self.widget.rename_after_cb.isChecked():
             caput(epics_config[self.detector] + ':TIFF1:FilePath', previous_filepath, wait=True)
             caput(epics_config[self.detector] + ':TIFF1:FileName', previous_filename, wait=True)
-            # if self.widget.rename_files_cb.isChecked():
-            #     caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber, wait=True)
+            if self.widget.rename_files_cb.isChecked():
+                caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber, wait=True)
 
         #update frame number
 
@@ -1110,6 +1135,60 @@ class MainController(object):
     def increase_point_number(self):
         cur_point_number = int(str(self.widget.point_txt.text()))
         self.widget.point_txt.setText(str(cur_point_number + 1))
+
+    def build_all_file_names(self):
+        filename = 'None'
+        filenumber = 1
+        filenames = []
+        for exp_ind, experiment in enumerate(self.model.experiment_setups):
+            for sample_point in self.model.sample_points:
+                if sample_point.perform_still_for_setup[exp_ind]:
+                    if self.widget.rename_files_cb.isChecked():
+                        filename = self.build_file_name(sample_point.name, experiment.name)
+                        filenumber = self.widget.frame_number_txt.text()
+
+                    elif self.widget.no_suffices_cb.isChecked():
+                        filename = self.basename
+                        _, _, filenumber = self.get_filename_info(self.detector)
+                    else:
+                        _, filename, filenumber = self.get_filename_info(self.detector)
+                    filenames.append(filename + '_' + str('%03d' % int(filenumber)))
+
+                if sample_point.perform_wide_scan_for_setup[exp_ind]:
+
+                    if self.widget.rename_files_cb.isChecked():
+                        filename = self.build_file_name(sample_point.name, experiment.name, 'w')
+                        filenumber = 1
+
+                    elif self.widget.no_suffices_cb.isChecked():
+                        filename = self.basename
+                        _, _, filenumber = self.get_filename_info(self.detector)
+
+                    else:
+                        _, filename, filenumber = self.get_filename_info(self.detector)
+                    filenames.append(filename + '_' + str('%03d' % int(filenumber)))
+
+                if sample_point.perform_step_scan_for_setup[exp_ind]:
+
+                    if self.widget.rename_files_cb.isChecked():
+                        filename = self.build_file_name(sample_point.name, experiment.name, 's')
+                        filenumber = 1
+
+                    elif self.widget.no_suffices_cb.isChecked():
+                        filename = self.basename
+                        _, _, filenumber = self.get_filename_info(self.detector)
+
+                    else:
+                        _, filename, filenumber = self.get_filename_info(self.detector)
+                    filenames.append(filename + '_' + str('%03d' % int(filenumber)))
+
+        return filenames
+
+    def check_for_duplicate_file_names(self, filenames):
+        for file_name in filenames:
+            if filenames.count(file_name) > 1:
+                return True
+
 
     def estimate_collection_time(self, epics_config):
         total_time = 0

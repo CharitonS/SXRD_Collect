@@ -301,7 +301,7 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
         caput(epics_config['pilatus'] + ':cam1:TriggerMode', 2, wait=True)  # 2 is ext. trigger
 
         caput(epics_config['pilatus'] + ':cam1:Acquire', 1)
-        time.sleep(0.5)
+        time.sleep(0.2)
         pilatus_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
         pilatus_trajectory_thread.start()
 
@@ -310,10 +310,10 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
         # caput(epics_config['pilatus'] + ':cam1:Acquire', 1, wait=True)
         pilatus_trajectory_thread.join()
         del stage_xps
-        time.sleep(0.5)
+        time.sleep(0.2)
     # caput(epics_config[detector_choice] + ':cam1:ShutterMode', previous_shutter_mode, wait=True)
     reset_detector_settings(previous_detector_settings, detector_choice)
-    time.sleep(0.5)
+    time.sleep(0.2)
     logger.info('Wide data collection finished.\n')
     # caput(epics_config['marccd'] + ':AcquireSequence.STRA', 'Wide scan finished', wait=True)
     return
@@ -324,24 +324,36 @@ class DetectorChecker(object):
         self.detector_choice = detector_choice
         self.pv_name = epics_config[detector_choice] + ':cam1'
 
-        if detector_choice == 'marccd':
-            self.detector_status = self.StatusChecker(3)
-            camonitor(self.pv_name + ':MarReadoutStatus_RBV',
-                      writer=partial(self.detector_status.set_status, 0, 'Idle', True))
-            camonitor(self.pv_name + ':MarCorrectStatus_RBV',
-                      writer=partial(self.detector_status.set_status, 1, 'Idle', True))
-            camonitor(self.pv_name + ':MarWritingStatus_RBV',
-                      writer=partial(self.detector_status.set_status, 2, 'Idle', True))
+
+        # TODO: uncomment these when using real marccd
+        # if detector_choice == 'marccd':
+        #     self.detector_status = self.StatusChecker(3)
+        #     camonitor(self.pv_name + ':MarReadoutStatus_RBV',
+        #               writer=partial(self.detector_status.set_status, 0, 'Idle', True))
+        #     camonitor(self.pv_name + ':MarCorrectStatus_RBV',
+        #               writer=partial(self.detector_status.set_status, 1, 'Idle', True))
+        #     camonitor(self.pv_name + ':MarWritingStatus_RBV',
+        #               writer=partial(self.detector_status.set_status, 2, 'Idle', True))
 
     def is_finished(self):
         if self.detector_choice == 'marccd':
-            if self.detector_status.is_true():
-                camonitor_clear(self.pv_name + ':MarReadoutStatus_RBV')
-                camonitor_clear(self.pv_name + ':MarCorrectStatus_RBV')
-                camonitor_clear(self.pv_name + ':MarWritingStatus_RBV')
+            # TODO: uncomment these when using real marccd
+
+            # if self.detector_status.is_true():
+            #     camonitor_clear(self.pv_name + ':MarReadoutStatus_RBV')
+            #     camonitor_clear(self.pv_name + ':MarCorrectStatus_RBV')
+            #     camonitor_clear(self.pv_name + ':MarWritingStatus_RBV')
+            #     return True
+            # else:
+            #     return False
+
+            # TODO: comment these when using real marccd (these lines are when using the sim detector
+
+            if not caget(epics_config[self.detector_choice] + ':cam1:DetectorState_RBV'):
                 return True
             else:
                 return False
+
         elif self.detector_choice == 'pilatus':
             if not caget(epics_config[self.detector_choice] + ':cam1:Acquire'):
                 return True
