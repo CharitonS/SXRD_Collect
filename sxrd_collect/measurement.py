@@ -325,34 +325,34 @@ class DetectorChecker(object):
         self.pv_name = epics_config[detector_choice] + ':cam1'
 
 
-        # TODO: uncomment these when using real marccd
-        # if detector_choice == 'marccd':
-        #     self.detector_status = self.StatusChecker(3)
-        #     camonitor(self.pv_name + ':MarReadoutStatus_RBV',
-        #               writer=partial(self.detector_status.set_status, 0, 'Idle', True))
-        #     camonitor(self.pv_name + ':MarCorrectStatus_RBV',
-        #               writer=partial(self.detector_status.set_status, 1, 'Idle', True))
-        #     camonitor(self.pv_name + ':MarWritingStatus_RBV',
-        #               writer=partial(self.detector_status.set_status, 2, 'Idle', True))
+        # TODO: comment these when using sim detector (these are for real MARCCD)
+        if detector_choice == 'marccd':
+            self.detector_status = self.StatusChecker(3)
+            camonitor(self.pv_name + ':MarReadoutStatus_RBV',
+                      writer=partial(self.detector_status.set_status, 0, 'Idle', True))
+            camonitor(self.pv_name + ':MarCorrectStatus_RBV',
+                      writer=partial(self.detector_status.set_status, 1, 'Idle', True))
+            camonitor(self.pv_name + ':MarWritingStatus_RBV',
+                      writer=partial(self.detector_status.set_status, 2, 'Idle', True))
 
     def is_finished(self):
         if self.detector_choice == 'marccd':
-            # TODO: uncomment these when using real marccd
+            # TODO: uncomment these when using sim detector (these are for real MARCCD)
 
-            # if self.detector_status.is_true():
-            #     camonitor_clear(self.pv_name + ':MarReadoutStatus_RBV')
-            #     camonitor_clear(self.pv_name + ':MarCorrectStatus_RBV')
-            #     camonitor_clear(self.pv_name + ':MarWritingStatus_RBV')
-            #     return True
-            # else:
-            #     return False
-
-            # TODO: comment these when using real marccd (these lines are when using the sim detector
-
-            if not caget(epics_config[self.detector_choice] + ':cam1:DetectorState_RBV'):
+            if self.detector_status.is_true():
+                camonitor_clear(self.pv_name + ':MarReadoutStatus_RBV')
+                camonitor_clear(self.pv_name + ':MarCorrectStatus_RBV')
+                camonitor_clear(self.pv_name + ':MarWritingStatus_RBV')
                 return True
             else:
                 return False
+
+            # TODO: comment these when using real marccd (these lines are when using the sim detector)
+
+            # if not caget(epics_config[self.detector_choice] + ':cam1:DetectorState_RBV'):
+            #     return True
+            # else:
+            #     return False
 
         elif self.detector_choice == 'pilatus':
             if not caget(epics_config[self.detector_choice] + ':cam1:Acquire'):

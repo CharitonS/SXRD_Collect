@@ -787,14 +787,19 @@ class MainController(object):
 
                 for sample_point in self.model.sample_points:
 
-                    if not caget('13IDA:eps_mbbi25') or not caget('13IDA:eps_mbbi26'):
-                        logger.info('Beam lost or one of the shutters is closed!')
-                        while not caget('13IDA:eps_mbbi25') or not caget('13IDA:eps_mbbi26'):
-                            time.sleep(1.0)
+                    if not self.widget.test_mode_cb.isChecked():
+                        if not caget('13IDA:eps_mbbi25') or not caget('13IDA:eps_mbbi26'):
+                            self.set_status_lbl('Waiting for Beam', "#FF0000")
+                            logger.info('Beam lost or one of the shutters is closed!')
+                            while not caget('13IDA:eps_mbbi25') or not caget('13IDA:eps_mbbi26'):
+                                QtWidgets.QApplication.processEvents()
+                                time.sleep(1.0)
+                                if not self.check_if_aborted():
+                                    break
+                            logger.info('Beam is back!')
 
-                        if not self.check_if_aborted():
-                            break
-                        logger.info('Beam is back!')
+                    if not self.check_if_aborted():
+                        break
 
                     if sample_point.perform_still_for_setup[exp_ind]:
                         self.set_status_lbl("Collecting\n" + str(c_frame) + " of " + str(nr), "#FF0000")
