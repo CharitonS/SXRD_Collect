@@ -692,7 +692,7 @@ class Ui_SXRDCollectWidget(object):
     def retranslateUi(self, SXRDCollectWidget):
         SXRDCollectWidget.setWindowTitle(_translate("SXRDCollectWidget", "Form", None))
         self.title_lbl.setText(_translate("SXRDCollectWidget", "Single Crystal X-ray Diffraction", None))
-        self.epics_config_btn.setText(_translate("SXRDCollectWidget", "EPICS \n Configuration", None))
+        self.epics_config_btn.setText(_translate("SXRDCollectWidget", "Reset \n EPICS Configuration", None))
         self.experiment_lbl.setText(_translate("SXRDCollectWidget", "Experiment Setup", None))
         self.load_setup_btn.setToolTip(_translate("SXRDCollectWidget", "<html><head/><body><p>Load experiment setup(s) from *.ini file</p></body></html>", None))
         self.load_setup_btn.setText(_translate("SXRDCollectWidget", "Load", None))

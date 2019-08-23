@@ -33,7 +33,7 @@ import re
 
 from qtpy import QtGui, QtCore, QtWidgets
 
-from config import epics_config, FILEPATH
+from config import epics_config, FILEPATH, default_values
 from views.MainView import MainView
 from models import SxrdModel
 from measurement import move_to_sample_pos, collect_step_data, collect_wide_data, collect_background
@@ -70,6 +70,10 @@ class MainController(object):
 
         self.connect_timer()
         self.epics_update_timer.start(1000)
+        self.reset_settings()
+
+    def reset_settings(self):
+        caput(epics_config['perkin_elmer'] + ':TIFF1:NDArrayPort', 'PEDET1')
 
     def connect_checkboxes(self):
         self.widget.no_suffices_cb.clicked.connect(lambda: self.update_cb('no_suffices'))
@@ -656,7 +660,8 @@ class MainController(object):
             return
 
     def configure_epics_clicked(self):
-        pass
+        for key in default_values:
+            caput(key, default_values[key], wait=True)
 
     def choose_detector_clicked(self):
         if self.widget.choose_detector_btn.isChecked():
@@ -769,7 +774,7 @@ class MainController(object):
                             filenumber = 1
                             caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                             caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                            caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                            # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
                             time.sleep(0.1)
 
                         elif self.widget.no_suffices_cb.isChecked():
@@ -813,7 +818,7 @@ class MainController(object):
                         self.check_perkin_elmer_trigger(self.detector)
                         # check if all motor positions are in a correct position
                         if self.check_conditions() is False:
-                            self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
+                            self.show_error_message_box('Please move microscope and/or Brillouin out!!')
                             self.reset_gui_state()
                             return
 
@@ -830,7 +835,7 @@ class MainController(object):
 
                         caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                         caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                        # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
 
                         logger.info("Performing wide scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         exposure_time = abs(experiment.omega_end - experiment.omega_start) / experiment.omega_step * \
@@ -865,7 +870,7 @@ class MainController(object):
                         # check if all motor positions are in a correct position
                         self.check_perkin_elmer_trigger(self.detector)
                         if self.check_conditions() is False:
-                            self.show_error_message_box('Please Move mirrors and microscope in the right positions!')
+                            self.show_error_message_box('Please Move microscope and/or Brillouin out!')
                             self.reset_gui_state()
                             return
 
@@ -883,7 +888,7 @@ class MainController(object):
 
                         caput(epics_config[self.detector] + ':TIFF1:FilePath', str(self.filepath), wait=True)
                         caput(epics_config[self.detector] + ':TIFF1:FileName', str(filename), wait=True)
-                        caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
+                        # caput(epics_config[self.detector] + ':TIFF1:FileNumber', filenumber, wait=True)
 
                         logger.info("Performing step scan for:\n\t\t{}\n\t\t{}".format(sample_point, experiment))
                         omega_step = experiment.omega_step
@@ -978,8 +983,8 @@ class MainController(object):
         if self.widget.rename_after_cb.isChecked():
             caput(epics_config[self.detector] + ':TIFF1:FilePath', previous_filepath, wait=True)
             caput(epics_config[self.detector] + ':TIFF1:FileName', previous_filename, wait=True)
-            if self.widget.rename_files_cb.isChecked():
-                caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber, wait=True)
+            # if self.widget.rename_files_cb.isChecked():
+                # caput(epics_config[self.detector] + ':TIFF1:FileNumber', previous_filenumber, wait=True)
 
         # update frame number
 
@@ -1171,8 +1176,15 @@ class MainController(object):
         return os.path.isfile(filename + '.tif')
 
     def check_conditions(self):
-        if self.widget.force_rotate_cb.isChecked():
-            return True
+        # if self.widget.force_rotate_cb.isChecked():
+        #     return True
+
+        if int(caget('13BMD:m23.RBV')) > -80:
+            return False
+
+        if int(caget('13BMD:m68.RBV')) < 50 or int(caget('13BMD:m65.RBV') < 50):
+            return False
+
         # if int(caget('13IDD:m24.RBV')) > -105:
         #     return False
         # elif int(caget('13IDD:m23.RBV')) > -105:

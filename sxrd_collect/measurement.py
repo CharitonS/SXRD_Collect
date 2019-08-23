@@ -261,12 +261,14 @@ def prepare_detector_settings(detector_choice):
 
 def prepare_omega_settings(omega_range, total_time):
     previous_omega_settings = {}
+    omega_base_speed_pv = epics_config['sample_position_omega'] + '.VBAS'
     omega_speed_pv = epics_config['sample_position_omega'] + '.VELO'
     previous_omega_settings[omega_speed_pv] = caget(omega_speed_pv)
     omega_acceleration_pv = epics_config['sample_position_omega'] + '.ACCL'
     previous_omega_settings[omega_acceleration_pv] = caget(omega_acceleration_pv)
 
     caput(omega_acceleration_pv, 0.1, wait=True)
+    caput(omega_base_speed_pv, 0.0, wait=True)
     caput(omega_speed_pv, omega_range/total_time, wait=True)
 
     return previous_omega_settings
@@ -383,26 +385,35 @@ def collect_wide_data(detector_choice, detector_position_x, detector_position_z,
 
         print("exposure time", exposure_time, " steps", num_steps, " omega_step: ", omega_step)
 
-        previous_proc_settings = prepare_proc_settings(num_steps)
         previous_omega_settings = prepare_omega_settings(omega_range, exposure_time*num_steps)
         motor_resolution = abs(caget(epics_config['sample_position_omega'] + '.MRES'))
         previous_sis_settings = prepare_sis_settings(omega_step, motor_resolution)
 
         caput(epics_config[detector_choice] + ':cam1:AcquireTime', exposure_time, wait=True)
-        perkin_elmer_collect_offset_frames()
+        perkin_elmer_collect_offset_frames(num_steps)
+        previous_proc_settings = prepare_proc_settings(num_steps)
         caput(epics_config['perkin_elmer'] + ':cam1:ImageMode', 1, wait=True)  # 1 is multiple
         caput(epics_config['perkin_elmer'] + ':cam1:NumImages', num_steps, wait=True)
         caput(epics_config['perkin_elmer'] + ':cam1:TriggerMode', 1, wait=True)  # 1 is ext. trigger
+        caput(epics_config['perkin_elmer_epics_shutter_mode'], 0, wait=True)  # Set shutter to None
+        caput(epics_config['table_shutter'], 0, wait=True)
+        # time.sleep(5.1)
 
         caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1, wait=False)
         caput(epics_config['sample_position_omega'], omega_end, wait=False)
-        time.sleep(0.5)
+        time.sleep(exposure_time + 0.5)
         # perkin_elmer_trajectory_thread = Thread(target=stage_xps.run_line_trajectory_general)
         # perkin_elmer_trajectory_thread.start()
 
-        while caget(epics_config['perkin_elmer'] + ':cam1:Acquire'):
+        # while caget(epics_config['perkin_elmer'] + ':cam1:Acquire'):
+        #     continue
+        while caget(epics_config['perkin_elmer'] + ':cam1:NumImagesCounter_RBV', as_string=False) < num_steps:
+            time.sleep(0.1)
+            print(caget(epics_config['perkin_elmer'] + ':cam1:NumImagesCounter_RBV', as_string=False))
             continue
         print("Acquire Complete!")
+        caput(epics_config['table_shutter'], 1, wait=True)
+        caput(epics_config['perkin_elmer_epics_shutter_mode'], 1, wait=True)  # Set shutter to Epics PV
         # caput(epics_config['perkin_elmer'] + ':cam1:Acquire', 1, wait=True)
         # perkin_elmer_trajectory_thread.join()
         # del stage_xps
@@ -586,9 +597,25 @@ def caput_pil3(pv, value, wait=True):
     return False
 
 
-def perkin_elmer_collect_offset_frames():
+def perkin_elmer_collect_offset_frames(num_frames=10):
     caput(epics_config['perkin_elmer_tiff_autosave'], 0, wait=True)
-    caput(epics_config['perkin_elmer_offset_frames'], 2, wait=True)
-    caput(epics_config['perkin_elmer_offset_constant'], 0, wait=True)
+    caput(epics_config['perkin_elmer_skip_frames'], 1, wait=True)
+    caput(epics_config['perkin_elmer_frames_to_skip'], 1, wait=True)
+    caput(epics_config['perkin_elmer_offset_frames'], num_frames, wait=True)
+    caput(epics_config['perkin_elmer_offset_constant'], 100, wait=True)
     caput(epics_config['perkin_elmer_acquire_offset_correction'], 1, wait=True)
     caput(epics_config['perkin_elmer_tiff_autosave'], 1, wait=True)
+    caput(epics_config['perkin_elmer_skip_frames'], 0, wait=True)
+
+def perkin_elmer_collect_offset_frames_while_rotating(num_frames=10):
+    caput(epics_config['perkin_elmer_tiff_autosave'], 0, wait=True)
+    caput(epics_config['perkin_elmer_skip_frames'], 1, wait=True)
+    caput(epics_config['perkin_elmer_frames_to_skip'], 1, wait=True)
+    caput(epics_config['perkin_elmer_offset_frames'], num_frames, wait=True)
+    caput(epics_config['perkin_elmer'] + ':cam1:TriggerMode', 1, wait=True)  # 1 is ext. trigger
+    caput(epics_config['perkin_elmer_offset_constant'], 100, wait=True)
+    caput(epics_config['perkin_elmer_acquire_offset_correction'], 1, wait=True)
+    caput(epics_config['sample_position_omega'], omega_end, wait=False)
+    caput(epics_config['perkin_elmer_tiff_autosave'], 1, wait=True)
+    caput(epics_config['perkin_elmer_skip_frames'], 0, wait=True)
+    caput(epics_config['perkin_elmer'] + ':cam1:TriggerMode', 0, wait=True)  # 1 is ext. trigger

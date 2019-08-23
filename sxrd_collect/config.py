@@ -21,7 +21,7 @@ epics_config = {
     'sample_position_y': '13BMD:m90',
     'sample_position_z': '13BMD:m91',
     'sample_position_omega': '13BMD:m38',
-    'table_shutter': '13BMD:Unidig1Bi13.VAL',
+    'table_shutter': '13BMD:Unidig1Bo13.VAL',
     'status_message': '13PEL1:cam1:DetectorState_RBV',
     'perkin_elmer': '13PEL1',
     'perkin_elmer_file': '13PEL1:TIFF1',
@@ -32,7 +32,20 @@ epics_config = {
     'perkin_elmer_acquire_offset_correction': '13PEL1:cam1:PEAcquireOffset',
     'perkin_elmer_tiff_autosave': '13PEL1:TIFF1:AutoSave',
     'perkin_elmer_shutter_mode': '13PEL1:cam1:ShutterMode',
+    'perkin_elmer_skip_frames': '13PEL1:cam1:PESkipFrames',
+    'perkin_elmer_frames_to_skip': '13PEL1:cam1:PENumFramesToSkip',
+    'perkin_elmer_epics_shutter_mode': '13PEL1:cam1:ShutterMode',
     'SIS': '13BMD:SIS1',
 }
 
 FILEPATH = 'T:/dac_user/2019/BMD_2019-1'
+
+default_values = {
+    '13PEL1:cam1:TriggerMode': 0,
+    '13PEL1:cam1:PESkipFrames': 0,
+    '13PEL1:cam1:ShutterMode': 1,
+    '13PEL1:TIFF1:NDArrayPort': 'PEDET1',
+    '13PEL1:Proc1:EnableFilter': 0,
+    '13BMD:m38.VELO': 5,
+    '13BMD:SIS1:StopAll': 1,
+}
